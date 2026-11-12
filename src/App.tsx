@@ -17,6 +17,7 @@ import { LocationPage } from './pages/LocationPage';
 import { ContactPage } from './pages/ContactPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsPage } from './pages/TermsPage';
+import { PagesPreviewPage } from './pages/PagesPreviewPage';
 
 // Admin Pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
@@ -160,6 +161,12 @@ function AppContent() {
 }
 
 export default function App() {
+  // O GitHub Pages não oferece API de pedidos. Publicamos uma página
+  // estática de contato, sem carrinho falso nem promessas de confirmação.
+  if (import.meta.env.VITE_STATIC_PREVIEW === 'true') {
+    return <PagesPreviewPage />;
+  }
+
   return (
     <AuthProvider>
       <CartProvider>

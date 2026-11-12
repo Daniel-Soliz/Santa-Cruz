@@ -1,5 +1,38 @@
 # Santa Cruz | Pedidos do restaurante
 
+## Por que a página ficava branca?
+
+O endereço `https://daniel-soliz.github.io/Santa-Cruz/` estava usando o código fonte do React/TypeScript diretamente. Navegadores não executam arquivos `.tsx` desse jeito. Também faltava configurar o caminho `/Santa-Cruz/` para CSS, JavaScript e imagens.
+
+Foi adicionada uma publicação compilada no GitHub Actions (`.github/workflows/deploy-pages.yml`), além de uma apresentação estática de segurança no `index.html`, que aparece mesmo se o JavaScript falhar.
+
+### Como configurar a publicação
+
+1. Abra **GitHub → Santa-Cruz → Settings → Pages**.
+2. Em **Build and deployment → Source**, selecione **GitHub Actions** (em vez de *Deploy from a branch*).
+3. Vá a **Actions → Publicar apresentação no GitHub Pages → Run workflow**, caso o fluxo não tenha começado.
+4. Verifique a conclusão verde do fluxo. Abra `https://daniel-soliz.github.io/Santa-Cruz/` e recarregue com Ctrl+F5.
+
+Se a configuração continuar como publicação por branch, o `index.html` já inclui uma página básica para evitar a tela branca, mas a versão React compilada exige **GitHub Actions**. Confira se não existe uma configuração antiga de publicação por Jekyll.
+
+### Limite importante
+
+No GitHub Pages, o site é **uma apresentação visual com atendimento pelo WhatsApp**, sem envio automático de pedidos. O Pages não executa o servidor Express, não persiste pedidos e não conecta pagamentos. Para ativar o fluxo completo de cardápio, sacola, checkout e painel, é obrigatório hospedar a API e usar banco persistente. **Não trate a versão do Pages como um sistema de pedidos automatizado.**
+
+Comandos para validar:
+
+```bash
+npm install
+npm run lint
+npm run build
+npm run test:smoke
+npm run build:pages
+npm run test:pages
+```
+
+O site usa largura máxima consistente, grades responsivas para celular e computador, botão de contato acessível e imagens com caminho ajustado pelo Vite. Mantenha `DEPLOY_TARGET=github-pages` e `VITE_STATIC_PREVIEW=true` somente na versão estática.
+
+
 Aplicação de cardápio e pedidos da Delícia do Nordeste. O cliente escolhe produtos, informa nome e telefone, opta por entrega ou retirada, seleciona o pagamento e acompanha o pedido. A equipe recebe e atualiza pedidos em `#/admin`.
 
 ## Rodar localmente
