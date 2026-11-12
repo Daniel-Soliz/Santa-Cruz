@@ -35,7 +35,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Data storage file
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(process.cwd(), 'data'));
+if (isProd && !process.env.DATA_DIR) {
+  throw new Error('Configure DATA_DIR em um volume persistente antes de publicar o sistema.');
+}
 const DB_FILE = path.join(DATA_DIR, 'database.json');
 
 interface DatabaseSchema {
@@ -67,21 +70,22 @@ function ensureDatabase(): DatabaseSchema {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
       return JSON.parse(content) as DatabaseSchema;
     } catch (e) {
-      console.error('Error reading database, creating new one', e);
+      console.error('Não foi possível ler o banco de pedidos.', e);
+      throw new Error('Banco existente inválido. Faça a recuperação do backup, não reinicialize os pedidos.');
     }
   }
 
   // Initial user setup
   // Password initially requires change on first login as instructed in prompt
-  const initialUsersWithPass = initialAdminUsers.map(u => {
+  const bootstrapPassword = process.env.ADMIN_PASSWORD || (isProd ? '' : 'Nordeste@2026');
+  const bootstrapEmail = process.env.ADMIN_EMAIL || (isProd ? '' : 'dono@deliciadonordeste.com.br');
+  if (!bootstrapEmail || bootstrapPassword.length < 12) {
+    throw new Error('Defina ADMIN_EMAIL e ADMIN_PASSWORD (mínimo 12 caracteres) para criar o primeiro administrador.');
+  }
+  // Apenas uma conta proprietária é criada. Novos funcionários são cadastrados no painel.
+  const initialUsersWithPass = initialAdminUsers.slice(0, 1).map(u => {
     const salt = crypto.randomBytes(16).toString('hex');
-    // Default initial setup password is provided securely for first login, marked mustChangePassword: true
-    const passwordHash = hashPassword('Nordeste@2026', salt);
-    return {
-      ...u,
-      passwordHash,
-      salt
-    };
+    return { ...u, email: bootstrapEmail, passwordHash: hashPassword(bootstrapPassword, salt), salt };
   });
 
   const defaultDb: DatabaseSchema = {
@@ -115,7 +119,8 @@ function saveDatabase() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
   } catch (err) {
-    console.error('Failed to save database to disk:', err);
+    console.error('Falha ao salvar os pedidos em disco:', err);
+    throw err;
   }
 }
 
@@ -149,6 +154,11 @@ function authRequired(requiredRoles?: string[]) {
 // ----------------------------------------------------
 // PUBLIC API ROUTES
 // ----------------------------------------------------
+
+// Endpoint de saúde do servidor e da API
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({ ok: true, service: 'santa-cruz-pedidos' });
+});
 
 // Store Settings (Public view - hides secrets)
 app.get('/api/settings', (_req: Request, res: Response) => {
@@ -244,10 +254,26 @@ function calculateOrderTotals(payload: {
   address?: { cep?: string; neighborhood?: string };
   couponCode?: string;
 }) {
+  if (!payload || !Array.isArray(payload.items) || payload.items.length === 0 || payload.items.length > 40) {
+    throw new Error('Pedido inválido: escolha entre 1 e 40 produtos.');
+  }
+  if (payload.deliveryType !== 'delivery' && payload.deliveryType !== 'pickup') {
+    throw new Error('Escolha entrega ou retirada.');
+  }
+  if (payload.deliveryType === 'pickup' && !db.settings.pickupEnabled) {
+    throw new Error('Retirada indisponível neste momento.');
+  }
+
   let subtotal = 0;
   const verifiedItems: any[] = [];
 
   for (const requestedItem of payload.items) {
+    if (!requestedItem || !Number.isInteger(requestedItem.quantity) || requestedItem.quantity < 1 || requestedItem.quantity > 50) {
+      throw new Error('A quantidade por prato deve ser de 1 a 50.');
+    }
+    if (requestedItem.selectedOptions !== undefined && !Array.isArray(requestedItem.selectedOptions)) {
+      throw new Error('Os adicionais enviados são inválidos.');
+    }
     const menuItem = db.menuItems.find(m => m.id === requestedItem.menuItemId);
     if (!menuItem) {
       throw new Error(`Item ${requestedItem.menuItemId} não existe no cardápio.`);
@@ -259,15 +285,25 @@ function calculateOrderTotals(payload: {
       throw new Error(`O prato "${menuItem.name}" esgotou por hoje.`);
     }
 
+    for (const group of menuItem.optionGroups || []) {
+      const chosen = (requestedItem.selectedOptions || []).filter(s => s.groupId === group.id);
+      if (chosen.length < group.minSelections || chosen.length > group.maxSelections) {
+        throw new Error('Confira as escolhas obrigatórias de ' + group.name + '.');
+      }
+      if (new Set(chosen.map(s => s.choiceId)).size !== chosen.length) {
+        throw new Error('Não repita o mesmo adicional.');
+      }
+    }
+
     let unitPrice = menuItem.promotionalPrice ?? menuItem.price;
     const selectedOptionSnapshots: any[] = [];
 
     if (requestedItem.selectedOptions && requestedItem.selectedOptions.length > 0) {
       for (const sel of requestedItem.selectedOptions) {
         const group = menuItem.optionGroups?.find(g => g.id === sel.groupId);
-        if (!group) continue;
+        if (!group) throw new Error('Grupo de adicional inválido.');
         const choice = group.choices?.find(c => c.id === sel.choiceId);
-        if (!choice) continue;
+        if (!choice) throw new Error('Adicional inválido.');
 
         unitPrice += choice.priceModifier;
         selectedOptionSnapshots.push({
@@ -399,6 +435,16 @@ app.post('/api/orders', (req: Request, res: Response) => {
       }
     }
 
+    const enabledMethods: Record<string, boolean> = {
+      pix: !!db.settings.pixEnabled && db.settings.pixType === 'manual',
+      mercadopago: !!db.settings.mercadoPagoEnabled && !!process.env.MERCADO_PAGO_ACCESS_TOKEN,
+      dinheiro: !!db.settings.cashOnDeliveryEnabled,
+      cartao_entrega: !!db.settings.cardOnDeliveryEnabled
+    };
+    if (!Object.prototype.hasOwnProperty.call(enabledMethods, paymentMethod) || !enabledMethods[paymentMethod]) {
+      return res.status(400).json({ error: 'Selecione uma forma de pagamento disponível.' });
+    }
+
     // Server-side calculation to prevent tampering
     const calculation = calculateOrderTotals({
       items,
@@ -406,6 +452,13 @@ app.post('/api/orders', (req: Request, res: Response) => {
       address,
       couponCode
     });
+
+    const parsedChangeFor = paymentMethod === 'dinheiro' && changeFor !== undefined && changeFor !== ''
+      ? Number(String(changeFor).replace(',', '.'))
+      : undefined;
+    if (parsedChangeFor !== undefined && (!Number.isFinite(parsedChangeFor) || parsedChangeFor < calculation.total)) {
+      return res.status(400).json({ error: 'Valor para troco deve ser maior ou igual ao total do pedido.' });
+    }
 
     if (calculation.subtotal < db.settings.minOrderValue) {
       return res.status(400).json({ 
@@ -453,7 +506,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
       total: calculation.total,
       paymentMethod,
       paymentStatus: initialPaymentStatus,
-      changeFor: paymentMethod === 'dinheiro' && changeFor ? parseFloat(changeFor) : undefined,
+      changeFor: parsedChangeFor,
       paymentDetails: {
         provider: paymentMethod === 'mercadopago' ? 'mercadopago' : 'manual'
       },

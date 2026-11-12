@@ -27,11 +27,7 @@ import { AdminMenuPage } from './pages/admin/AdminMenuPage';
 import { AdminPromotionsPage } from './pages/admin/AdminPromotionsPage';
 import { AdminStoreSettingsPage } from './pages/admin/AdminStoreSettingsPage';
 import { AdminPaymentsPage } from './pages/admin/AdminPaymentsPage';
-import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
-import { AdminReviewsPage } from './pages/admin/AdminReviewsPage';
-import { AdminReportsPage } from './pages/admin/AdminReportsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { AdminChecklistPage } from './pages/admin/AdminChecklistPage';
 
 function AppContent() {
   const { isAuthenticated, user } = useAuth();
@@ -39,7 +35,7 @@ function AppContent() {
     return window.location.hash ? window.location.hash.replace('#', '') : '/';
   });
 
-  const [adminTab, setAdminTab] = useState<string>('dashboard');
+  const [adminTab, setAdminTab] = useState<string>('pedidos');
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -90,18 +86,10 @@ function AppContent() {
           return <AdminStoreSettingsPage />;
         case 'pagamentos':
           return <AdminPaymentsPage />;
-        case 'clientes':
-          return <AdminCustomersPage />;
-        case 'avaliacoes':
-          return <AdminReviewsPage />;
-        case 'relatorios':
-          return <AdminReportsPage />;
         case 'usuarios':
           return <AdminUsersPage />;
-        case 'configuracoes':
-          return <AdminChecklistPage />;
         default:
-          return <AdminDashboardPage onSelectTab={setAdminTab} />;
+          return <AdminOrdersPage />;
       }
     };
 

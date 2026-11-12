@@ -173,7 +173,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess, onNav
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="dono@deliciadonordeste.com.br"
+                    placeholder="E-mail do administrador"
                     className="w-full pl-10 pr-3.5 py-3 text-sm rounded-xl border border-stone-300 focus:border-[#E8365D] outline-hidden bg-stone-50"
                   />
                 </div>
@@ -222,25 +222,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess, onNav
               </button>
             </form>
           )}
-
-          {/* Safe Initial Provisioning Helper Note */}
-          <div className="pt-4 border-t border-stone-100 text-xs text-stone-500 space-y-2 bg-[#FFF8EC] p-3 rounded-xl border border-amber-200/60">
-            <span className="font-bold text-[#722238] block flex items-center gap-1">
-              <Shield className="w-3.5 h-3.5 text-[#E8365D]" />
-              Guia do 1º Acesso Administrativo:
-            </span>
-            <p className="text-[11px] text-stone-600 leading-relaxed">
-              O sistema possui perfis pré-configurados (<strong>Dono</strong>, <strong>Gerente</strong> e <strong>Atendente</strong>) com troca obrigatória de senha no primeiro login:
-            </p>
-            <div className="text-[11px] font-mono bg-white p-2 rounded border border-stone-200 space-y-0.5">
-              <p>• Dono: <span className="text-[#722238] font-bold">dono@deliciadonordeste.com.br</span></p>
-              <p>• Gerente: <span className="text-stone-700">gerencia@deliciadonordeste.com.br</span></p>
-              <p>• Senha inicial temporária: <span className="text-stone-700">Nordeste@2026</span></p>
-            </div>
-            <p className="text-[10px] text-stone-400 italic">
-              Conforme exigido pelo manual de segurança, a troca da senha temporária é obrigatória logo no primeiro acesso.
-            </p>
-          </div>
 
           <div className="text-center pt-2">
             <button
