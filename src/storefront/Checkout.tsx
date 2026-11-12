@@ -44,7 +44,7 @@ export function Checkout({lines,settings,open,ready,onDone}:{lines:CartLine[];se
   if(!lines.length){setError('Adicione um prato antes de finalizar.');return;}
   if((payment==='pix'||payment==='mercadopago')&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)){setError('Informe um e-mail válido para o pagamento online.');return;}
   if(payment==='pix'&&digit(form.cpf).length!==11){setError('Para gerar o Pix, informe seu CPF de 11 dígitos. Ele será enviado apenas ao Mercado Pago.');return;}
-  if(!settings.payments[payment]){setError('Selecione uma forma de pagamento habilitada.');return;}
+  if(!settings.payments[payment==='mercadopago'?'mercadoPago':payment]){setError('Selecione uma forma de pagamento habilitada.');return;}
   setSending(true);setError('');
   try{
    const result=await call<{orderId:string}>('createOrder',{
