@@ -33,3 +33,24 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Acessibilidade */
+:focus-visible { outline: 3px solid #E8365D; outline-offset: 3px; }
+html { scroll-behavior: smooth; }
+button, a, input, textarea, select { touch-action: manipulation; }
+@media (prefers-reduced-motion: reduce) {
+ *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+/* Comanda térmica: imprimir somente o pedido selecionado, largura de 80 mm. */
+.receipt-print { display: none; }
+@media print {
+ body * { visibility: hidden !important; }
+ #thermal-comanda, #thermal-comanda * { visibility: visible !important; }
+ #thermal-comanda {
+   display: block !important; position: absolute; inset: 0 auto auto 0;
+   width: 80mm; padding: 5mm; margin: 0; font: 11px/1.3 monospace;
+   background: #fff !important; color: #000 !important;
+ }
+ #thermal-comanda p { border-bottom: 1px dashed #999; padding: 3px 0; }
+ @page { size: 80mm auto; margin: 0; }
+}
