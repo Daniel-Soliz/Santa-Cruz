@@ -123,7 +123,7 @@ export const startCardCheckout=onCall({region,secrets:[mpToken],maxInstances:20}
  if(!settings?.payments?.mercadoPago)reject('Cartão online temporariamente desabilitado.');
  if(order.payment?.checkoutUrl)return {initPoint:order.payment.checkoutUrl};
  const {token,site,webhook}=getPaymentEnvironment();
- const back=`${site}#/pedido/${encodeURIComponent(orderId)}`;
+ const back=`${site}?order=${encodeURIComponent(orderId)}`;
  const response=await fetch('https://api.mercadopago.com/checkout/preferences',{
   method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`,
    'X-Idempotency-Key':crypto.createHash('sha256').update('card:'+orderId).digest('hex')},
@@ -131,7 +131,7 @@ export const startCardCheckout=onCall({region,secrets:[mpToken],maxInstances:20}
    items:[{id:orderId,title:`Pedido ${orderId.slice(-8)} · Delícia do Nordeste`,quantity:1,unit_price:order.total,currency_id:'BRL'}],
    ...(order.customer?.email?{payer:{name:order.customer.name,email:order.customer.email}}:{}),
    external_reference:orderId,
-   back_urls:{success:`${back}?mp=success`,pending:`${back}?mp=pending`,failure:`${back}?mp=failure`},
+   back_urls:{success:`${back}&mp=success`,pending:`${back}&mp=pending`,failure:`${back}&mp=failure`},
    auto_return:'approved',notification_url:webhook
   })
  });

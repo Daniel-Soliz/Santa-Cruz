@@ -4,6 +4,8 @@ import {ShoppingBag,Menu as MenuIcon,Search,Plus,Minus,X,MapPin,Clock3,ArrowRigh
 import {auth,call,configured,db,guest} from '../lib/firebase';
 import {categories as demoCats,demoProducts,defaultSettings,money,logo,mapsUrl,storeOpen,quoteZone, type Product,type Category,type StoreSettings} from '../data/storeCatalog';
 import {AdminPanel} from './AdminPanel';
+import {Checkout} from './Checkout';
+import {Tracking} from './Tracking';
 
 type CartLine={key:string;id:string;name:string;image:string;price:number;quantity:number;optionId?:string;optionName?:string;notes:string;demo:boolean};
 type Method='pix'|'mercadopago'|'cash'|'cardOnDelivery';
@@ -112,7 +114,16 @@ function Location({settings}:{settings:StoreSettings}){
 }
 export function StorefrontApp(){
  const [path,setPath]=useState(activePath),[products,setProducts]=useState<Product[]>(demoProducts),[cats,setCats]=useState<Category[]>(demoCats),[settings,setSettings]=useState<StoreSettings>(defaultSettings),[cart,setCart]=useState<CartLine[]>(()=>{try{return JSON.parse(localStorage.getItem('nordeste_cart_v3')||'[]');}catch{return [];}}),[selected,setSelected]=useState<Product|null>(null),[drawer,setDrawer]=useState(false),[now,setNow]=useState(new Date()),[catalogLoaded,setCatalogLoaded]=useState(false);
- useEffect(()=>{const route=()=>{setPath(activePath());setDrawer(false);};window.addEventListener('hashchange',route);return()=>window.removeEventListener('hashchange',route);},[]);
+ useEffect(()=>{
+  const returned=new URLSearchParams(window.location.search).get('order');
+  if(returned && /^[a-zA-Z0-9_-]{8,130}$/.test(returned)){
+    history.replaceState(null,'',window.location.pathname+'#/pedido/'+encodeURIComponent(returned));
+    setPath('/pedido/'+returned);
+  }
+  const route=()=>{setPath(activePath());setDrawer(false);};
+  window.addEventListener('hashchange',route);
+  return()=>window.removeEventListener('hashchange',route);
+ },[]);
  useEffect(()=>{localStorage.setItem('nordeste_cart_v3',JSON.stringify(cart));},[cart]);
  useEffect(()=>{const t=setInterval(()=>setNow(new Date()),60000);return()=>clearInterval(t);},[]);
  useEffect(()=>{if(!db)return;guest().catch(console.error);const s1=onSnapshot(doc(db,'settings','public'),s=>{if(s.exists())setSettings({...defaultSettings,...s.data(),payments:{...defaultSettings.payments,...s.data().payments}} as StoreSettings);});const s2=onSnapshot(collection(db,'products'),s=>{setCatalogLoaded(!s.empty);setProducts(s.empty?demoProducts:s.docs.map(d=>({...d.data(),id:d.id}) as Product));});const s3=onSnapshot(collection(db,'categories'),s=>{setCats(s.empty?demoCats:s.docs.map(d=>({...d.data(),id:d.id}) as Category));});return()=>{s1();s2();s3();};},[]);

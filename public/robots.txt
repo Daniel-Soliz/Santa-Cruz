@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /Santa-Cruz/
+Disallow: /Santa-Cruz/admin/
+Sitemap: https://daniel-soliz.github.io/Santa-Cruz/sitemap.xml

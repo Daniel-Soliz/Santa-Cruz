@@ -67,5 +67,5 @@ export function quoteZone(settings:StoreSettings,cep:string,subtotal:number){
   if(!settings.deliveryEnabled || !/^\d{8}$/.test(cep.replace(/\D/g,'')))return null;
   const zone=[...settings.zones].filter(z=>z.enabled&&z.prefix&&cep.replace(/\D/g,'').startsWith(z.prefix)).sort((a,b)=>b.prefix.length-a.prefix.length)[0];
   if(!zone)return null;
-  return {...zone,fee:subtotal>=settings.minimumDelivery*5?0:zone.fee};
+  return {...zone,fee:zone.fee};
 }
