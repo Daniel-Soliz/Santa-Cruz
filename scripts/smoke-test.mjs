@@ -57,7 +57,7 @@ try {
   }
   assert.ok(ready, 'Servidor não ficou pronto.');
   const page = await send('/');
-  assert.match(page, /<div id="root"><\/div>/);
+  assert.match(page, /<div id="root"(?:\s|>)/, 'Elemento principal do React não encontrado.');
   const logo = await fetch(base + '/assets/aistudio/logo_casa_do_norte_108ee79c.jpg');
   assert.equal(logo.status, 200, 'Logo não encontrada no build.');
 

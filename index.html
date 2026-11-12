@@ -8,14 +8,14 @@
     <meta property="og:title" content="Restaurante Delícia do Nordeste Santa Cruz - Parque Belém, São Paulo" />
     <meta property="og:description" content="O sabor da culinária nordestina em São Paulo! Restaurante Delícia do Nordeste Santa Cruz no Parque Belém. Refeições no local, retirada e delivery. Tel: (11) 96014-9521." />
     <meta property="og:type" content="restaurant" />
-    <meta property="og:image" content="/assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
+    <meta property="og:image" content="assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#E8365D" />
 
     <!-- Favicon & PWA Icons derived from official emblem -->
-    <link rel="icon" type="image/jpeg" href="/assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
-    <link rel="apple-touch-icon" href="/assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/jpeg" href="assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
+    <link rel="apple-touch-icon" href="assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
+    <link rel="manifest" href="manifest.json" />
 
     <!-- Google Fonts: Baloo 2, Poppins, Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,9 +51,86 @@
         }
       }
     </style>
+
+    <!-- Exibido somente se o JavaScript não carregar, evitando tela em branco no GitHub Pages. -->
+    <style>
+      .preboot { box-sizing: border-box; min-height: 100vh; background: #fff8ec; color: #422832; font-family: 'Poppins',system-ui,sans-serif; }
+      .preboot *, .preboot *::before, .preboot *::after { box-sizing: inherit; }
+      .preboot__header { background: #fff; border-bottom: 1px solid #f2e2d5; }
+      .preboot__nav { max-width: 1160px; margin: auto; padding: 14px 24px; display:flex; justify-content:space-between; align-items:center; gap: 16px; }
+      .preboot__identity { display:flex; align-items:center; gap: 12px; min-width:0; font-weight:800; font-size: 16px; line-height:1.35; }
+      .preboot__identity img { height: 52px; width: 52px; border-radius: 50%; object-fit:cover; flex-shrink:0; border: 2px solid #e9bc55; }
+      .preboot__identity small { display:block; font-size:11px; color:#8d5260; font-weight:600; }
+      .preboot__button { display:inline-flex; justify-content:center; align-items:center; padding: 13px 22px; font-weight:800; text-align:center; border-radius: 14px; text-decoration:none; color:#fff; background:#8d2447; box-shadow:0 8px 20px #8d24471f; }
+      .preboot__button--gold { background:#f9d71c; color:#63283b; }
+      .preboot__main { max-width:1160px; margin:auto; padding: min(10vh,90px) 24px 80px; }
+      .preboot__grid { display:grid; grid-template-columns:1.25fr .75fr; align-items:center; gap:64px; }
+      .preboot__tag { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#8d2447; background:#ffe8d1; border:1px solid #edcbae; border-radius:999px; padding:8px 15px; }
+      .preboot h1 { font-family:'Baloo 2','Poppins',sans-serif; font-size:clamp(40px,6vw,72px); line-height:1.05; color:#642039; margin:24px 0 18px; letter-spacing:-.03em; }
+      .preboot h1 strong { color:#e8365d; }
+      .preboot__subtitle { font-size:clamp(16px,2vw,19px); line-height:1.7; color:#62545a; max-width:630px; }
+      .preboot__actions { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:26px; }
+      .preboot__aside { padding:44px 32px; border-radius:28px; background:linear-gradient(145deg,#7c2744,#4f1a32); text-align:center; box-shadow:0 25px 50px #6026402b; color:#fff; }
+      .preboot__aside img { max-width:215px; width:75%; aspect-ratio:1; border-radius:50%; object-fit:cover; border:7px solid #f9d71c; }
+      .preboot__aside p { font-size:14px; color:#fce2de; line-height:1.6; }
+      .preboot__info { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:48px; }
+      .preboot__info article { background:#fff; border:1px solid #f0e2d6; border-radius:20px; padding:20px; font-size:13px; line-height:1.6; color:#6d6061; }
+      .preboot__info b { display:block; font-size:15px; color:#642039; margin-bottom:6px; }
+      .preboot__info a { color:#8d2447; font-weight:700; text-decoration:none; }
+      .preboot__footer { text-align:center; font-size:12px; color:#8e7a7d; padding:26px; border-top:1px solid #edddce; }
+      @media (max-width: 780px) {
+        .preboot__nav { padding:12px 16px; }
+        .preboot__identity { font-size:13px; }
+        .preboot__identity img { width:44px; height:44px; }
+        .preboot__nav>.preboot__button { display:none; }
+        .preboot__main { padding:45px 20px 50px; }
+        .preboot__grid { grid-template-columns:1fr; gap:28px; }
+        .preboot__aside { padding:24px; }
+        .preboot__aside img { width:120px; }
+        .preboot__info { grid-template-columns:1fr; gap:12px; margin-top:28px; }
+        .preboot__actions .preboot__button { width:100%; }
+        .preboot h1 { margin-top:20px; }
+      }
+    </style>
   </head>
   <body class="bg-[#FFF8EC] text-[#4A4A44] antialiased font-['Poppins',sans-serif] selection:bg-[#E8365D] selection:text-white min-h-screen">
-    <div id="root"></div>
+    <div id="root">
+      <div class="preboot">
+        <header class="preboot__header">
+          <div class="preboot__nav">
+            <div class="preboot__identity">
+              <img src="assets/aistudio/logo_casa_do_norte_108ee79c.jpg" alt="Logo do Restaurante Delícia do Nordeste" />
+              <div>Delícia do Nordeste<small>Casa do Norte · Santa Cruz</small></div>
+            </div>
+            <a class="preboot__button" href="https://wa.me/5511960149521?text=Ol%C3%A1%2C%20gostaria%20de%20fazer%20um%20pedido." target="_blank" rel="noopener noreferrer">Pedir pelo WhatsApp</a>
+          </div>
+        </header>
+        <main class="preboot__main">
+          <div class="preboot__grid">
+            <section>
+              <span class="preboot__tag">Restaurante · São Paulo</span>
+              <h1>O sabor do <strong>Nordeste</strong> perto de você.</h1>
+              <p class="preboot__subtitle">Bem-vindo à Casa do Norte Santa Cruz. Nosso cardápio digital está sendo preparado para receber pedidos. Enquanto isso, você pode falar diretamente com a equipe pelo WhatsApp.</p>
+              <div class="preboot__actions">
+                <a class="preboot__button preboot__button--gold" href="https://wa.me/5511960149521?text=Ol%C3%A1%2C%20gostaria%20de%20fazer%20um%20pedido." target="_blank" rel="noopener noreferrer">Fazer pedido pelo WhatsApp</a>
+                <a class="preboot__button" href="https://www.google.com/maps/search/?api=1&amp;query=Rua+Santa+Cruz+da+Concei%C3%A7%C3%A3o,+Parque+Bel%C3%A9m,+S%C3%A3o+Paulo+-+SP,+02850-100" target="_blank" rel="noopener noreferrer">Como chegar</a>
+              </div>
+            </section>
+            <aside class="preboot__aside">
+              <img src="assets/aistudio/logo_casa_do_norte_108ee79c.jpg" alt="Emblema Casa do Norte Santa Cruz" />
+              <h2>Delícia do Nordeste</h2>
+              <p>Atendimento direto para informações, disponibilidade e confirmação de pedidos.</p>
+            </aside>
+          </div>
+          <div class="preboot__info">
+            <article><b>Pedidos</b>O pedido é tratado pelo WhatsApp. O site ainda não confirma compras automaticamente.</article>
+            <article><b>Endereço</b>Rua Santa Cruz da Conceição, Parque Belém, São Paulo · SP</article>
+            <article><b>Horários cadastrados</b>Terça a domingo, 8h às 22h. <a href="https://wa.me/5511960149521" target="_blank" rel="noopener noreferrer">Confirme o atendimento.</a></article>
+          </div>
+        </main>
+        <footer class="preboot__footer">Restaurante Delícia do Nordeste · Unidade Santa Cruz</footer>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

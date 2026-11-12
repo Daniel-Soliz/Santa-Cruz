@@ -2,16 +2,17 @@
   "name": "Restaurante Delícia do Nordeste - Casa do Norte Santa Cruz",
   "short_name": "Delícia do Nordeste",
   "description": "Cardápio e pedidos da Casa do Norte Delícia do Nordeste - Unidade Santa Cruz",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#FFF8EC",
   "theme_color": "#E8365D",
   "icons": [
     {
-      "src": "/assets/aistudio/logo_casa_do_norte_108ee79c.jpg",
+      "src": "./assets/aistudio/logo_casa_do_norte_108ee79c.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
-  ]
+  ],
+  "scope": "./"
 }
