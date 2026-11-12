@@ -29,6 +29,16 @@ function EditProduct({item,cats,onSave,onClose}:{item:Product;cats:Category[];on
    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!data.demo} onChange={e=>val('demo',e.target.checked)}/> Produto ilustrativo (bloqueia venda)</label>
    <label className="text-xs font-bold text-stone-800">Ordem<input type="number" className={input} value={data.order} onChange={e=>val('order',Number(e.target.value))}/></label>
    <label className={label+' sm:col-span-2'}>Marcadores separados por vírgula<input className={input} value={data.tags.join(', ')} onChange={e=>val('tags',e.target.value.split(',').map(x=>x.trim()).filter(Boolean))}/></label>
+   <fieldset className="sm:col-span-2 rounded-2xl border border-stone-200 p-4">
+    <legend className="px-2 font-bold text-[#722238]">Tamanhos e opcionais com preço adicional</legend>
+    <p className="mb-3 text-xs text-stone-600">Exemplo: Individual (+ R$ 0), Serve 2 pessoas (+ R$ 20). O cliente escolhe uma opção.</p>
+    {(data.options||[]).map((o,i)=><div key={o.id} className="mb-3 grid grid-cols-[1fr_110px_32px] items-end gap-2">
+      <label className={label}>Opção<input className={input} value={o.name} onChange={e=>val('options',(data.options||[]).map((x,j)=>i===j?{...x,name:e.target.value}:x))}/></label>
+      <label className={label}>+ R$<input type="number" min="0" step=".01" className={input} value={o.price} onChange={e=>val('options',(data.options||[]).map((x,j)=>i===j?{...x,price:Number(e.target.value)}:x))}/></label>
+      <button type="button" aria-label="Remover opção" className="h-10 rounded-lg bg-rose-50 text-rose-700" onClick={()=>val('options',(data.options||[]).filter((_,j)=>i!==j))}><Trash2 className="mx-auto" size={16}/></button>
+    </div>)}
+    <button type="button" onClick={()=>val('options',[...(data.options||[]),{id:crypto.randomUUID(),name:'Nova opção',price:0}])} className="rounded-xl border border-stone-200 px-4 py-2 text-xs font-bold">+ Adicionar opção</button>
+   </fieldset>
   </div>
   {error&&<p role="alert" className="mt-4 text-rose-700">{error}</p>}
   <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-xl border px-4 py-3">Cancelar</button><button disabled={busy} className="rounded-xl bg-[#E8365D] px-5 py-3 font-bold text-white disabled:opacity-50">{busy?'Salvando...':'Salvar prato'}</button></div>

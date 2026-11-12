@@ -51,7 +51,7 @@ export function Checkout({lines,settings,open,ready,onDone}:{lines:CartLine[];se
    const result=await call<{orderId:string}>('createOrder',{
     requestId:keyRef.current,kind,customer:{name:form.name.trim(),phone:digit(form.phone),email:form.email.trim()},
     address:kind==='delivery'?{cep:digit(form.cep),street:form.street.trim(),number:form.number.trim(),neighborhood:form.neighborhood.trim(),complement:form.complement.trim(),reference:form.reference.trim()}:null,
-    paymentMethod:payment,items:lines.map(l=>({id:l.id,quantity:l.quantity,optionId:l.optionId||'',notes:l.notes}))
+    paymentMethod:payment,expectedTotal:total,items:lines.map(l=>({id:l.id,quantity:l.quantity,optionId:l.optionId||'',notes:l.notes}))
    });
    setOrderId(result.orderId);
    createdId.current=result.orderId;

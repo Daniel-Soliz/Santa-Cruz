@@ -41,6 +41,8 @@ export const createOrder=onCall({region,maxInstances:25},async(request)=>{
  const name=safeString(customer.name,90),phone=digits(customer.phone),email=safeString(customer.email,150);
  if(name.length<2||phone.length<10||phone.length>13)throw new HttpsError('invalid-argument','Nome e telefone com DDD são obrigatórios.');
  const method=safeString(data.paymentMethod,30);
+ if(['pix','mercadopago'].includes(method)&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+  throw new HttpsError('invalid-argument','E-mail válido é obrigatório para pagamento online.');
  if(!['pix','mercadopago','cash','cardOnDelivery'].includes(method))throw new HttpsError('invalid-argument','Forma de pagamento inválida.');
  const kind=safeString(data.kind,20);
  const addr=data.address||{};
@@ -92,6 +94,8 @@ export const createOrder=onCall({region,maxInstances:25},async(request)=>{
    if(subtotalCents<=0||subtotalCents>20000000)reject('Valor total inválido.');
    const delivery=shipping(settings,kind,cep,subtotalCents);
    const amountCents=subtotalCents+delivery.feeCents;
+   if(!Number.isFinite(toCents(data.expectedTotal))||toCents(data.expectedTotal)!==amountCents)
+    reject('Preços ou taxa foram atualizados. Revise o total do pedido e tente novamente.');
    const order={
     ownerUid:uid,kind,status:'Recebido',customer:{name,phone,...(email?{email}:{})},
     address:kind==='delivery'?{cep,street:safeString(addr.street,120),number:safeString(addr.number,15),
