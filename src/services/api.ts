@@ -106,6 +106,17 @@ export const api = {
     return data;
   },
 
+  async quoteDelivery(cep: string, subtotal: number): Promise<{ available: boolean; cep: string; zone: string; fee: number; estimatedMinutes: number }> {
+    const res = await fetch(`${API_BASE}/delivery/quote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cep, subtotal })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Área de entrega indisponível');
+    return data;
+  },
+
   async getQrCode(text: string): Promise<string> {
     const res = await fetch(`${API_BASE}/qrcode?text=${encodeURIComponent(text)}`);
     const data = await res.json();
@@ -163,6 +174,17 @@ export const api = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erro ao atualizar status');
+    return data;
+  },
+
+  async adminAssignDelivery(orderId: string, details: { driverName: string; driverPhone: string; note: string }): Promise<{ success: boolean; order: Order }> {
+    const res = await fetch(`${API_BASE}/admin/orders/${encodeURIComponent(orderId)}/delivery`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(details)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Não foi possível atribuir o entregador');
     return data;
   },
 

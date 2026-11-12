@@ -38,6 +38,9 @@ interface CartContextType {
   total: number;
   itemsCount: number;
   storeSettings: StoreSettings | null;
+  deliveryQuote: { available: boolean; cep: string; zone: string; fee: number; estimatedMinutes: number } | null;
+  deliveryQuoteError: string;
+  isQuotingDelivery: boolean;
   refreshSettings: () => Promise<void>;
 }
 
@@ -70,22 +73,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem('delicia_address');
       return saved ? JSON.parse(saved) : {
-        cep: '02850-100',
-        street: 'Rua Santa Cruz da Conceição',
+        cep: '',
+        street: '',
         number: '',
         complement: '',
-        neighborhood: 'Parque Belém',
+        neighborhood: '',
         city: 'São Paulo',
         state: 'SP',
         reference: ''
       };
     } catch {
       return {
-        cep: '02850-100',
-        street: 'Rua Santa Cruz da Conceição',
+        cep: '',
+        street: '',
         number: '',
         complement: '',
-        neighborhood: 'Parque Belém',
+        neighborhood: '',
         city: 'São Paulo',
         state: 'SP',
         reference: ''
@@ -100,6 +103,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [couponDescription, setCouponDescription] = useState<string>('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
+  const [deliveryQuote, setDeliveryQuote] = useState<CartContextType['deliveryQuote']>(null);
+  const [deliveryQuoteError, setDeliveryQuoteError] = useState('');
+  const [isQuotingDelivery, setIsQuotingDelivery] = useState(false);
 
   const refreshSettings = async () => {
     try {
@@ -131,25 +137,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('delicia_address', JSON.stringify(address));
   }, [address]);
 
-  // Calculations
+  // Taxa e atendimento ao CEP confirmados no servidor.
   const subtotal = items.reduce((sum, item) => sum + item.totalPriceCalculated, 0);
-
-  let deliveryFee = 0;
-  if (deliveryType === 'delivery' && storeSettings) {
-    if (storeSettings.freeDeliveryAbove && subtotal >= storeSettings.freeDeliveryAbove) {
-      deliveryFee = 0;
-    } else {
-      deliveryFee = storeSettings.defaultDeliveryFee;
-      if (address.cep && storeSettings.deliveryZones) {
-        const cleanCep = address.cep.replace(/\D/g, '');
-        const matched = storeSettings.deliveryZones.find(z => z.active && z.cepPrefix && cleanCep.startsWith(z.cepPrefix));
-        if (matched) {
-          deliveryFee = matched.fee;
-        }
-      }
+  useEffect(() => {
+    if (deliveryType !== 'delivery') {
+      setDeliveryQuote(null);
+      setDeliveryQuoteError('');
+      setIsQuotingDelivery(false);
+      return;
     }
-  }
+    const cep = address.cep.replace(/\D/g, '');
+    if (cep.length !== 8) {
+      setDeliveryQuote(null);
+      setIsQuotingDelivery(false);
+      setDeliveryQuoteError('Informe o CEP para calcular a entrega.');
+      return;
+    }
+    let cancelled = false;
+    setDeliveryQuote(null);
+    setIsQuotingDelivery(true);
+    setDeliveryQuoteError('');
+    api.quoteDelivery(cep, subtotal).then(quote => {
+      if (!cancelled) setDeliveryQuote(quote);
+    }).catch((err: Error) => {
+      if (!cancelled) setDeliveryQuoteError(err.message || 'Entrega indisponível.');
+    }).finally(() => {
+      if (!cancelled) setIsQuotingDelivery(false);
+    });
+    return () => { cancelled = true; };
+  }, [deliveryType, address.cep, subtotal]);
 
+  const deliveryFee = deliveryType === 'delivery' ? (deliveryQuote?.fee || 0) : 0;
   const total = Math.max(0, subtotal - couponDiscount + deliveryFee);
   const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -278,6 +296,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         total,
         itemsCount,
         storeSettings,
+        deliveryQuote,
+        deliveryQuoteError,
+        isQuotingDelivery,
         refreshSettings
       }}
     >
