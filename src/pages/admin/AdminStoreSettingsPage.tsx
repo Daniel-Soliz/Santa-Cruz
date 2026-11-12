@@ -401,7 +401,7 @@ export const AdminStoreSettingsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Taxa de Entrega Padrão (R$)
+                Taxa de Referência (R$)
               </label>
               <input
                 type="number"
@@ -428,6 +428,23 @@ export const AdminStoreSettingsPage: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+
+        <div className="rounded-3xl border border-amber-200 bg-white p-4 sm:p-6 space-y-4">
+          <h3 className="font-heading font-extrabold text-base text-[#722238]">Canais de atendimento</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-[#fff8ec] p-4 text-sm font-bold text-stone-800">
+              <input type="checkbox" checked={formData.deliveryEnabled}
+                onChange={e => handleChange('deliveryEnabled', e.target.checked)} className="w-5 h-5" />
+              Receber pedidos para entrega
+            </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-[#fff8ec] p-4 text-sm font-bold text-stone-800">
+              <input type="checkbox" checked={formData.pickupEnabled}
+                onChange={e => handleChange('pickupEnabled', e.target.checked)} className="w-5 h-5" />
+              Permitir retirada no balcão
+            </label>
+          </div>
+          <p className="text-xs text-stone-600">A entrega só pode ser habilitada depois de conferir e ativar as áreas abaixo. Novas lojas começam com delivery desligado para evitar aceitar CEPs ou taxas de teste.</p>
         </div>
 
         {/* Áreas de entrega de verdade, com CEP, taxa e prazo. */}

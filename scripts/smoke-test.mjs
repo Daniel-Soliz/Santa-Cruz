@@ -63,6 +63,17 @@ try {
   assert.equal(logo.status, 200, 'Logo não encontrada no build.');
 
   const settings = await send('/api/settings');
+  assert.equal(settings.deliveryEnabled, false);
+  assert.equal(settings.pixEnabled, false);
+  assert.equal(settings.mercadoPagoReady, false);
+  const login = await post('/api/admin/login', { email: 'admin@restaurante.teste', password: 'SenhaExclusivaTeste2026!' });
+  assert.ok(login.token);
+  const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${login.token}` };
+  await send('/api/admin/settings', { method: 'PUT', headers: authHeaders,
+    body: JSON.stringify({ deliveryEnabled: true, deliveryZones: [
+      { id:'test-zone', name:'Parque Belém e Entorno', cepPrefix:'02850', fee:6, estimatedMinutes:30, active:true }
+    ] })
+  });
   const menu = await send('/api/menu');
   assert.ok(menu.length > 0, 'Cardápio vazio.');
   const item = menu.find(x => x.status === 'disponivel' && (!x.optionGroups || x.optionGroups.length === 0) && x.price >= settings.minOrderValue);
@@ -94,9 +105,6 @@ try {
   const tracking = await send(`/api/orders/${id}?token=${token}`);
   assert.equal(tracking.status, 'Recebido');
 
-  const login = await post('/api/admin/login', { email: 'admin@restaurante.teste', password: 'SenhaExclusivaTeste2026!' });
-  assert.ok(login.token);
-  const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${login.token}` };
   const orders = await send('/api/admin/orders', { headers: authHeaders });
   assert.equal(orders[0].id, created.orderId);
   await send(`/api/admin/orders/${id}/status`, {

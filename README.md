@@ -60,7 +60,7 @@ O **painel administrativo** fica em `/#/admin` quando você publica o servidor E
 
 ### Entregas por CEP
 
-Em **Admin → Loja**, cadastre e habilite regiões por prefixo do CEP, taxa e prazo. Um cliente só consegue finalizar uma entrega dentro de uma região ativa. Os CEPs fora das regiões cadastradas são recusados e o cliente pode escolher retirada. A taxa é calculada no servidor e a faixa mais específica tem prioridade. A prévia do carrinho só confirma o valor depois de validar o CEP.
+Em **Admin → Loja**, cadastre e habilite regiões por prefixo do CEP, taxa e prazo. **Entregas começam desligadas** e as regiões demonstrativas começam inativas. Confirme os bairros reais, ative as regiões e marque “Receber pedidos para entrega” antes de divulgar o serviço. A retirada começa habilitada. Um cliente só consegue finalizar uma entrega dentro de uma região ativa. Os CEPs fora das regiões cadastradas são recusados e o cliente pode escolher retirada. A taxa é calculada no servidor e a faixa mais específica tem prioridade. A prévia do carrinho só confirma o valor depois de validar o CEP.
 
 ### Configuração do Mercado Pago
 
@@ -81,7 +81,7 @@ Referências oficiais:
 
 ### Pix, pagamento presencial e segurança
 
-**Pix manual não tem QR Code automático**: o cliente recebe somente a chave cadastrada e o valor do pedido. A equipe confere o recebimento antes de marcar como pago. Dinheiro e cartão na maquininha continuam disponíveis quando habilitados. O backend bloqueia pedidos com formas desativadas e não aceita produtos fictícios em produção. Para testes com dados descartáveis, o script de smoke usa `ALLOW_DEMO_ORDERS=true` exclusivamente no processo de teste.
+**O Pix manual começa desativado e sem chave cadastrada.** Confirme sua chave bancária antes de ativar. **Pix manual não tem QR Code automático**: o cliente recebe somente a chave cadastrada e o valor do pedido. A equipe confere o recebimento antes de marcar como pago. Dinheiro e cartão na maquininha continuam disponíveis quando habilitados. O backend bloqueia pedidos com formas desativadas e não aceita produtos fictícios em produção. Para testes com dados descartáveis, o script de smoke usa `ALLOW_DEMO_ORDERS=true` exclusivamente no processo de teste.
 
 ### Implantação pendente
 

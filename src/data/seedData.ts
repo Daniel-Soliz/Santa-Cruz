@@ -41,7 +41,7 @@ export const initialStoreSettings: StoreSettings = {
   allowScheduledOrders: false,
   minOrderValue: 20.00,
   defaultPrepMinutes: 30,
-  deliveryEnabled: true,
+  deliveryEnabled: false,
   pickupEnabled: true,
 
   // Horário oficial: Terça a domingo, das 08h às 22h. Segunda-feira: Fechado.
@@ -56,9 +56,9 @@ export const initialStoreSettings: StoreSettings = {
   ],
 
   deliveryZones: [
-    { id: "z1", name: "Parque Belém e Entorno", cepPrefix: "02850", fee: 6.00, estimatedMinutes: 30, active: true },
-    { id: "z2", name: "Freguesia do Ó e Brasilândia", cepPrefix: "028", fee: 8.50, estimatedMinutes: 40, active: true },
-    { id: "z3", name: "Bairros Adjacentes Zona Norte SP", cepPrefix: "02", fee: 11.00, estimatedMinutes: 45, active: true },
+    { id: "z1", name: "Parque Belém e Entorno", cepPrefix: "02850", fee: 6.00, estimatedMinutes: 30, active: false },
+    { id: "z2", name: "Freguesia do Ó e Brasilândia", cepPrefix: "028", fee: 8.50, estimatedMinutes: 40, active: false },
+    { id: "z3", name: "Bairros Adjacentes Zona Norte SP", cepPrefix: "02", fee: 11.00, estimatedMinutes: 45, active: false },
   ],
   defaultDeliveryFee: 7.50,
   freeDeliveryAbove: 100.00,

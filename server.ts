@@ -267,7 +267,7 @@ function quoteDelivery(cepValue: unknown, subtotal: number) {
   const zones = db.settings.deliveryZones || [];
   const match = [...zones].filter(z => z.active && z.cepPrefix && cep.startsWith(z.cepPrefix.replace(/\D/g, '')))
     .sort((a,b) => (b.cepPrefix?.length || 0) - (a.cepPrefix?.length || 0))[0];
-  if (zones.length > 0 && !match) throw new Error('Ainda não entregamos neste CEP. Escolha retirada ou fale com a equipe.');
+  if (!match) throw new Error('Este CEP não está em uma área ativa de entrega. Escolha retirada ou fale com a equipe.');
   const amount = Number(match ? match.fee : db.settings.defaultDeliveryFee);
   if (!Number.isFinite(amount) || amount < 0) throw new Error('Taxa de entrega não configurada corretamente.');
   return {
