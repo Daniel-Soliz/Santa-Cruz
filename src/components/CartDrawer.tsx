@@ -51,7 +51,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
     couponDiscount, 
     applyCoupon, 
     removeCoupon,
-    storeSettings 
+    storeSettings,
+    deliveryQuote,
+    deliveryQuoteError,
+    isQuotingDelivery
   } = useCart();
 
   const [couponInput, setCouponInput] = useState('');
@@ -116,6 +119,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
     }
 
     if (deliveryType === 'delivery') {
+      if (isQuotingDelivery || !deliveryQuote || deliveryQuote.cep !== address.cep.replace(/\D/g, '')) {
+        setSubmissionError(deliveryQuoteError || 'Confirme um CEP atendido antes de enviar o pedido.');
+        return;
+      }
       if (!address.street.trim() || !address.number.trim() || !address.neighborhood.trim()) {
         setSubmissionError('Por favor, preencha rua, número e bairro para a entrega.');
         return;
@@ -124,6 +131,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
 
     if (storeSettings?.minOrderValue && subtotal < storeSettings.minOrderValue) {
       setSubmissionError(`O pedido mínimo é de R$ ${storeSettings.minOrderValue.toFixed(2).replace('.', ',')}`);
+      return;
+    }
+
+    const methodsAvailable: Record<string, boolean> = {
+      pix: !!storeSettings?.pixEnabled && !!storeSettings?.pixKey?.trim(),
+      mercadopago: !!storeSettings?.mercadoPagoReady,
+      dinheiro: !!storeSettings?.cashOnDeliveryEnabled,
+      cartao_entrega: !!storeSettings?.cardOnDeliveryEnabled
+    };
+    if (!methodsAvailable[paymentMethod]) {
+      setSubmissionError('Escolha uma forma de pagamento ativa na loja.');
       return;
     }
 
@@ -327,8 +345,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               <div className="p-1 rounded-xl bg-stone-100 border border-stone-200 grid grid-cols-2 gap-1 text-center font-bold text-xs">
                 <button
                   type="button"
+                  disabled={!storeSettings?.deliveryEnabled}
                   onClick={() => setDeliveryType('delivery')}
-                  className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     deliveryType === 'delivery'
                       ? 'bg-white text-[#722238] shadow-xs border border-stone-200'
                       : 'text-stone-500 hover:text-stone-800'
@@ -340,8 +359,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
 
                 <button
                   type="button"
+                  disabled={!storeSettings?.pickupEnabled}
                   onClick={() => setDeliveryType('pickup')}
-                  className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     deliveryType === 'pickup'
                       ? 'bg-white text-[#722238] shadow-xs border border-stone-200'
                       : 'text-stone-500 hover:text-stone-800'
@@ -351,6 +371,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                   <span>Retirar no Balcão</span>
                 </button>
               </div>
+
+              {deliveryType === 'delivery' && (
+                <div className={`rounded-xl border px-4 py-3 text-xs ${deliveryQuote ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-900'}`} role="status">
+                  {isQuotingDelivery ? 'Calculando disponibilidade e taxa da entrega...' :
+                    deliveryQuote ? `Atendemos ${deliveryQuote.zone}. Taxa: R$ ${deliveryQuote.fee.toFixed(2).replace('.', ',')}. Estimativa: ${deliveryQuote.estimatedMinutes} minutos após confirmação.` :
+                    deliveryQuoteError || 'Informe o CEP para conferir a área de entrega.'}
+                </div>
+              )}
 
               {/* Customer Info Form */}
               <div className="space-y-3 p-4 rounded-2xl bg-[#FFF8EC] border border-amber-200/80">
@@ -563,8 +591,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                   {/* Pix */}
                   <button
                     type="button"
+                    disabled={!(!!storeSettings?.pixEnabled && !!storeSettings?.pixKey?.trim())}
                     onClick={() => setPaymentMethod('pix')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === 'pix'
                         ? 'border-[#722238] bg-white ring-2 ring-[#722238]/10 shadow-xs'
                         : 'border-stone-200 bg-white/70 hover:border-stone-300'
@@ -578,8 +607,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                   {/* Mercado Pago */}
                   <button
                     type="button"
+                    disabled={!(!!storeSettings?.mercadoPagoReady)}
                     onClick={() => setPaymentMethod('mercadopago')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === 'mercadopago'
                         ? 'border-[#1F5FA8] bg-white ring-2 ring-[#1F5FA8]/10 shadow-xs'
                         : 'border-stone-200 bg-white/70 hover:border-stone-300'
@@ -593,8 +623,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                   {/* Dinheiro */}
                   <button
                     type="button"
+                    disabled={!(!!storeSettings?.cashOnDeliveryEnabled)}
                     onClick={() => setPaymentMethod('dinheiro')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === 'dinheiro'
                         ? 'border-[#D4AF37] bg-white ring-2 ring-[#D4AF37]/10 shadow-xs'
                         : 'border-stone-200 bg-white/70 hover:border-stone-300'
@@ -608,8 +639,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                   {/* Cartão na Entrega */}
                   <button
                     type="button"
+                    disabled={!(!!storeSettings?.cardOnDeliveryEnabled)}
                     onClick={() => setPaymentMethod('cartao_entrega')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === 'cartao_entrega'
                         ? 'border-[#E8365D] bg-white ring-2 ring-[#E8365D]/10 shadow-xs'
                         : 'border-stone-200 bg-white/70 hover:border-stone-300'
@@ -620,6 +652,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                     <span className="text-[10px] text-stone-500 block">Débito/Crédito na entrega</span>
                   </button>
                 </div>
+
+                {!storeSettings?.mercadoPagoReady && (
+                  <p className="text-xs text-stone-600 rounded-xl bg-amber-50 border border-amber-200 p-3">
+                    Mercado Pago será liberado após configurar as credenciais e o webhook seguro no servidor.
+                  </p>
+                )}
 
                 {/* Change input for cash */}
                 {paymentMethod === 'dinheiro' && (
@@ -659,7 +697,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                 <div className="flex justify-between text-stone-600">
                   <span>Taxa de entrega ({deliveryType === 'delivery' ? 'Delivery' : 'Retirada'}):</span>
                   <span className="font-semibold text-stone-800">
-                    {deliveryType === 'pickup' 
+                    {deliveryType === 'delivery' && !deliveryQuote ? 'Calcular pelo CEP' : deliveryType === 'pickup' 
                       ? 'Grátis' 
                       : deliveryFee === 0 
                         ? 'Grátis (Promoção)' 
@@ -691,7 +729,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
           <div className="p-4 sm:p-5 bg-stone-50 border-t border-stone-200 shrink-0">
             <button
               onClick={handleSubmitOrder}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isQuotingDelivery || (deliveryType === 'delivery' && !deliveryQuote)}
               className="w-full py-4 px-6 rounded-2xl bg-[#F9D71C] text-[#722238] font-heading font-extrabold text-base sm:text-lg hover:bg-[#E8C60B] active:scale-98 shadow-md transition-all flex items-center justify-between border border-amber-400 cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? (
