@@ -56,6 +56,13 @@ export const createOrder=onCall({region,maxInstances:25},async(request)=>{
   return await firestore.runTransaction(async transaction=>{
    const prior=await transaction.get(ref);
    if(prior.exists)return {orderId,duplicate:true};
+   const rateRef=firestore.collection('orderRateLimits').doc(uid);
+   const rateSnapshot=await transaction.get(rateRef);
+   const now=Date.now();
+   const rate=rateSnapshot.data();
+   const fresh=!rate || now-Number(rate.windowStart)>60*60*1000;
+   const count=fresh?0:Number(rate.count)||0;
+   if(count>=8)reject('Limite temporário de pedidos atingido. Aguarde e tente novamente.');
    const config=await transaction.get(firestore.doc('settings/public'));
    if(!config.exists)reject('Loja ainda não habilitada. Cadastre horários e pagamentos no painel.');
    const settings=config.data()!;
@@ -105,6 +112,7 @@ export const createOrder=onCall({region,maxInstances:25},async(request)=>{
     payment:{method,status:'pending'},history:[{status:'Recebido',at:new Date().toISOString()}]
    };
    transaction.create(ref,order);
+   transaction.set(rateRef,{windowStart:fresh?now:rate.windowStart,count:count+1});
    return {orderId,duplicate:false};
   });
  }catch(err){
@@ -243,7 +251,7 @@ export const mercadoPagoWebhook=onRequest({region,secrets:[mpToken,mpSecret],max
     !['pix','mercadopago'].includes(order.payment?.method))return;
    if(order.payment.method==='pix'&&order.payment.providerId&&order.payment.providerId!==String(id))return;
    const status=normalizeOrderPayment(payment.status);
-   if(order.payment.status===status||(order.payment.status==='paid'&&status==='pending')||
+   if(order.payment.status===status||(order.payment.status==='paid'&&status!=='refunded')||
       (order.payment.status==='refunded'&&status!=='refunded'))return;
    tx.update(ref,{'payment.status':status,'payment.lastProviderId':String(id),
       updatedAt:FieldValue.serverTimestamp()});

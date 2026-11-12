@@ -128,6 +128,7 @@ Em **Configurações**, confirme endereço, telefone, horários, pedido mínimo,
 - Firestore: catálogo público e configurações públicas são legíveis; pedidos são legíveis **somente pelo usuário autenticado dono do pedido ou por admin**. Clientes criam pedidos **via callable Cloud Function** que calcula o valor; escrita direta na coleção `orders` é proibida.
 - Storage: só contas com custom claim admin podem fazer upload/alterar imagens (limite de tamanho e tipos).
 - Access Tokens/segredos do Mercado Pago ficam no Secret Manager e são acessíveis somente pelas Functions.
+- A função limita novos pedidos a 8 por sessão e por hora para reduzir abuso. Para proteção adicional, configure Firebase App Check antes de escala comercial.
 - Um pedido anônimo só pode ser acompanhado no **mesmo navegador enquanto a sessão anônima persistir**. Para suporte após limpeza de dados, a equipe pode localizar o pedido pelo painel.
 - Use política de privacidade e retenção de dados adequada à LGPD antes de abrir para clientes.
 
