@@ -63,7 +63,7 @@ export function storeOpen(settings:StoreSettings, date=new Date()){
   const h=settings.hours[day];
   return !settings.paused && !!h?.enabled && time>=h.opens && time<h.closes;
 }
-export function quoteZone(settings:StoreSettings,cep:string,subtotal:number){
+export function quoteZone(settings:StoreSettings,cep:string,_subtotal:number){
   if(!settings.deliveryEnabled || !/^\d{8}$/.test(cep.replace(/\D/g,'')))return null;
   const zone=[...settings.zones].filter(z=>z.enabled&&z.prefix&&cep.replace(/\D/g,'').startsWith(z.prefix)).sort((a,b)=>b.prefix.length-a.prefix.length)[0];
   if(!zone)return null;

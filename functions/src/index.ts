@@ -58,7 +58,7 @@ export const createOrder=onCall({region,maxInstances:25},async(request)=>{
    if(!config.exists)reject('Loja ainda não habilitada. Cadastre horários e pagamentos no painel.');
    const settings=config.data()!;
    if(!isOpen(settings))reject('Fechado agora. Pedidos disponíveis somente no horário de funcionamento.');
-   if(settings.payments?.[method]!==true)reject('Pagamento desativado pelo restaurante.');
+   if(settings.payments?.[method==='mercadopago'?'mercadoPago':method]!==true)reject('Pagamento desativado pelo restaurante.');
    const refs=provided.map((line:any)=>{
     const id=safeString(line.id,90);
     if(!/^[a-zA-Z0-9_-]{1,90}$/.test(id)||!Number.isInteger(line.quantity)||line.quantity<1||line.quantity>30)

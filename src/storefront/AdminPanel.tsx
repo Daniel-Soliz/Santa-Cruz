@@ -35,7 +35,7 @@ function EditProduct({item,cats,onSave,onClose}:{item:Product;cats:Category[];on
  </form></div>;
 }
 function AdminOrders({orders}:{orders:Order[]}){
- const [sound,setSound]=useState(false),[filter,setFilter]=useState('ativos'),[error,setError]=useState('');const last=useRef<Set<string>|null>(null);
+ const [sound,setSound]=useState(false),[filter,setFilter]=useState('ativos'),[error,setError]=useState(''),[printing,setPrinting]=useState<Order|null>(null);const last=useRef<Set<string>|null>(null);
  const audio=useRef<AudioContext|null>(null);
  useEffect(()=>{
   const ids=new Set(orders.map(o=>o.id));
@@ -58,8 +58,18 @@ function AdminOrders({orders}:{orders:Order[]}){
  <div className="mt-4 flex flex-wrap items-center gap-2">
  {o.payment.status!=='paid'&&['cash','cardOnDelivery'].includes(o.payment.method)&&
  <button className="rounded-xl bg-emerald-700 px-4 py-3 text-xs font-bold text-white" onClick={async()=>{try{await call('adminConfirmManualPayment',{orderId:o.id});}catch(e){setError((e as Error).message);}}}>Confirmar pagamento presencial</button>}
- <span className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-[#722238]">{o.status}</span><select value={o.status} onChange={e=>update(o.id,e.target.value)} aria-label="Alterar status" className="min-h-11 flex-1 rounded-xl border border-stone-300 px-3 text-sm"><option disabled>Alterar status</option>{statuses.filter(s=>s!=='Saiu para entrega'||o.kind==='delivery').filter(s=>s!=='Pronto para retirar'||o.kind!=='delivery').map(s=><option key={s}>{s}</option>)}</select><button onClick={()=>window.print()} className="grid h-11 w-11 place-items-center rounded-xl bg-[#722238] text-white" aria-label="Imprimir comanda"><Printer size={18}/></button></div>
+ <span className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-[#722238]">{o.status}</span><select value={o.status} onChange={e=>update(o.id,e.target.value)} aria-label="Alterar status" className="min-h-11 flex-1 rounded-xl border border-stone-300 px-3 text-sm"><option disabled>Alterar status</option>{statuses.filter(s=>s!=='Saiu para entrega'||o.kind==='delivery').filter(s=>s!=='Pronto para retirar'||o.kind!=='delivery').map(s=><option key={s}>{s}</option>)}</select><button onClick={()=>{setPrinting(o);setTimeout(()=>window.print(),100);}} className="grid h-11 w-11 place-items-center rounded-xl bg-[#722238] text-white" aria-label="Imprimir comanda"><Printer size={18}/></button></div>
  </article>)}</div>{shown.length===0&&<p className="rounded-xl bg-white p-9 text-center text-stone-500">Nenhum pedido neste filtro.</p>}
+ {printing&&<section id="thermal-comanda" className="receipt-print" aria-label="Comanda para impressão">
+  <h1>Delícia do Nordeste · Santa Cruz</h1>
+  <p>Pedido #{printing.id.slice(-8).toUpperCase()}</p>
+  <p>Cliente: {printing.customer.name} · {printing.customer.phone}</p>
+  <p>Tipo: {printing.kind}</p>
+  {printing.items.map((it,i)=><p key={i}>{it.quantity}× {it.name} {it.optionName?'- '+it.optionName:''} {it.notes?'Obs: '+it.notes:''} {money(it.total)}</p>)}
+  <p>TOTAL: {money(printing.total)}</p>
+  <p>Pagamento: {printing.payment.method} ({printing.payment.status})</p>
+  {printing.address&&<p>Entrega: {printing.address.street}, {printing.address.number}, {printing.address.neighborhood} · {printing.address.cep}</p>}
+ </section>}
  </>;
 }
 function AdminMenu({products,cats}:{products:Product[];cats:Category[]}){

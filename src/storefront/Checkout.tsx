@@ -10,9 +10,10 @@ type Details={name:string;phone:string;email:string;cpf:string;cep:string;street
 const blank:Details={name:'',phone:'',email:'',cpf:'',cep:'',street:'',number:'',neighborhood:'',complement:'',reference:''};
 const digit=(s:string)=>s.replace(/\D/g,'');
 export function Checkout({lines,settings,open,ready,onDone}:{lines:CartLine[];settings:StoreSettings;open:boolean;ready:boolean;onDone:()=>void}){
- const [step,setStep]=useState(0),[kind,setKind]=useState<Kind>('pickup'),[payment,setPayment]=useState<Payment>('mercadopago'),
+ const [step,setStep]=useState(0),[kind,setKind]=useState<Kind>('pickup'),[payment,setPayment]=useState<Payment>('cash'),
   [form,setForm]=useState<Details>(blank),[loadingCep,setLoadingCep]=useState(false),[sending,setSending]=useState(false),[error,setError]=useState(''),[orderId,setOrderId]=useState('');
  const keyRef=useRef(crypto.randomUUID());
+ const createdId=useRef('');
  const subtotal=lines.reduce((s,l)=>s+l.price*l.quantity,0);
  const zone=kind==='delivery'?quoteZone(settings,form.cep,subtotal):null;
  const fee=zone?.fee||0,total=subtotal+fee;
@@ -53,6 +54,7 @@ export function Checkout({lines,settings,open,ready,onDone}:{lines:CartLine[];se
     paymentMethod:payment,items:lines.map(l=>({id:l.id,quantity:l.quantity,optionId:l.optionId||'',notes:l.notes}))
    });
    setOrderId(result.orderId);
+   createdId.current=result.orderId;
    onDone();
    if(payment==='mercadopago'){
     const redirect=await call<{initPoint:string}>('startCardCheckout',{orderId:result.orderId});
@@ -65,7 +67,7 @@ export function Checkout({lines,settings,open,ready,onDone}:{lines:CartLine[];se
   }catch(e){
    const text=(e as Error).message||'Erro ao processar';
    setError(text);
-   if(orderId)window.location.hash=`/pedido/${orderId}`;
+   if(createdId.current)window.location.hash=`/pedido/${createdId.current}`;
   }finally{setSending(false);}
  };
  if(!lines.length&&!orderId)return <main className="mx-auto max-w-2xl px-4 py-24 text-center"><h1 className="font-heading text-3xl text-[#722238]">Sua sacola está vazia</h1><a href="#/cardapio" className="mt-5 inline-block rounded-xl bg-[#E8365D] p-4 font-bold text-white">Escolher pratos</a></main>;
