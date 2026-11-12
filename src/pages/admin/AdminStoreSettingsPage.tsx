@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Store, 
   Phone, 
@@ -22,7 +22,8 @@ export const AdminStoreSettingsPage: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  if (!formData) return null;
+  useEffect(() => { if (storeSettings) setFormData(storeSettings); }, [storeSettings]);
+  if (!formData) return <div className="p-8 text-center text-stone-500">Carregando configurações da loja...</div>;
 
   const handleChange = (field: keyof StoreSettings, value: any) => {
     setFormData(prev => prev ? { ...prev, [field]: value } : null);
@@ -400,7 +401,7 @@ export const AdminStoreSettingsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                Taxa de Entrega Padrão (R$)
+                Taxa de Referência (R$)
               </label>
               <input
                 type="number"
@@ -427,6 +428,65 @@ export const AdminStoreSettingsPage: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+
+        <div className="rounded-3xl border border-amber-200 bg-white p-4 sm:p-6 space-y-4">
+          <h3 className="font-heading font-extrabold text-base text-[#722238]">Canais de atendimento</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-[#fff8ec] p-4 text-sm font-bold text-stone-800">
+              <input type="checkbox" checked={formData.deliveryEnabled}
+                onChange={e => handleChange('deliveryEnabled', e.target.checked)} className="w-5 h-5" />
+              Receber pedidos para entrega
+            </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-[#fff8ec] p-4 text-sm font-bold text-stone-800">
+              <input type="checkbox" checked={formData.pickupEnabled}
+                onChange={e => handleChange('pickupEnabled', e.target.checked)} className="w-5 h-5" />
+              Permitir retirada no balcão
+            </label>
+          </div>
+          <p className="text-xs text-stone-600">A entrega só pode ser habilitada depois de conferir e ativar as áreas abaixo. Novas lojas começam com delivery desligado para evitar aceitar CEPs ou taxas de teste.</p>
+        </div>
+
+        {/* Áreas de entrega de verdade, com CEP, taxa e prazo. */}
+        <div className="rounded-3xl border border-amber-200 bg-white p-4 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-heading font-extrabold text-base text-[#722238]">Áreas de entrega por CEP</h3>
+              <p className="text-xs text-stone-500">O sistema escolhe o prefixo de CEP mais específico e recusa pedidos fora das áreas cadastradas.</p>
+            </div>
+            <button type="button" className="rounded-xl bg-[#722238] text-white px-4 py-2 font-bold text-xs"
+              onClick={() => handleChange('deliveryZones', [...formData.deliveryZones, {
+                id: 'zona-' + Date.now(), name: '', cepPrefix: '', fee: 0, estimatedMinutes: 45, active: false
+              }])}>+ Nova área</button>
+          </div>
+          {formData.deliveryZones.map((zone, index) => (
+            <div key={zone.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 rounded-2xl p-4 border border-stone-200 bg-[#FFF8EC] items-end">
+              <label className="lg:col-span-2 text-xs font-bold text-stone-700">Nome da área
+                <input className="block w-full mt-1 p-2.5 rounded-xl border border-stone-300 bg-white" value={zone.name}
+                  onChange={e => handleChange('deliveryZones', formData.deliveryZones.map((z, i) => i === index ? {...z, name:e.target.value} : z))} />
+              </label>
+              <label className="text-xs font-bold text-stone-700">Prefixo do CEP
+                <input inputMode="numeric" maxLength={8} placeholder="02850" className="block w-full mt-1 p-2.5 rounded-xl border border-stone-300 bg-white"
+                  value={zone.cepPrefix || ''} onChange={e => handleChange('deliveryZones', formData.deliveryZones.map((z,i) => i === index ? {...z, cepPrefix:e.target.value.replace(/\D/g,'')} : z))} />
+              </label>
+              <label className="text-xs font-bold text-stone-700">Taxa (R$)
+                <input type="number" min="0" step="0.5" className="block w-full mt-1 p-2.5 rounded-xl border border-stone-300 bg-white"
+                  value={zone.fee} onChange={e => handleChange('deliveryZones', formData.deliveryZones.map((z,i) => i === index ? {...z, fee: Number(e.target.value)} : z))} />
+              </label>
+              <label className="text-xs font-bold text-stone-700">Prazo (min)
+                <input type="number" min="1" className="block w-full mt-1 p-2.5 rounded-xl border border-stone-300 bg-white"
+                  value={zone.estimatedMinutes} onChange={e => handleChange('deliveryZones', formData.deliveryZones.map((z,i) => i === index ? {...z, estimatedMinutes: Number(e.target.value)} : z))} />
+              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-bold text-stone-700 flex items-center gap-2">
+                  <input type="checkbox" checked={zone.active} onChange={e => handleChange('deliveryZones', formData.deliveryZones.map((z,i) => i === index ? {...z,active:e.target.checked} : z))}/> Ativa
+                </label>
+                <button type="button" className="text-rose-700 text-xs font-bold p-2" aria-label={'Excluir ' + zone.name}
+                  onClick={() => handleChange('deliveryZones', formData.deliveryZones.filter((_,i) => i !== index))}>Excluir</button>
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-stone-600">Exemplo: prefixo 02850 atende CEPs iniciados por 02850. Confira cada região e taxa real antes de ativar.</p>
         </div>
 
         {/* Section 5: Weekly Opening Hours */}

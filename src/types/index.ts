@@ -80,6 +80,8 @@ export interface StoreSettings {
   mercadoPagoSandbox: boolean;
   mercadoPagoPublicKey?: string;
   mercadoPagoAccessTokenConfigured: boolean; // nunca expor o token real no cliente!
+  mercadoPagoReady?: boolean; // true somente com servidor e webhook prontos
+  mercadoPagoWebhookUrl?: string; // URL pública do backend, sem segredo
   pixEnabled: boolean;
   pixType: 'manual' | 'mercadopago';
   pixKey?: string;
@@ -206,6 +208,7 @@ export interface OrderItemSnapshot {
 export interface Order {
   id: string; // e.g. "PED-2026-A1B2"
   accessToken: string; // token secreto seguro para acompanhar o pedido
+  requestId?: string; // evita duplicação quando o checkout é reenviado
   createdAt: string;
   updatedAt: string;
   type: 'delivery' | 'pickup';
@@ -234,8 +237,17 @@ export interface Order {
     pixCopiaECola?: string;
     transactionId?: string;
     paidAt?: string;
+    checkoutUrl?: string;
   };
   estimatedTime?: string;
+  delivery?: {
+    driverName?: string;
+    driverPhone?: string;
+    note?: string;
+    assignedAt?: string;
+    dispatchedAt?: string;
+    deliveredAt?: string;
+  };
 }
 
 export interface Coupon {

@@ -34,7 +34,6 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({ orderId, t
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [copiedPix, setCopiedPix] = useState(false);
-  const [pixQrDataUrl, setPixQrDataUrl] = useState<string>('');
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   // Retrieve secret token from URL prop or localStorage
@@ -67,19 +66,6 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({ orderId, t
     const interval = setInterval(fetchOrder, 6000);
     return () => clearInterval(interval);
   }, [orderId, effectiveToken]);
-
-  // Generate Pix QR Code if method is Pix
-  useEffect(() => {
-    if (order && order.paymentMethod === 'pix') {
-      const pixPayload = storeSettings?.pixKey 
-        ? `00020126580014BR.GOV.BCB.PIX0136${storeSettings.pixKey}520400005303986540${order.total.toFixed(2)}5802BR5925DELICIA DO NORDESTE6009RIO DE JAN62070503***6304`
-        : `PIX-DELICIA-NORDESTE-${order.id}-VALOR-${order.total}`;
-      
-      api.getQrCode(pixPayload)
-        .then(setPixQrDataUrl)
-        .catch(console.error);
-    }
-  }, [order, storeSettings]);
 
   if (isLoading) {
     return (
@@ -331,17 +317,12 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({ orderId, t
             </div>
 
             <p className="text-xs text-stone-600 leading-relaxed">
-              Abra o aplicativo do seu banco, selecione a opção <strong>Pix Copia e Cola</strong> ou aponte a câmera para o QR Code abaixo. O valor exato é de <strong>R$ {order.total.toFixed(2).replace('.', ',')}</strong>.
+              Pix manual: copie a chave cadastrada e faça a transferência com o valor de <strong>R$ {order.total.toFixed(2).replace('.', ',')}</strong>. A loja confere o comprovante antes de marcar o pedido como pago.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-6 justify-center py-2">
-              {pixQrDataUrl && (
-                <div className="bg-white p-3 rounded-2xl border border-amber-200 shadow-xs">
-                  <img src={pixQrDataUrl} alt="QR Code Pix" className="w-40 h-40 object-contain mx-auto" />
-                </div>
-              )}
-
-              <div className="space-y-3 max-w-sm text-center sm:text-left">
+            <div className="flex flex-col items-center gap-4 justify-center py-2">
+              {!storeSettings?.pixKey && <p className="text-rose-700 text-xs font-bold">Chave Pix não cadastrada. Contate a loja antes de pagar.</p>}
+              <div className="space-y-3 max-w-sm w-full text-center sm:text-left">
                 <div>
                   <span className="text-[11px] font-bold text-stone-500 uppercase block">
                     Chave Pix da Casa do Norte ({storeSettings?.pixKeyType || 'E-mail'})
@@ -350,10 +331,11 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({ orderId, t
                     <input
                       type="text"
                       readOnly
-                      value={storeSettings?.pixKey || 'deliciadonordeste.santacruz@gmail.com'}
+                      value={storeSettings?.pixKey || ''}
                       className="bg-white text-xs font-mono p-2 rounded-xl border border-stone-300 flex-1 outline-hidden"
                     />
                     <button
+                      disabled={!storeSettings?.pixKey}
                       onClick={copyPixKey}
                       className="px-3 py-2 bg-stone-800 text-white rounded-xl text-xs font-bold hover:bg-stone-900 flex items-center gap-1 cursor-pointer shrink-0"
                     >

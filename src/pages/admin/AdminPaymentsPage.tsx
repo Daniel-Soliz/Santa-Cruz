@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, 
   QrCode, 
@@ -17,12 +17,12 @@ import { api } from '../../services/api';
 export const AdminPaymentsPage: React.FC = () => {
   const { storeSettings, refreshSettings } = useCart();
   const [formData, setFormData] = useState({
-    mercadoPagoEnabled: storeSettings?.mercadoPagoEnabled ?? true,
+    mercadoPagoEnabled: storeSettings?.mercadoPagoEnabled ?? false,
     mercadoPagoSandbox: storeSettings?.mercadoPagoSandbox ?? true,
     mercadoPagoPublicKey: storeSettings?.mercadoPagoPublicKey || '',
     pixEnabled: storeSettings?.pixEnabled ?? true,
     pixType: storeSettings?.pixType || 'manual',
-    pixKey: storeSettings?.pixKey || 'deliciadonordeste.santacruz@gmail.com',
+    pixKey: storeSettings?.pixKey || '',
     pixKeyType: storeSettings?.pixKeyType || 'email',
     pixBeneficiary: storeSettings?.pixBeneficiary || 'Restaurante Delícia do Nordeste Santa Cruz',
     cashOnDeliveryEnabled: storeSettings?.cashOnDeliveryEnabled ?? true,
@@ -32,9 +32,23 @@ export const AdminPaymentsPage: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const webhookUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/api/payments/mercadopago/webhook`
-    : 'https://seusite.com/api/payments/mercadopago/webhook';
+  useEffect(() => {
+    if (!storeSettings) return;
+    setFormData({
+      mercadoPagoEnabled: storeSettings.mercadoPagoEnabled,
+      mercadoPagoSandbox: storeSettings.mercadoPagoSandbox,
+      mercadoPagoPublicKey: storeSettings.mercadoPagoPublicKey || '',
+      pixEnabled: storeSettings.pixEnabled,
+      pixType: storeSettings.pixType,
+      pixKey: storeSettings.pixKey || '',
+      pixKeyType: storeSettings.pixKeyType || 'email',
+      pixBeneficiary: storeSettings.pixBeneficiary || '',
+      cashOnDeliveryEnabled: storeSettings.cashOnDeliveryEnabled,
+      cardOnDeliveryEnabled: storeSettings.cardOnDeliveryEnabled,
+    });
+  }, [storeSettings]);
+
+  const webhookUrl = storeSettings?.mercadoPagoWebhookUrl || 'Configure APP_URL HTTPS no servidor';
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,13 +108,25 @@ export const AdminPaymentsPage: React.FC = () => {
           </div>
 
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-            storeSettings?.mercadoPagoAccessTokenConfigured
+            storeSettings?.mercadoPagoReady
               ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
               : 'bg-amber-100 text-amber-800 border border-amber-300'
           }`}>
-            {storeSettings?.mercadoPagoAccessTokenConfigured ? 'Pronto para Produção' : 'Aguardando Credenciais'}
+            {storeSettings?.mercadoPagoReady ? 'Integração configurada' : 'Integração não ativada'}
           </span>
         </div>
+
+        <label className="flex items-center gap-3 rounded-xl bg-sky-50 border border-sky-200 p-3 text-xs font-bold text-[#1F5FA8]">
+          <input type="checkbox" checked={formData.mercadoPagoEnabled}
+            onChange={e => setFormData(prev => ({...prev, mercadoPagoEnabled:e.target.checked}))}
+            className="w-4 h-4" />
+          Habilitar Checkout Pro quando as credenciais e o webhook estiverem prontos
+        </label>
+        {!storeSettings?.mercadoPagoReady && (
+          <p className="text-xs bg-amber-50 text-amber-900 border border-amber-200 rounded-xl p-3" role="status">
+            Para cobrar pelo Mercado Pago configure MERCADO_PAGO_ACCESS_TOKEN, MERCADO_PAGO_WEBHOOK_SECRET e APP_URL HTTPS no servidor. Ativar esta opção sozinha não libera cobranças.
+          </p>
+        )}
 
         {/* Security Warning */}
         <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-stone-700 flex items-start gap-3">
@@ -165,7 +191,7 @@ export const AdminPaymentsPage: React.FC = () => {
             <QrCode className="w-6 h-6 text-emerald-600" />
             <div>
               <h3 className="font-heading font-extrabold text-lg">Pix Instantâneo</h3>
-              <p className="text-xs text-stone-500">QR Code dinâmico e chave Pix da Casa do Norte</p>
+              <p className="text-xs text-stone-500">Chave Pix manual conferida pela equipe, sem QR Code fictício</p>
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import QRCode from 'qrcode';
+import { verifyMercadoPagoSignature, amountMatches } from './src/server/paymentSecurity';
 import { 
   StoreSettings, 
   Category, 
@@ -117,7 +118,10 @@ let db = ensureDatabase();
 
 function saveDatabase() {
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+    // Gravação atômica: evita deixar um JSON pela metade caso a gravação seja interrompida.
+    const tempFile = `${DB_FILE}.${process.pid}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(db, null, 2), 'utf-8');
+    fs.renameSync(tempFile, DB_FILE);
   } catch (err) {
     console.error('Falha ao salvar os pedidos em disco:', err);
     throw err;
@@ -160,13 +164,27 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true, service: 'santa-cruz-pedidos' });
 });
 
-// Store Settings (Public view - hides secrets)
+// A publicação estática no GitHub Pages NÃO executa esta API.
+function mercadoPagoReady() {
+  const url = process.env.APP_URL || '';
+  return !!process.env.MERCADO_PAGO_ACCESS_TOKEN &&
+    !!process.env.MERCADO_PAGO_WEBHOOK_SECRET &&
+    /^https:\/\/[^/]+/i.test(url) &&
+    !!db.settings.mercadoPagoEnabled;
+}
+
+// Configuração pública sem credenciais privadas.
 app.get('/api/settings', (_req: Request, res: Response) => {
-  const publicSettings = {
+  const url = process.env.APP_URL || '';
+  res.json({
     ...db.settings,
-    mercadoPagoAccessTokenConfigured: !!process.env.MERCADO_PAGO_ACCESS_TOKEN || db.settings.mercadoPagoAccessTokenConfigured
-  };
-  res.json(publicSettings);
+    mercadoPagoAccessTokenConfigured: !!process.env.MERCADO_PAGO_ACCESS_TOKEN,
+    mercadoPagoReady: mercadoPagoReady(),
+    mercadoPagoEnabled: mercadoPagoReady(),
+    mercadoPagoWebhookUrl: /^https:\/\/[^/]+/i.test(url)
+      ? `${url.replace(/\/$/, '')}/api/payments/mercadopago/webhook`
+      : ''
+  });
 });
 
 // Categories
@@ -181,7 +199,7 @@ app.get('/api/categories', (_req: Request, res: Response) => {
 app.get('/api/menu', (_req: Request, res: Response) => {
   // Only return items that are not hidden
   const publicMenu = db.menuItems
-    .filter(item => item.status !== 'oculto')
+    .filter(item => item.status !== 'oculto' && (!isProd || process.env.ALLOW_DEMO_ORDERS === 'true' || !item.isExampleDemo))
     .sort((a, b) => a.order - b.order);
   res.json(publicMenu);
 });
@@ -239,6 +257,36 @@ app.get('/api/coupons/validate', (req: Request, res: Response) => {
     description: coupon.description,
     discountAmount: Math.round(discount * 100) / 100,
   });
+});
+
+// As zonas ativas são uma lista de CEPs autorizados, não apenas sugestões.
+function quoteDelivery(cepValue: unknown, subtotal: number) {
+  if (!db.settings.deliveryEnabled) throw new Error('Entregas pausadas neste momento.');
+  const cep = String(cepValue || '').replace(/\D/g, '');
+  if (cep.length !== 8) throw new Error('Informe um CEP válido com 8 números.');
+  const zones = db.settings.deliveryZones || [];
+  const match = [...zones].filter(z => z.active && z.cepPrefix && cep.startsWith(z.cepPrefix.replace(/\D/g, '')))
+    .sort((a,b) => (b.cepPrefix?.length || 0) - (a.cepPrefix?.length || 0))[0];
+  if (!match) throw new Error('Este CEP não está em uma área ativa de entrega. Escolha retirada ou fale com a equipe.');
+  const amount = Number(match ? match.fee : db.settings.defaultDeliveryFee);
+  if (!Number.isFinite(amount) || amount < 0) throw new Error('Taxa de entrega não configurada corretamente.');
+  return {
+    available: true,
+    cep,
+    zone: match?.name || 'Área de entrega',
+    fee: db.settings.freeDeliveryAbove && subtotal >= db.settings.freeDeliveryAbove ? 0 : amount,
+    estimatedMinutes: match?.estimatedMinutes || db.settings.defaultPrepMinutes + 20
+  };
+}
+
+app.post('/api/delivery/quote', (req: Request, res: Response) => {
+  try {
+    const subtotal = Number(req.body?.subtotal || 0);
+    if (!Number.isFinite(subtotal) || subtotal < 0) throw new Error('Subtotal inválido.');
+    res.json(quoteDelivery(req.body?.cep, subtotal));
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // Real Server-Side Order Calculation
@@ -330,31 +378,10 @@ function calculateOrderTotals(payload: {
     });
   }
 
-  // Delivery Fee calculation
-  let deliveryFee = 0;
-  if (payload.deliveryType === 'delivery') {
-    if (!db.settings.deliveryEnabled) {
-      throw new Error('Entrega delivery temporariamente desabilitada pelo restaurante.');
-    }
-
-    deliveryFee = db.settings.defaultDeliveryFee;
-    
-    // Check zones if CEP or neighborhood matches
-    if (payload.address?.cep && db.settings.deliveryZones) {
-      const cleanCep = payload.address.cep.replace(/\D/g, '');
-      const matchedZone = db.settings.deliveryZones.find(z => 
-        z.active && z.cepPrefix && cleanCep.startsWith(z.cepPrefix)
-      );
-      if (matchedZone) {
-        deliveryFee = matchedZone.fee;
-      }
-    }
-
-    // Free delivery check
-    if (db.settings.freeDeliveryAbove && subtotal >= db.settings.freeDeliveryAbove) {
-      deliveryFee = 0;
-    }
-  }
+  // Cálculo único compartilhado pelo checkout e pela consulta de entrega.
+  const deliveryFee = payload.deliveryType === 'delivery'
+    ? quoteDelivery(payload.address?.cep, subtotal).fee
+    : 0;
 
   // Coupon discount
   let discount = 0;
@@ -415,17 +442,36 @@ app.post('/api/orders', (req: Request, res: Response) => {
       address, 
       couponCode, 
       paymentMethod, 
-      changeFor 
+      changeFor,
+      requestId
     } = req.body;
 
-    // Check if orders are paused
+    // Reenviar o mesmo pedido por falha na rede não duplica a comanda.
+    if (requestId !== undefined) {
+      if (typeof requestId !== 'string' || !/^[a-f0-9-]{36}$/i.test(requestId)) {
+        return res.status(400).json({ error: 'Identificador de pedido inválido.' });
+      }
+      const priorOrder = db.orders.find(o => o.requestId === requestId);
+      if (priorOrder) {
+        if (priorOrder.customer.phone.replace(/\D/g, '') !== String(customer?.phone || '').replace(/\D/g, '')) {
+          return res.status(409).json({ error: 'Este identificador já foi usado.' });
+        }
+        return res.json({ success: true, orderId: priorOrder.id, accessToken: priorOrder.accessToken, order: priorOrder });
+      }
+    }
+
+    // Loja fechada ou pausada não recebe novos pedidos.
+    if (!db.settings.isOpenManual) {
+      return res.status(400).json({ error: 'Restaurante fechado para novos pedidos no momento.' });
+    }
     if (db.settings.isOrdersPaused) {
       return res.status(400).json({ 
         error: `Pedidos temporariamente pausados: ${db.settings.pauseReason || 'Voltaremos em breve!'}` 
       });
     }
 
-    if (!customer || !customer.name || !customer.phone) {
+    if (!customer || typeof customer.name !== 'string' || typeof customer.phone !== 'string' ||
+        !customer.name.trim() || !/^\d{10,13}$/.test(customer.phone.replace(/\D/g, ''))) {
       return res.status(400).json({ error: 'Nome e telefone do cliente são obrigatórios.' });
     }
 
@@ -436,8 +482,8 @@ app.post('/api/orders', (req: Request, res: Response) => {
     }
 
     const enabledMethods: Record<string, boolean> = {
-      pix: !!db.settings.pixEnabled && db.settings.pixType === 'manual',
-      mercadopago: !!db.settings.mercadoPagoEnabled && !!process.env.MERCADO_PAGO_ACCESS_TOKEN,
+      pix: !!db.settings.pixEnabled && db.settings.pixType === 'manual' && !!db.settings.pixKey?.trim(),
+      mercadopago: mercadoPagoReady(),
       dinheiro: !!db.settings.cashOnDeliveryEnabled,
       cartao_entrega: !!db.settings.cardOnDeliveryEnabled
     };
@@ -458,6 +504,11 @@ app.post('/api/orders', (req: Request, res: Response) => {
       : undefined;
     if (parsedChangeFor !== undefined && (!Number.isFinite(parsedChangeFor) || parsedChangeFor < calculation.total)) {
       return res.status(400).json({ error: 'Valor para troco deve ser maior ou igual ao total do pedido.' });
+    }
+
+    if (isProd && process.env.ALLOW_DEMO_ORDERS !== 'true' &&
+        calculation.verifiedItems.some(i => db.menuItems.some(m => m.id === i.menuItemId && m.isExampleDemo))) {
+      return res.status(400).json({ error: 'Cardápio de demonstração. Cadastre os pratos e preços reais antes de vender.' });
     }
 
     if (calculation.subtotal < db.settings.minOrderValue) {
@@ -481,6 +532,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
     const newOrder: Order = {
       id: orderNumber,
       accessToken,
+      requestId: typeof requestId === 'string' ? requestId : undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       type: deliveryType,
@@ -644,136 +696,116 @@ app.get('/api/qrcode', async (req: Request, res: Response) => {
 // MERCADO PAGO INTEGRATION ENDPOINTS
 // ----------------------------------------------------
 
-// Create Checkout Pro Preference
+// Checkout Pro via Preferences API. Credenciais ficam apenas no servidor.
 app.post('/api/payments/mercadopago/create-preference', async (req: Request, res: Response) => {
-  const { orderId, orderToken } = req.body;
-  const order = db.orders.find(o => o.id === orderId);
-
-  if (!order || order.accessToken !== orderToken) {
-    return res.status(404).json({ error: 'Pedido inválido para pagamento.' });
+  const order = db.orders.find(o => o.id === req.body?.orderId);
+  if (!order || order.accessToken !== req.body?.orderToken) {
+    return res.status(404).json({ error: 'Pedido não encontrado.' });
+  }
+  if (order.paymentMethod !== 'mercadopago' || order.status === 'Cancelado') {
+    return res.status(409).json({ error: 'Pedido não permite pagamento com Mercado Pago.' });
+  }
+  if (order.paymentStatus === 'Pago') {
+    return res.status(409).json({ error: 'Este pedido já está pago.' });
+  }
+  if (!mercadoPagoReady()) {
+    return res.status(503).json({ error: 'Mercado Pago indisponível. Confirme credenciais, webhook e APP_URL HTTPS.' });
+  }
+  if (order.paymentDetails?.preferenceId && order.paymentDetails.checkoutUrl) {
+    return res.json({ configured: true, preferenceId: order.paymentDetails.preferenceId, initPoint: order.paymentDetails.checkoutUrl });
   }
 
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-  if (!accessToken) {
-    return res.status(400).json({
-      configured: false,
-      message: 'Integração Mercado Pago aguardando credenciais oficiais. Configure o Access Token no painel ou nas variáveis de ambiente do servidor.'
-    });
-  }
-
+  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN!;
+  const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
   try {
-    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+    // A volta ao site não confirma o pagamento. Somente o webhook validado pode alterar o status.
+    const returnUrl = `${appUrl}/#/pedido/${encodeURIComponent(order.id)}?token=${encodeURIComponent(order.accessToken)}`;
     const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+        Authorization: `Bearer ${accessToken}`,
+        'X-Idempotency-Key': crypto.createHash('sha256').update(order.id).digest('hex')
       },
       body: JSON.stringify({
-        items: [
-          {
-            id: order.id,
-            title: `Pedido ${order.id} - Casa do Norte Santa Cruz`,
-            description: `${order.items.length} itens no Restaurante Delícia do Nordeste`,
-            quantity: 1,
-            unit_price: order.total,
-            currency_id: 'BRL'
-          }
-        ],
-        payer: {
-          name: order.customer.name,
-          phone: { number: order.customer.phone },
-          email: order.customer.email || 'cliente@deliciadonordeste.com.br'
-        },
-        back_urls: {
-          success: `${appUrl}/pedido/${order.id}?token=${order.accessToken}&mp=success`,
-          failure: `${appUrl}/pedido/${order.id}?token=${order.accessToken}&mp=failure`,
-          pending: `${appUrl}/pedido/${order.id}?token=${order.accessToken}&mp=pending`
-        },
+        items: [{ id: order.id, title: `Pedido ${order.id} · Delícia do Nordeste`, quantity: 1,
+          currency_id: 'BRL', unit_price: order.total }],
+        ...(order.customer.email ? { payer: { name: order.customer.name, email: order.customer.email } } : {}),
+        back_urls: { success: `${returnUrl}&mp=success`, failure: `${returnUrl}&mp=failure`, pending: `${returnUrl}&mp=pending` },
         auto_return: 'approved',
         notification_url: `${appUrl}/api/payments/mercadopago/webhook`,
         external_reference: order.id
       })
     });
-
-    const preferenceData = await response.json();
     if (!response.ok) {
-      console.error('Mercado Pago API error:', preferenceData);
-      return res.status(502).json({ error: 'Erro ao gerar preferência no Mercado Pago', details: preferenceData });
+      console.error('Erro ao solicitar preferência MP:', response.status);
+      return res.status(502).json({ error: 'Não foi possível iniciar o pagamento. Tente novamente.' });
     }
-
-    order.paymentDetails = {
-      ...order.paymentDetails,
-      preferenceId: preferenceData.id
-    };
+    const preference = await response.json();
+    const initPoint = db.settings.mercadoPagoSandbox ? preference.sandbox_init_point : preference.init_point;
+    if (!preference.id || !initPoint || !/^https:\/\//.test(initPoint)) {
+      return res.status(502).json({ error: 'Mercado Pago não retornou um checkout válido.' });
+    }
+    order.paymentDetails = { ...order.paymentDetails, preferenceId: preference.id, checkoutUrl: initPoint };
     saveDatabase();
-
-    res.json({
-      configured: true,
-      preferenceId: preferenceData.id,
-      initPoint: db.settings.mercadoPagoSandbox ? preferenceData.sandbox_init_point : preferenceData.init_point
-    });
-  } catch (err: any) {
-    console.error('Mercado Pago connection error:', err);
-    res.status(500).json({ error: 'Falha de comunicação com o gateway de pagamento Mercado Pago.' });
+    return res.json({ configured: true, preferenceId: preference.id, initPoint });
+  } catch (err) {
+    console.error('Falha de comunicação Mercado Pago', err);
+    return res.status(502).json({ error: 'Não foi possível contatar o Mercado Pago.' });
   }
 });
 
-// Mercado Pago Webhook with Idempotency
+// O webhook só confia em assinatura válida e consulta a API do MP como fonte de verdade.
 app.post('/api/payments/mercadopago/webhook', async (req: Request, res: Response) => {
-  const eventId = req.query.id as string || req.body?.data?.id || req.body?.id;
-  const eventTopic = req.query.topic as string || req.body?.type;
-
-  // Idempotency check: prevent duplicate execution
-  if (eventId && db.processedWebhooks.includes(eventId)) {
-    return res.status(200).send('Already processed');
+  const dataId = req.query['data.id'];
+  if (!verifyMercadoPagoSignature({
+    dataId,
+    requestId: req.header('x-request-id'),
+    signature: req.header('x-signature'),
+    secret: process.env.MERCADO_PAGO_WEBHOOK_SECRET
+  })) {
+    return res.status(process.env.MERCADO_PAGO_WEBHOOK_SECRET ? 401 : 503).json({ error: 'Notificação não autenticada.' });
   }
-
+  if (req.body?.type !== 'payment') return res.status(200).send('Ignorado');
+  const paymentId = String(dataId);
   try {
-    if (eventId) {
-      db.processedWebhooks.push(eventId);
-      if (db.processedWebhooks.length > 500) {
-        db.processedWebhooks.shift();
+    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+      headers: { Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN || ''}` }
+    });
+    if (!mpRes.ok) return res.status(503).json({ error: 'Falha ao validar pagamento no provedor.' });
+    const payment = await mpRes.json();
+    const order = db.orders.find(o => o.id === payment.external_reference);
+    if (!order || order.paymentMethod !== 'mercadopago' ||
+        !amountMatches(payment.transaction_amount, order.total) ||
+        payment.currency_id !== 'BRL' || String(payment.id) !== paymentId ||
+        payment.live_mode !== !db.settings.mercadoPagoSandbox) {
+      console.warn('Webhook ignorado: pagamento não corresponde a um pedido elegível.');
+      return res.status(200).send('Pagamento não vinculado');
+    }
+    const key = `${paymentId}:${payment.status}`;
+    if (db.processedWebhooks.includes(key)) return res.status(200).send('Já processado');
+    // Não desfazemos a aprovação se chegar uma notificação antiga de pending ou rejected.
+    if (order.paymentStatus !== 'Pago' || payment.status === 'refunded' || payment.status === 'charged_back') {
+      const status: PaymentStatus | null = payment.status === 'approved' ? 'Pago'
+        : payment.status === 'refunded' || payment.status === 'charged_back' ? 'Reembolsado'
+        : payment.status === 'rejected' || payment.status === 'cancelled' ? 'Falhou'
+        : payment.status === 'pending' || payment.status === 'in_process' ? 'Aguardando pagamento' : null;
+      if (status && order.paymentStatus !== status) {
+        order.paymentStatus = status;
+        order.updatedAt = new Date().toISOString();
+        order.paymentDetails = { ...order.paymentDetails, transactionId: paymentId,
+          ...(status === 'Pago' ? { paidAt: new Date().toISOString() } : {}) };
+        order.statusHistory.push({ status: order.status, timestamp: new Date().toISOString(),
+          note: `Mercado Pago: ${status} (transação ${paymentId})` });
       }
     }
-
-    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-    if (accessToken && (eventTopic === 'payment' || req.body?.action === 'payment.created' || req.body?.action === 'payment.updated')) {
-      const paymentId = req.body?.data?.id || req.query.id;
-      if (paymentId) {
-        const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        if (mpRes.ok) {
-          const paymentInfo = await mpRes.json();
-          const orderId = paymentInfo.external_reference;
-          const order = db.orders.find(o => o.id === orderId);
-          if (order) {
-            if (paymentInfo.status === 'approved') {
-              order.paymentStatus = 'Pago';
-              order.paymentDetails = {
-                ...order.paymentDetails,
-                transactionId: String(paymentId),
-                paidAt: new Date().toISOString()
-              };
-              order.statusHistory.push({
-                status: order.status,
-                timestamp: new Date().toISOString(),
-                note: `Pagamento aprovado via Mercado Pago (ID Transação: ${paymentId})`
-              });
-              saveDatabase();
-            } else if (paymentInfo.status === 'rejected') {
-              order.paymentStatus = 'Falhou';
-              saveDatabase();
-            }
-          }
-        }
-      }
-    }
-    res.status(200).send('OK');
+    db.processedWebhooks.push(key);
+    if (db.processedWebhooks.length > 500) db.processedWebhooks.splice(0, db.processedWebhooks.length - 500);
+    saveDatabase();
+    return res.status(200).send('OK');
   } catch (err) {
-    console.error('Webhook error:', err);
-    res.status(200).send('Webhook handled with warning');
+    console.error('Falha ao consultar pagamento Mercado Pago:', err);
+    return res.status(503).json({ error: 'Pagamento ainda não validado, reenviar notificação.' });
   }
 });
 
@@ -871,6 +903,26 @@ app.patch('/api/admin/orders/:id/status', authRequired(['Dono', 'Gerente', 'Aten
   if (!allowedStatuses.includes(status)) {
     return res.status(400).json({ error: 'Status de pedido inválido.' });
   }
+  if (order.status === 'Finalizado' || order.status === 'Cancelado') {
+    return res.status(409).json({ error: 'Pedido encerrado não pode voltar ao atendimento.' });
+  }
+  if (status === 'Saiu para entrega' && order.type !== 'delivery' ||
+      status === 'Pronto para retirada' && order.type !== 'pickup') {
+    return res.status(400).json({ error: 'Status incompatível com a forma de atendimento.' });
+  }
+  if (status === 'Saiu para entrega' && !order.delivery?.driverName?.trim()) {
+    return res.status(400).json({ error: 'Atribua um entregador antes de despachar.' });
+  }
+  if (order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'Pago' &&
+      !['Recebido', 'Cancelado'].includes(status)) {
+    return res.status(409).json({ error: 'Aguarde a confirmação de pagamento do Mercado Pago.' });
+  }
+  if (status === 'Saiu para entrega') {
+    order.delivery = { ...order.delivery, dispatchedAt: new Date().toISOString() };
+  }
+  if (status === 'Finalizado' && order.type === 'delivery') {
+    order.delivery = { ...order.delivery, deliveredAt: new Date().toISOString() };
+  }
 
   order.status = status;
   order.updatedAt = new Date().toISOString();
@@ -888,6 +940,27 @@ app.patch('/api/admin/orders/:id/status', authRequired(['Dono', 'Gerente', 'Aten
   res.json({ success: true, order });
 });
 
+// Cadastro de entregador e observações de despacho. Apenas usuários da loja.
+app.patch('/api/admin/orders/:id/delivery', authRequired(['Dono', 'Gerente', 'Atendente']), (req: Request, res: Response) => {
+  const order = db.orders.find(o => o.id === req.params.id);
+  if (!order) return res.status(404).json({ error: 'Pedido não encontrado.' });
+  if (order.type !== 'delivery' || ['Finalizado', 'Cancelado'].includes(order.status)) {
+    return res.status(409).json({ error: 'Este pedido não está disponível para despacho.' });
+  }
+  const driverName = typeof req.body.driverName === 'string' ? req.body.driverName.trim().slice(0, 80) : '';
+  const driverPhone = typeof req.body.driverPhone === 'string' ? req.body.driverPhone.replace(/\D/g, '').slice(0, 13) : '';
+  const note = typeof req.body.note === 'string' ? req.body.note.trim().slice(0, 300) : '';
+  if (!driverName) return res.status(400).json({ error: 'Nome do entregador é obrigatório.' });
+  if (driverPhone && !/^\d{10,13}$/.test(driverPhone)) {
+    return res.status(400).json({ error: 'Telefone do entregador inválido.' });
+  }
+  order.delivery = { ...order.delivery, driverName, driverPhone, note, assignedAt: new Date().toISOString() };
+  order.updatedAt = new Date().toISOString();
+  order.statusHistory.push({ status: order.status, timestamp: order.updatedAt, note: `Entrega atribuída para ${driverName}` });
+  saveDatabase();
+  res.json({ success: true, order });
+});
+
 // Admin Update Order Payment Status
 app.patch('/api/admin/orders/:id/payment', authRequired(['Dono', 'Gerente']), (req: Request, res: Response) => {
   const { paymentStatus } = req.body;
@@ -897,6 +970,13 @@ app.patch('/api/admin/orders/:id/payment', authRequired(['Dono', 'Gerente']), (r
     return res.status(404).json({ error: 'Pedido não encontrado.' });
   }
 
+  if (order.paymentMethod === 'mercadopago') {
+    return res.status(403).json({ error: 'Pagamentos Mercado Pago são conferidos automaticamente pelo webhook, não manualmente.' });
+  }
+  const validManualStatuses = ['Pago', 'Aguardando conferência manual'];
+  if (!validManualStatuses.includes(paymentStatus)) {
+    return res.status(400).json({ error: 'Selecione um status manual válido.' });
+  }
   order.paymentStatus = paymentStatus;
   order.updatedAt = new Date().toISOString();
   if (paymentStatus === 'Pago' && !order.paymentDetails?.paidAt) {
@@ -912,10 +992,17 @@ app.patch('/api/admin/orders/:id/payment', authRequired(['Dono', 'Gerente']), (r
 
 // Admin Update Store Settings
 app.put('/api/admin/settings', authRequired(['Dono']), (req: Request, res: Response) => {
-  db.settings = {
-    ...db.settings,
-    ...req.body
-  };
+  const updated = req.body;
+  if (updated.deliveryZones !== undefined) {
+    if (!Array.isArray(updated.deliveryZones) || updated.deliveryZones.length > 30 ||
+        updated.deliveryZones.some((z: any) => !/^\d{2,8}$/.test(String(z.cepPrefix || '')) ||
+          !Number.isFinite(z.fee) || z.fee < 0 ||
+          !Number.isInteger(z.estimatedMinutes) || z.estimatedMinutes < 1)) {
+      return res.status(400).json({ error: 'Confira os CEPs, taxas e prazos das áreas de entrega.' });
+    }
+  }
+  const { mercadoPagoReady, mercadoPagoWebhookUrl, mercadoPagoAccessTokenConfigured, ...safeSettings } = updated;
+  db.settings = { ...db.settings, ...safeSettings };
   saveDatabase();
   res.json({ success: true, settings: db.settings });
 });
