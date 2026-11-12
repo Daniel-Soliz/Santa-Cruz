@@ -64,7 +64,7 @@ export const initialStoreSettings: StoreSettings = {
   freeDeliveryAbove: 100.00,
 
   // Pagamentos
-  mercadoPagoEnabled: true,
+  mercadoPagoEnabled: false,
   mercadoPagoSandbox: true,
   mercadoPagoPublicKey: "",
   mercadoPagoAccessTokenConfigured: false,

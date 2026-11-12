@@ -80,6 +80,8 @@ export interface StoreSettings {
   mercadoPagoSandbox: boolean;
   mercadoPagoPublicKey?: string;
   mercadoPagoAccessTokenConfigured: boolean; // nunca expor o token real no cliente!
+  mercadoPagoReady?: boolean; // true somente com servidor e webhook prontos
+  mercadoPagoWebhookUrl?: string; // URL pública do backend, sem segredo
   pixEnabled: boolean;
   pixType: 'manual' | 'mercadopago';
   pixKey?: string;
@@ -234,8 +236,17 @@ export interface Order {
     pixCopiaECola?: string;
     transactionId?: string;
     paidAt?: string;
+    checkoutUrl?: string;
   };
   estimatedTime?: string;
+  delivery?: {
+    driverName?: string;
+    driverPhone?: string;
+    note?: string;
+    assignedAt?: string;
+    dispatchedAt?: string;
+    deliveredAt?: string;
+  };
 }
 
 export interface Coupon {
