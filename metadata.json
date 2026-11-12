@@ -1,8 +1,0 @@
-{
-  "name": "Restaurante Delícia do Nordeste Santa Cruz",
-  "description": "O sabor da culinária nordestina em São Paulo! Restaurante Delícia do Nordeste Santa Cruz no Parque Belém. Refeições no local, retirada e delivery. Tel: (11) 96014-9521.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
