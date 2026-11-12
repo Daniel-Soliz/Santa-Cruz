@@ -1,117 +1,159 @@
-# Santa Cruz | Pedidos do restaurante
+# Delícia do Nordeste Santa Cruz | Loja online
 
-## Por que a página ficava branca?
+**Projeto:** React 19 + Vite 8 + Tailwind 4 + Firebase Authentication, Cloud Firestore, Cloud Storage e Cloud Functions (Node 22).
+**Site:** https://daniel-soliz.github.io/Santa-Cruz/
+**Painel:** https://daniel-soliz.github.io/Santa-Cruz/admin/ (redireciona para a rota `#/admin`)
 
-O endereço `https://daniel-soliz.github.io/Santa-Cruz/` estava usando o código fonte do React/TypeScript diretamente. Navegadores não executam arquivos `.tsx` desse jeito. Também faltava configurar o caminho `/Santa-Cruz/` para CSS, JavaScript e imagens.
+## O que funciona
 
-Foi adicionada uma publicação compilada no GitHub Actions (`.github/workflows/deploy-pages.yml`), além de uma apresentação estática de segurança no `index.html`, que aparece mesmo se o JavaScript falhar.
+- Home com pratos em destaque, cardápio com categorias, filtros, busca, foto, descrição, preço e estado esgotado
+- Modal de tamanho, observação e quantidade, carrinho persistido no navegador e botão fixo no celular
+- Checkout com retirada, delivery por CEP ou consumo no local, busca pelo ViaCEP e formas de pagamento
+- Pedidos gravados via Cloud Functions, preços recalculados no servidor com os produtos reais do Firestore
+- Pix emitido pela API de pagamentos do Mercado Pago com QR Code e copia e cola; cartão via Checkout Pro
+- Número do pedido e acompanhamento em tempo real pelo usuário que fez a compra
+- Login administrativo por e-mail e senha, pedidos ao vivo, alerta sonoro, impressão 80 mm, fotos no Storage e CRUD do cardápio
+- Regras de horário na zona `America/Sao_Paulo`, terça a domingo de 08h às 22h como padrão
+- SEO, schema.org Restaurant e Menu, sitemap, robots.txt, fallback sem JavaScript, acessibilidade e layout responsivo
 
-### Como configurar a publicação
+**Importante:** o GitHub Pages hospeda apenas o frontend. Para finalizar pedidos reais, é necessário ativar o Firebase e implantar as Functions. Sem essa etapa, a vitrine usa exemplos claramente identificados e bloqueia a finalização. Não há simulação de compra aprovada.
 
-1. Abra **GitHub → Santa-Cruz → Settings → Pages**.
-2. Em **Build and deployment → Source**, selecione **GitHub Actions** (em vez de *Deploy from a branch*).
-3. Vá a **Actions → Publicar apresentação no GitHub Pages → Run workflow**, caso o fluxo não tenha começado.
-4. Verifique a conclusão verde do fluxo. Abra `https://daniel-soliz.github.io/Santa-Cruz/` e recarregue com Ctrl+F5.
+## 1. Criar e configurar Firebase
 
-Se a configuração continuar como publicação por branch, o `index.html` já inclui uma página básica para evitar a tela branca, mas a versão React compilada exige **GitHub Actions**. Confira se não existe uma configuração antiga de publicação por Jekyll.
+1. Abra https://console.firebase.google.com/ e crie um projeto para o restaurante.
+2. Adicione um aplicativo **Web**. Em **Configurações do projeto → Seus aplicativos**, copie o objeto de configuração do SDK.
+3. Em **Authentication → Sign-in method**, habilite **Anônimo** para clientes e **E-mail/senha** para funcionários.
+4. Em **Authentication → Settings → Authorized domains**, autorize `daniel-soliz.github.io`.
+5. Crie o **Cloud Firestore** no modo de produção e ative **Cloud Storage**. Para implantação de Functions/Storage, pode ser necessário ativar faturamento no plano Blaze.
+6. Nas configurações do Firestore e Storage, publique as regras dos arquivos `firestore.rules` e `storage.rules`. A implantação pelo CLI está explicada adiante.
 
-### Limite importante
+O SDK usa apenas as seis variáveis públicas do arquivo `.env.example`, prefixadas com `VITE_FIREBASE_`. Elas identificam o aplicativo e **não** são o token privado do Mercado Pago.
 
-No GitHub Pages, o site é **uma apresentação visual com atendimento pelo WhatsApp**, sem envio automático de pedidos. O Pages não executa o servidor Express, não persiste pedidos e não conecta pagamentos. Para ativar o fluxo completo de cardápio, sacola, checkout e painel, é obrigatório hospedar a API e usar banco persistente. **Não trate a versão do Pages como um sistema de pedidos automatizado.**
-
-Comandos para validar:
-
-```bash
-npm install
-npm run lint
-npm run build
-npm run test:smoke
-npm run build:pages
-npm run test:pages
-```
-
-O site usa largura máxima consistente, grades responsivas para celular e computador, botão de contato acessível e imagens com caminho ajustado pelo Vite. Mantenha `DEPLOY_TARGET=github-pages` e `VITE_STATIC_PREVIEW=true` somente na versão estática.
-
-
-Aplicação de cardápio e pedidos da Delícia do Nordeste. O cliente escolhe produtos, informa nome e telefone, opta por entrega ou retirada, seleciona o pagamento e acompanha o pedido. A equipe recebe e atualiza pedidos em `#/admin`.
-
-## Rodar localmente
-
-Requer **Node.js 22**. Na primeira execução, instale as dependências e inicie:
+Para testar localmente, crie `.env.local` na raiz, copiando os nomes do `.env.example` e preenchendo com a configuração do seu app Firebase:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abra `http://localhost:3000`. Confira a API em `http://localhost:3000/api/health`. Para validar o código:
+Abra a URL do Vite mostrada no terminal. A loja funciona com exemplos mesmo antes de conectar o Firebase, mas não aceita pedidos reais sem o backend.
+
+## 2. Configurar GitHub Pages
+
+No repositório GitHub, vá em **Settings → Secrets and variables → Actions → Variables** e crie:
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_APP_ID
+VITE_FIREBASE_MESSAGING_SENDER_ID
+```
+
+Preencha com os valores **públicos** de configuração do Firebase Web. Não insira Access Token, webhook secret, senha de administrador nem credencial de serviço nesse painel de variáveis públicas. Em **Settings → Pages → Source**, selecione **GitHub Actions**.
+
+O workflow `.github/workflows/deploy-pages.yml` compila a loja com a base `/Santa-Cruz/`, checa os arquivos e publica após merge na `main`. Enquanto a branch não for integrada, o site principal não muda.
+
+## 3. Implantar Firestore, Storage e Cloud Functions
+
+No computador com Node.js 22, instale e autentique o Firebase CLI:
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase use --add
+npm --prefix functions install
+npm --prefix functions run build
+firebase deploy --only firestore:rules,storage,functions
+```
+
+Selecione o **mesmo projeto** usado nas variáveis Web. O deploy das Functions usa a região `southamerica-east1`. Configure e limite gastos no Firebase/Google Cloud antes de permitir pedidos reais.
+
+Para o backend, crie `functions/.env` com base em `functions/env.example`:
+
+```text
+PUBLIC_SITE_URL=https://daniel-soliz.github.io/Santa-Cruz/
+MP_WEBHOOK_URL=https://URL-HTTPS-REAL-DO-SEU-WEBHOOK
+```
+
+O endereço do webhook é gerado pelo Firebase ao implantar a função `mercadoPagoWebhook`. Copie a URL **exata** indicada no terminal ou console e publique novamente após preencher o `.env`. **Nunca** use uma URL de `github.io` para o webhook.
+
+## 4. Credenciais Mercado Pago, sem expor secrets
+
+Crie uma aplicação no painel https://www.mercadopago.com.br/developers/pt. Use inicialmente credenciais de teste. No terminal:
+
+```bash
+firebase functions:secrets:set MP_ACCESS_TOKEN
+firebase functions:secrets:set MP_WEBHOOK_SECRET
+firebase deploy --only functions
+```
+
+Cada comando pede o valor de maneira interativa. O Access Token é privado. O `MP_WEBHOOK_SECRET` é a chave secreta da configuração de **Webhooks** no Mercado Pago Developers, na aplicação correspondente. Associe o tópico **payment** à URL pública da Function `mercadoPagoWebhook`.
+
+O servidor recalcula preços, valida a identidade da sessão, emite cobranças, confere a assinatura HMAC e o pagamento diretamente na API do Mercado Pago e só então registra `paid`. O retorno do Checkout Pro nunca confirma a compra sozinho. Dados de CPF são enviados ao provedor para emitir o Pix, sem salvar o CPF no documento do pedido.
+
+**Cartão:** usa Checkout Pro, que abre o ambiente seguro do Mercado Pago e depois retorna ao seu site.
+
+**Pix:** usa Payments API e mostra o QR Code/código copia e cola no próprio site. A integração precisa ser testada com a sua conta real ou de teste antes da abertura.
+
+Docs oficiais:
+- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/configure-back-urls
+- https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/integration-configuration/integrate-pix
+- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/payment-notifications
+
+## 5. Criar o primeiro administrador
+
+No Console Firebase → Authentication, crie um usuário com **e-mail e senha**. Depois conceda a claim `admin: true` usando o script do projeto com credenciais de aplicação padrão do Google Cloud (ADC) ou uma máquina autorizada:
+
+```bash
+gcloud auth application-default login
+npm --prefix functions run make-admin -- email@seudominio.com.br
+```
+
+O projeto selecionado nas credenciais ADC deve ser o mesmo projeto Firebase. Também é possível definir `GOOGLE_CLOUD_PROJECT` no terminal antes de executar. A permissão de administrador não é concedida pelo frontend. Encerre a sessão e entre novamente pelo painel `#/admin`.
+
+Não compartilhe senhas nem arquivos JSON de conta de serviço no GitHub. Para revogar acesso, desative o usuário no Firebase Authentication ou retire sua claim no ambiente administrativo.
+
+## 6. Publicar o cardápio real
+
+Entre no painel em `#/admin`. A primeira versão exibe produtos demonstrativos definidos em `src/data/storeCatalog.ts`, com fotos meramente ilustrativas. Clique **Importar exemplos** se quiser usá-los como ponto de partida no Firestore.
+
+Para cada prato, ajuste nome, preço real, foto, categoria, adicionais e disponibilidade. Em seguida, **desmarque a opção “Produto ilustrativo”** somente depois da conferência. Produtos demo não podem virar pedidos reais. Organize as categorias e publique as configurações da loja.
+
+Em **Configurações**, confirme endereço, telefone, horários, pedido mínimo, bairros/CEPs atendidos, taxas, tempos e meios de pagamento. O delivery começa desligado; adicione ao menos uma região com prefixo ativo antes de habilitar. Pix e Mercado Pago também começam desligados e só devem ser ativados após testar as cobranças.
+
+## Segurança e privacidade
+
+- Firestore: catálogo público e configurações públicas são legíveis; pedidos são legíveis **somente pelo usuário autenticado dono do pedido ou por admin**. Clientes criam pedidos **via callable Cloud Function** que calcula o valor; escrita direta na coleção `orders` é proibida.
+- Storage: só contas com custom claim admin podem fazer upload/alterar imagens (limite de tamanho e tipos).
+- Access Tokens/segredos do Mercado Pago ficam no Secret Manager e são acessíveis somente pelas Functions.
+- Um pedido anônimo só pode ser acompanhado no **mesmo navegador enquanto a sessão anônima persistir**. Para suporte após limpeza de dados, a equipe pode localizar o pedido pelo painel.
+- Use política de privacidade e retenção de dados adequada à LGPD antes de abrir para clientes.
+
+## Testar antes de receber dinheiro
 
 ```bash
 npm run lint
-npm run build
-npm start
+npm run build:pages
+npm run test:pages
+npm --prefix functions install
+npm --prefix functions run test
 ```
 
-Por padrão, o banco é criado em `data/database.json` (ignorado pelo Git). Em desenvolvimento, o primeiro administrador é `dono@deliciadonordeste.com.br` com senha temporária `Nordeste@2026`; troque-a no primeiro login. **Em produção essas credenciais não funcionam**: configure `ADMIN_EMAIL` e `ADMIN_PASSWORD` (mínimo 12 caracteres).
+No navegador: teste filtros e sacola no celular, horários, CEP atendido e não atendido, compra de retirada, Pix de teste, cartão de teste, webhook, status de pedido e impressão. O GitHub Actions roda os testes estáticos e os testes das regras de negócio, mas **não comprova uma cobrança real nem um deploy Firebase conectado**.
 
-## Central de pedidos, entregas e Mercado Pago
+## Arquivos principais
 
-O **painel administrativo** fica em `/#/admin` quando você publica o servidor Express com banco de dados. Ele inclui uma central de pedidos em colunas, indicadores de pedidos ativos, entregas, pagamentos pendentes e despacho. A equipe pode registrar o nome, telefone e instruções do entregador; o status de entrega exige atribuir alguém antes do despacho.
+- `src/data/storeCatalog.ts`: modelos, sete categorias, catálogo de demonstração e horários padrão.
+- `src/storefront/StorefrontApp.tsx`: home, filtros, modal, sacola, navegação e mapa.
+- `src/storefront/Checkout.tsx`: etapas de checkout, ViaCEP e pagamento.
+- `src/storefront/Tracking.tsx`: confirmação, status e Pix no próprio site.
+- `src/storefront/AdminPanel.tsx`: equipe, pedidos, cardápio, fotos e configurações.
+- `src/lib/firebase.ts`: cliente modular Firebase e callable Functions.
+- `functions/src/index.ts` e `functions/src/core.ts`: backend seguro, cálculos e webhooks.
+- `firestore.rules`, `storage.rules`, `firebase.json`: segurança e deploy.
 
-### Entregas por CEP
+## O que ainda depende do restaurante
 
-Em **Admin → Loja**, cadastre e habilite regiões por prefixo do CEP, taxa e prazo. **Entregas começam desligadas** e as regiões demonstrativas começam inativas. Confirme os bairros reais, ative as regiões e marque “Receber pedidos para entrega” antes de divulgar o serviço. A retirada começa habilitada. Um cliente só consegue finalizar uma entrega dentro de uma região ativa. Os CEPs fora das regiões cadastradas são recusados e o cliente pode escolher retirada. A taxa é calculada no servidor e a faixa mais específica tem prioridade. A prévia do carrinho só confirma o valor depois de validar o CEP.
-
-### Configuração do Mercado Pago
-
-O Checkout Pro usa a API de preferências e direciona o cliente ao site do Mercado Pago. Antes de ativar, configure as variáveis privadas no backend, preferencialmente pelo gerenciador de segredos da sua hospedagem:
-
-- `MERCADO_PAGO_ACCESS_TOKEN`: token privado da sua aplicação.
-- `MERCADO_PAGO_WEBHOOK_SECRET`: segredo de assinatura **Webhooks** da mesma aplicação, obtido no portal Mercado Pago Developers.
-- `APP_URL`: domínio público HTTPS do **servidor Express**, sem barra final (não use `github.io`).
-- `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `DATA_DIR`: conforme as instruções de produção abaixo.
-
-No painel **Admin → Pagamentos**, escolha ambiente de testes ou produção e habilite Mercado Pago. A integração só aparece ao cliente quando o token, segredo, domínio HTTPS e a opção da loja estiverem configurados. Registre `https://SEU-BACKEND/api/payments/mercadopago/webhook` como Webhook de **payments** na aplicação correspondente.
-
-**O retorno da página de pagamento não confirma a compra.** O backend valida assinatura com HMAC e timestamp, consulta o pagamento diretamente no Mercado Pago, compara ID, pedido, valor, moeda e ambiente, e só então atualiza o status para pago, falhou ou reembolsado. A equipe não pode marcar pagamentos do Mercado Pago manualmente. Os eventos duplicados são tratados de forma idempotente.
-
-Referências oficiais:
-- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/configure-back-urls
-- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/payment-notifications
-
-### Pix, pagamento presencial e segurança
-
-**O Pix manual começa desativado e sem chave cadastrada.** Confirme sua chave bancária antes de ativar. **Pix manual não tem QR Code automático**: o cliente recebe somente a chave cadastrada e o valor do pedido. A equipe confere o recebimento antes de marcar como pago. Dinheiro e cartão na maquininha continuam disponíveis quando habilitados. O backend bloqueia pedidos com formas desativadas e não aceita produtos fictícios em produção. Para testes com dados descartáveis, o script de smoke usa `ALLOW_DEMO_ORDERS=true` exclusivamente no processo de teste.
-
-### Implantação pendente
-
-O GitHub Pages mostra a vitrine estática com link para WhatsApp. Ele **não roda o checkout automatizado**. O novo painel e a integração precisam do servidor publicado no Cloud Run (ou outra hospedagem Node), com banco persistente e preferencialmente uma migração do JSON para um banco transacional antes de escalar. Não é possível ativar cobranças reais sem credenciais, domínio e infraestrutura autorizados.
-
-## Publicação no Google Cloud
-
-Este aplicativo precisa de **servidor Node.js**. O **Firebase Hosting estático sozinho não atende `/api/orders`**; use Cloud Run, com o Dockerfile incluído, ou outra hospedagem que execute o servidor Express.
-
-**Atenção: ainda não publique para receber pedidos reais sem armazenamento persistente.** O banco atual é um arquivo JSON; no Cloud Run o sistema só inicia em produção com `DATA_DIR` apontando para um volume persistente montado. A arquitetura de arquivo requer apenas uma instância e requisições serializadas para evitar conflito, além de backup e controle de acesso. Para operação maior, migre o banco para Firestore ou Cloud SQL antes de publicar. Não use um diretório temporário do contêiner como banco de pedidos.
-
-Configure também:
-- `ADMIN_EMAIL`, `ADMIN_PASSWORD`: credenciais privadas do responsável pela loja.
-- `DATA_DIR`: caminho montado e persistente do banco (ex.: `/mnt/pedidos`).
-- `PORT`: definida pela plataforma, normalmente `8080`.
-- `MERCADO_PAGO_ACCESS_TOKEN`: apenas caso queira ativar Mercado Pago em produção.
-
-Antes de vender, substitua **todos os nove pratos de demonstração**, identificados como `[EXEMPLO]`, pelos produtos e preços reais no painel. Confirme WhatsApp, endereço, horários, entrega, Pix e meios de pagamento. O QR Code, a finalização do pedido e o painel dependem das rotas da API em execução.
-
-## Estrutura
-
-- `src/pages`: cardápio, acompanhamento e páginas públicas.
-- `src/pages/admin`: pedidos, cardápio, pagamentos, loja, cupons e usuários.
-- `src/components`: carrinho, personalizações e componentes visuais.
-- `src/context` e `src/services`: estado do pedido e acesso à API.
-- `server.ts`: API Express, validação de valores e persistência.
-- `public`: imagens e manifest para o navegador.
-
-## Segurança e dados
-
-Não envie `.env` nem `data/database.json` para o GitHub: este último contém pedidos e dados dos clientes. O histórico de commits anteriores do repositório tinha um `database.json` e credenciais de teste conhecidas; não reutilize esses dados nem essas senhas para uma loja real. Use um backup privado e controle de acesso para cada funcionário.
-
-As regras antigas do Firebase foram removidas porque a aplicação não usa o SDK do Firestore; elas não protegiam o banco JSON nem as rotas do Express.
+Fotos reais dos pratos, nomes e preços finais, catálogo e adicionais, áreas e valores de entrega, chave/conta Mercado Pago, configuração do Firebase, dados de contato/horários confirmados e política comercial (cancelamentos, reembolso e LGPD).

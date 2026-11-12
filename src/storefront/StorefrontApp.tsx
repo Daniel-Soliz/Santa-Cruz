@@ -21,7 +21,7 @@ function FoodImage({src,name,large=false}:{src:string;name:string;large?:boolean
  const [bad,setBad]=useState(false);
  useEffect(()=>setBad(false),[src]);
  return bad||!src?<div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-100 to-rose-100 text-rose-700"><Utensils size={large?56:36}/></div>:
- <img loading="lazy" decoding="async" src={src} onError={()=>setBad(true)} alt={name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"/>;
+ <img loading={large?'eager':'lazy'} fetchPriority={large?'high':undefined} decoding="async" src={src} onError={()=>setBad(true)} alt={name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"/>;
 }
 function ItemCard({p,onAdd}:{p:Product;onAdd:(p:Product)=>void}){
  return <article className="group overflow-hidden rounded-[22px] bg-white shadow-sm ring-1 ring-stone-200/80 transition hover:-translate-y-1 hover:shadow-lg">
