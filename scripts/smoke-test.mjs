@@ -83,7 +83,10 @@ try {
   await post('/api/orders', { ...payload, paymentMethod: 'mercadopago' }, 400);
   const calculation = await post('/api/orders/calculate', payload);
   assert.ok(calculation.total > 0 && Number.isFinite(calculation.total));
-  const created = await post('/api/orders', payload, 201);
+  const requestId = 'a83b3847-d85d-401c-b327-b91902da610f';
+  const created = await post('/api/orders', {...payload, requestId}, 201);
+  const retry = await post('/api/orders', {...payload, requestId});
+  assert.equal(retry.orderId, created.orderId, 'Reenvio deve recuperar o mesmo pedido');
   assert.ok(created.orderId && created.accessToken);
   const id = encodeURIComponent(created.orderId);
   const token = encodeURIComponent(created.accessToken);

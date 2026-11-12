@@ -208,6 +208,7 @@ export interface OrderItemSnapshot {
 export interface Order {
   id: string; // e.g. "PED-2026-A1B2"
   accessToken: string; // token secreto seguro para acompanhar o pedido
+  requestId?: string; // evita duplicação quando o checkout é reenviado
   createdAt: string;
   updatedAt: string;
   type: 'delivery' | 'pickup';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   Trash2, 
@@ -64,6 +64,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   const [submissionError, setSubmissionError] = useState('');
   const [isLookingUpCep, setIsLookingUpCep] = useState(false);
   const [cepError, setCepError] = useState('');
+  const pendingRequestId = useRef<string | null>(null);
+  // Uma mudança no conteúdo do pedido precisa gerar uma nova chave de envio.
+  useEffect(() => {
+    pendingRequestId.current = null;
+  }, [items, deliveryType, customer.name, customer.phone, address.cep, paymentMethod]);
 
   if (!isCartOpen) return null;
 
@@ -155,7 +160,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
 
     setIsSubmitting(true);
     try {
+      const requestId = pendingRequestId.current || crypto.randomUUID();
+      pendingRequestId.current = requestId;
       const payload = {
+        requestId,
         deliveryType,
         customer,
         address: deliveryType === 'delivery' ? address : undefined,
@@ -189,6 +197,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
         console.error('Error saving order history', e);
       }
 
+      pendingRequestId.current = null;
       clearCart();
       setIsCartOpen(false);
 

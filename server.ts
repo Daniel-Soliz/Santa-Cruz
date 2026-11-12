@@ -118,7 +118,10 @@ let db = ensureDatabase();
 
 function saveDatabase() {
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+    // Gravação atômica: evita deixar um JSON pela metade caso a gravação seja interrompida.
+    const tempFile = `${DB_FILE}.${process.pid}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(db, null, 2), 'utf-8');
+    fs.renameSync(tempFile, DB_FILE);
   } catch (err) {
     console.error('Falha ao salvar os pedidos em disco:', err);
     throw err;
@@ -196,7 +199,7 @@ app.get('/api/categories', (_req: Request, res: Response) => {
 app.get('/api/menu', (_req: Request, res: Response) => {
   // Only return items that are not hidden
   const publicMenu = db.menuItems
-    .filter(item => item.status !== 'oculto')
+    .filter(item => item.status !== 'oculto' && (!isProd || process.env.ALLOW_DEMO_ORDERS === 'true' || !item.isExampleDemo))
     .sort((a, b) => a.order - b.order);
   res.json(publicMenu);
 });
@@ -439,8 +442,23 @@ app.post('/api/orders', (req: Request, res: Response) => {
       address, 
       couponCode, 
       paymentMethod, 
-      changeFor 
+      changeFor,
+      requestId
     } = req.body;
+
+    // Reenviar o mesmo pedido por falha na rede não duplica a comanda.
+    if (requestId !== undefined) {
+      if (typeof requestId !== 'string' || !/^[a-f0-9-]{36}$/i.test(requestId)) {
+        return res.status(400).json({ error: 'Identificador de pedido inválido.' });
+      }
+      const priorOrder = db.orders.find(o => o.requestId === requestId);
+      if (priorOrder) {
+        if (priorOrder.customer.phone.replace(/\D/g, '') !== String(customer?.phone || '').replace(/\D/g, '')) {
+          return res.status(409).json({ error: 'Este identificador já foi usado.' });
+        }
+        return res.json({ success: true, orderId: priorOrder.id, accessToken: priorOrder.accessToken, order: priorOrder });
+      }
+    }
 
     // Loja fechada ou pausada não recebe novos pedidos.
     if (!db.settings.isOpenManual) {
@@ -514,6 +532,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
     const newOrder: Order = {
       id: orderNumber,
       accessToken,
+      requestId: typeof requestId === 'string' ? requestId : undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       type: deliveryType,
