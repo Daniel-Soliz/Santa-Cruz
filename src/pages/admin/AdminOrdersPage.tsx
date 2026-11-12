@@ -32,12 +32,25 @@ export const AdminOrdersPage: React.FC = () => {
   const [cancelModalOrder, setCancelModalOrder] = useState<Order | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+  const [driverName, setDriverName] = useState('');
+  const [driverPhone, setDriverPhone] = useState('');
+  const [deliveryNote, setDeliveryNote] = useState('');
+  const [savingDelivery, setSavingDelivery] = useState(false);
+
+  useEffect(() => {
+    setDriverName(selectedOrder?.delivery?.driverName || '');
+    setDriverPhone(selectedOrder?.delivery?.driverPhone || '');
+    setDeliveryNote(selectedOrder?.delivery?.note || '');
+  }, [selectedOrder?.id]);
 
   const fetchOrders = async () => {
     try {
       const data = await api.adminGetOrders();
       setOrders(data);
+      setFetchError('');
     } catch (e) {
+      setFetchError('Não foi possível sincronizar os pedidos. Confira sua conexão ou faça login novamente.');
       console.error('Error fetching admin orders', e);
     } finally {
       setIsLoading(false);
@@ -76,14 +89,37 @@ export const AdminOrdersPage: React.FC = () => {
     }
   };
 
+  const handleSaveDelivery = async () => {
+    if (!selectedOrder) return;
+    setSavingDelivery(true);
+    try {
+      const result = await api.adminAssignDelivery(selectedOrder.id, { driverName, driverPhone, note: deliveryNote });
+      setSelectedOrder(result.order);
+      await fetchOrders();
+    } catch (err: any) {
+      alert(err.message || 'Não foi possível salvar a entrega');
+    } finally {
+      setSavingDelivery(false);
+    }
+  };
+
   const filteredOrders = orders.filter(o => {
-    const matchesStatus = filterStatus === 'all' || o.status === filterStatus;
+    const matchesStatus = filterStatus === 'all'
+      || (filterStatus === 'delivery' && o.type === 'delivery')
+      || (filterStatus === 'pickup' && o.type === 'pickup')
+      || (filterStatus === 'awaitingPayment' && o.paymentStatus !== 'Pago')
+      || o.status === filterStatus;
     const matchesSearch = 
       o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.customer.phone.includes(searchQuery);
     return matchesStatus && matchesSearch;
   });
+
+  const activeOrders = orders.filter(o => !['Finalizado','Cancelado'].includes(o.status));
+  const deliveriesActive = activeOrders.filter(o => o.type === 'delivery');
+  const awaitingPayment = activeOrders.filter(o => o.paymentStatus !== 'Pago');
+  const readyToDispatch = activeOrders.filter(o => o.type === 'delivery' && o.status === 'Em preparo');
 
   // Kanban buckets
   const receivedOrders = filteredOrders.filter(o => o.status === 'Recebido');
@@ -100,12 +136,12 @@ export const AdminOrdersPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="font-heading font-extrabold text-xl text-[#722238]">
-              Gerenciamento de Pedidos em Tempo Real
+              Central de Pedidos · Santa Cruz
             </h2>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block" />
           </div>
           <p className="text-xs text-stone-500">
-            Atualização contínua com alerta sonoro sincronizado com a cozinha.
+            Organize a cozinha, confira pagamentos e acompanhe cada entrega. Atualização automática a cada 5 segundos.
           </p>
         </div>
 
@@ -129,6 +165,9 @@ export const AdminOrdersPage: React.FC = () => {
             className="text-xs p-2 rounded-xl border border-stone-300 bg-stone-50 font-semibold text-stone-700 outline-hidden"
           >
             <option value="all">Todos os Status ({orders.length})</option>
+            <option value="delivery">Somente entregas</option>
+            <option value="pickup">Somente retiradas</option>
+            <option value="awaitingPayment">Pagamento pendente</option>
             <option value="Recebido">Recebidos / Novos</option>
             <option value="Aceito">Aceitos</option>
             <option value="Em preparo">Em Preparo</option>
@@ -148,6 +187,30 @@ export const AdminOrdersPage: React.FC = () => {
         </div>
       </div>
 
+      {fetchError && (
+        <div role="alert" className="rounded-2xl bg-rose-50 border border-rose-300 text-rose-800 p-4 text-sm font-semibold flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 shrink-0" /> {fetchError}
+        </div>
+      )}
+
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" aria-label="Resumo operacional">
+        {[
+          { title: 'Pedidos ativos', value: activeOrders.length, Icon: ShoppingBag, detail: 'Em atendimento' },
+          { title: 'Entregas abertas', value: deliveriesActive.length, Icon: Truck, detail: 'Delivery em andamento' },
+          { title: 'Aguardando pagamento', value: awaitingPayment.length, Icon: AlertCircle, detail: 'Confira antes de preparar' },
+          { title: 'Prontos para despacho', value: readyToDispatch.length, Icon: Clock, detail: 'Acompanhe o entregador' }
+        ].map(stat => (
+          <div key={stat.title} className="p-4 sm:p-5 rounded-2xl bg-white border border-stone-200 shadow-sm min-w-0">
+            <div className="flex justify-between items-center text-[#722238] gap-2">
+              <span className="text-xs font-bold leading-snug">{stat.title}</span>
+              <stat.Icon className="w-5 h-5 shrink-0 text-[#E8365D]" />
+            </div>
+            <p className="font-heading text-3xl sm:text-4xl font-extrabold text-[#722238] mt-3 tabular-nums">{stat.value}</p>
+            <p className="text-[11px] text-stone-500 mt-1">{stat.detail}</p>
+          </div>
+        ))}
+      </section>
+
       {/* Kanban Board Columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-start">
         
@@ -166,6 +229,11 @@ export const AdminOrdersPage: React.FC = () => {
             ) : (
               receivedOrders.map(order => (
                 <div key={order.id} className="p-4 rounded-2xl bg-white border border-amber-300 shadow-sm space-y-3">
+                  {order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'Pago' && (
+                    <p className="text-[11px] font-bold rounded-lg bg-amber-100 border border-amber-200 text-amber-900 p-2">
+                      Aguardando confirmação automática do Mercado Pago
+                    </p>
+                  )}
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="font-heading font-bold text-sm text-stone-900 block">{order.id}</span>
@@ -189,6 +257,8 @@ export const AdminOrdersPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       onClick={() => handleUpdateStatus(order.id, 'Aceito', 'Pedido aceito pela cozinha')}
+                      disabled={order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'Pago'}
+                      title={order.paymentMethod === 'mercadopago' && order.paymentStatus !== 'Pago' ? 'Aguarde confirmação do Mercado Pago' : 'Aceitar pedido'}
                       className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 cursor-pointer shadow-xs"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -443,7 +513,7 @@ export const AdminOrdersPage: React.FC = () => {
             </div>
 
             {/* Quick Status and Payment actions */}
-            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#FFF8EC] border border-amber-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#FFF8EC] border border-amber-200">
               <div>
                 <label className="block text-[11px] font-bold text-stone-600 uppercase mb-1">
                   Status Operacional
@@ -469,14 +539,16 @@ export const AdminOrdersPage: React.FC = () => {
                 </label>
                 <select
                   value={selectedOrder.paymentStatus}
+                  disabled={selectedOrder.paymentMethod === 'mercadopago'}
+                  title={selectedOrder.paymentMethod === 'mercadopago' ? 'Atualizado somente pelo webhook do Mercado Pago' : 'Confirmar pagamento manual'}
                   onChange={(e) => handleUpdatePayment(selectedOrder.id, e.target.value as PaymentStatus)}
                   className="w-full text-xs p-2 rounded-xl border border-stone-300 bg-white font-bold text-stone-800 outline-hidden"
                 >
                   <option value="Aguardando pagamento">Aguardando pagamento</option>
                   <option value="Aguardando conferência manual">Aguardando conferência manual</option>
                   <option value="Pago">Pago (Confirmado)</option>
-                  <option value="Falhou">Falhou</option>
-                  <option value="Reembolsado">Reembolsado</option>
+                  <option value="Falhou" disabled>Falhou</option>
+                  <option value="Reembolsado" disabled>Reembolsado</option>
                 </select>
               </div>
             </div>
@@ -499,6 +571,36 @@ export const AdminOrdersPage: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {selectedOrder.type === 'delivery' && (
+              <section className="space-y-3 p-4 rounded-2xl border border-[#e5d4c6] bg-[#fff8ec]">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-[#722238]" />
+                  <h4 className="font-heading font-extrabold text-[#722238]">Despacho e entregador</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="text-xs font-bold text-stone-700">Nome do entregador
+                    <input type="text" maxLength={80} value={driverName} onChange={e => setDriverName(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5" placeholder="Nome de quem vai entregar" />
+                  </label>
+                  <label className="text-xs font-bold text-stone-700">Telefone do entregador
+                    <input type="tel" value={driverPhone} onChange={e => setDriverPhone(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5" placeholder="DDD + telefone" />
+                  </label>
+                </div>
+                <label className="text-xs font-bold text-stone-700 block">Observações do despacho
+                  <textarea rows={2} maxLength={300} value={deliveryNote} onChange={e => setDeliveryNote(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5" placeholder="Ex: retirar pedido pela entrada lateral" />
+                </label>
+                <button type="button" disabled={savingDelivery || !driverName.trim()}
+                  onClick={handleSaveDelivery} className="rounded-xl bg-[#722238] text-white px-5 py-2.5 font-bold text-xs disabled:opacity-50">
+                  {savingDelivery ? 'Salvando...' : 'Salvar entregador'}
+                </button>
+                {selectedOrder.delivery?.assignedAt && (
+                  <p className="text-[11px] text-stone-500">Entregador cadastrado: {selectedOrder.delivery.driverName}. Para despachar, altere o status para “Saiu para entrega”.</p>
+                )}
+              </section>
+            )}
 
             {/* Items table */}
             <div className="space-y-2 text-xs">
