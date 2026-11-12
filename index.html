@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>Restaurante Delícia do Nordeste Santa Cruz - Parque Belém, São Paulo</title>
+    <meta name="description" content="O sabor da culinária nordestina em São Paulo! Restaurante Delícia do Nordeste Santa Cruz no Parque Belém. Refeições no local, retirada e delivery. Tel: (11) 96014-9521." />
+    <meta property="og:title" content="Restaurante Delícia do Nordeste Santa Cruz - Parque Belém, São Paulo" />
+    <meta property="og:description" content="O sabor da culinária nordestina em São Paulo! Restaurante Delícia do Nordeste Santa Cruz no Parque Belém. Refeições no local, retirada e delivery. Tel: (11) 96014-9521." />
+    <meta property="og:type" content="restaurant" />
+    <meta property="og:image" content="/assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#E8365D" />
+
+    <!-- Favicon & PWA Icons derived from official emblem -->
+    <link rel="icon" type="image/jpeg" href="/assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
+    <link rel="apple-touch-icon" href="/assets/aistudio/logo_casa_do_norte_108ee79c.jpg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Google Fonts: Baloo 2, Poppins, Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- Structured Data (JSON-LD) for Schema.org Restaurant -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": "Restaurante Delícia do Nordeste Santa Cruz",
+      "image": "/assets/aistudio/logo_casa_do_norte_108ee79c.jpg",
+      "telephone": "+55-11-96014-9521",
+      "priceRange": "R$ 20 a R$ 80 por pessoa",
+      "servesCuisine": ["Nordestina", "Brasileira"],
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Rua Santa Cruz da Conceição",
+        "addressLocality": "São Paulo",
+        "addressRegion": "SP",
+        "postalCode": "02850-100",
+        "addressCountry": "BR"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.1",
+        "reviewCount": "16"
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "08:00",
+          "closes": "22:00"
+        }
+      ]
+    }
+    </script>
+
+    <style>
+      /* Thermal comanda printing styles */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #thermal-comanda, #thermal-comanda * {
+          visibility: visible;
+        }
+        #thermal-comanda {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 80mm;
+          margin: 0;
+          padding: 6px;
+          background: #fff;
+          color: #000;
+          font-family: 'Courier New', monospace;
+          font-size: 11px;
+          line-height: 1.25;
+        }
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-[#FFF8EC] text-[#4A4A44] antialiased font-['Poppins',sans-serif] selection:bg-[#E8365D] selection:text-white min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-pink: #E8365D;
+    --brand-pink-hover: #D1254D;
+    --brand-yellow: #F9D71C;
+    --brand-yellow-hover: #E8C60B;
+    --brand-charcoal: #4A4A44;
+    --brand-cream: #FFF8EC;
+    --brand-cream-card: #FFFFFF;
+    --brand-blue: #1F5FA8;
+    --brand-maroon: #722238;
+    --brand-gold: #D4AF37;
+  }
+
+  body {
+    background-color: var(--brand-cream);
+    color: var(--brand-charcoal);
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: 'Baloo 2', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+}
+
+/* Custom scrollbar for horizontal category pills */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
