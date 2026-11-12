@@ -1,69 +1,51 @@
-# Restaurante Delícia do Nordeste — Casa do Norte (Unidade Santa Cruz)
+# Santa Cruz | Pedidos do restaurante
 
-Sistema profissional de pedidos online, cardápio digital nordestino e painel administrativo integrado em tempo real para a **Casa do Norte Delícia do Nordeste — Unidade Santa Cruz**.
+Aplicação de cardápio e pedidos da Delícia do Nordeste. O cliente escolhe produtos, informa nome e telefone, opta por entrega ou retirada, seleciona o pagamento e acompanha o pedido. A equipe recebe e atualiza pedidos em `#/admin`.
 
----
+## Rodar localmente
 
-## 1. Identidade e Manual da Marca
-
-- **Emblema Oficial:** Utilização estrita do arquivo de imagem autoritativo anexado (`/assets/aistudio/logo_casa_do_norte_108ee79c.jpg`), contendo o chapéu de couro sertanejo com as letras **SC** e a medalha circular com os dizeres **CASA DO NORTE**.
-- **Paleta de Cores:**
-  - Rosa/Vermelho Principal: `#E8365D`
-  - Amarelo de Destaque: `#F9D71C`
-  - Cinza-Chumbo de Texto: `#4A4A44`
-  - Fundo Creme Acolhedor: `#FFF8EC`
-  - Vinho Nobre da Medalha: `#722238`
-  - Dourado dos Frisos: `#D4AF37`
-  - Azul de Apoio: `#1F5FA8`
-- **Tipografia:** `Baloo 2` para títulos e `Poppins` / `Inter` para textos corridos.
-- **Telefone da Fachada:** `3984-1957` (registrado como telefone fixo; DDD e WhatsApp editáveis e confirmáveis pelo lojista nas configurações).
-- **Endereço e Coordenadas:** Unidade Santa Cruz / RJ cadastrado e editável no painel administrativo, sem dados fictícios apresentados como definitivos.
-
----
-
-## 2. Arquitetura e Tecnologias
-
-- **Frontend:** React 19 + TypeScript + Tailwind CSS v4 + Motion.
-- **Backend Full-Stack:** Express com middleware Vite em desenvolvimento e endpoints REST seguros para catálogo, cálculo de comandas, webhooks e painel administrativo.
-- **Persistência de Dados:** Banco local JSON com sincronização contínua (`data/database.json`), compatível com migração direta para Cloud Firestore.
-- **Segurança de Preços:** Cálculo de totais, taxa de entrega, cupom de desconto e adicionais **exclusivamente executado no servidor**, impedindo manipulação de valores pelo navegador.
-- **Acompanhamento Seguro:** Rota `/pedido/:id?token=...` protegida por token secreto de alta entropia para proteção contra enumeração e cumprimento da LGPD.
-- **Impressão de Comanda:** Layout térmico (58mm / 80mm) compatível com impressoras de cozinha e balcão via CSS `@media print`.
-
----
-
-## 3. Primeiro Acesso Administrativo e Perfis (RBAC)
-
-O sistema possui controle de acesso por papéis (RBAC):
-- **Dono:** Acesso irrestrito a configurações da loja, pagamentos, relatórios, usuários e backup.
-- **Gerente:** Gestão de pedidos, cardápio, cupons, avaliações e relatórios.
-- **Atendente:** Visualização e atualização de pedidos em tempo real.
-
-### Credenciais Iniciais de Demonstração
-Conforme exigido pelo manual de segurança, o primeiro acesso exige troca imediata de senha pessoal:
-- **E-mail:** `dono@deliciadonordeste.com.br`
-- **Senha Inicial Temporária:** `Nordeste@2026`
-- **Procedimento:** Ao fazer o primeiro login, o sistema exibe automaticamente o formulário para definição da nova senha forte (mínimo 8 caracteres) com hash criptográfico PBKDF2 e salt exclusivo.
-
----
-
-## 4. Meios de Pagamento
-
-1. **Pix Instantâneo e Manual:** Geração de QR Code e chave Pix da loja com cópia-e-cola e status `Aguardando conferência manual`.
-2. **Mercado Pago Checkout Pro:** Integração server-side com preferência de pagamento, alternância entre Sandbox e Produção e webhook com idempotência para evitar duplicidade.
-3. **Pagamento na Entrega/Balcão:** Dinheiro com cálculo de troco informado pelo cliente e cartão presencial na maquininha.
-
----
-
-## 5. Como Executar
+Requer **Node.js 22**. Na primeira execução, instale as dependências e inicie:
 
 ```bash
-# Instalar dependências
 npm install
-
-# Iniciar servidor em desenvolvimento (Porta 3000)
 npm run dev
-
-# Gerar build de produção
-npm run build
 ```
+
+Abra `http://localhost:3000`. Confira a API em `http://localhost:3000/api/health`. Para validar o código:
+
+```bash
+npm run lint
+npm run build
+npm start
+```
+
+Por padrão, o banco é criado em `data/database.json` (ignorado pelo Git). Em desenvolvimento, o primeiro administrador é `dono@deliciadonordeste.com.br` com senha temporária `Nordeste@2026`; troque-a no primeiro login. **Em produção essas credenciais não funcionam**: configure `ADMIN_EMAIL` e `ADMIN_PASSWORD` (mínimo 12 caracteres).
+
+## Publicação no Google Cloud
+
+Este aplicativo precisa de **servidor Node.js**. O **Firebase Hosting estático sozinho não atende `/api/orders`**; use Cloud Run, com o Dockerfile incluído, ou outra hospedagem que execute o servidor Express.
+
+**Atenção: ainda não publique para receber pedidos reais sem armazenamento persistente.** O banco atual é um arquivo JSON; no Cloud Run o sistema só inicia em produção com `DATA_DIR` apontando para um volume persistente montado. A arquitetura de arquivo requer apenas uma instância e requisições serializadas para evitar conflito, além de backup e controle de acesso. Para operação maior, migre o banco para Firestore ou Cloud SQL antes de publicar. Não use um diretório temporário do contêiner como banco de pedidos.
+
+Configure também:
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`: credenciais privadas do responsável pela loja.
+- `DATA_DIR`: caminho montado e persistente do banco (ex.: `/mnt/pedidos`).
+- `PORT`: definida pela plataforma, normalmente `8080`.
+- `MERCADO_PAGO_ACCESS_TOKEN`: apenas caso queira ativar Mercado Pago em produção.
+
+Antes de vender, substitua **todos os nove pratos de demonstração**, identificados como `[EXEMPLO]`, pelos produtos e preços reais no painel. Confirme WhatsApp, endereço, horários, entrega, Pix e meios de pagamento. O QR Code, a finalização do pedido e o painel dependem das rotas da API em execução.
+
+## Estrutura
+
+- `src/pages`: cardápio, acompanhamento e páginas públicas.
+- `src/pages/admin`: pedidos, cardápio, pagamentos, loja, cupons e usuários.
+- `src/components`: carrinho, personalizações e componentes visuais.
+- `src/context` e `src/services`: estado do pedido e acesso à API.
+- `server.ts`: API Express, validação de valores e persistência.
+- `public`: imagens e manifest para o navegador.
+
+## Segurança e dados
+
+Não envie `.env` nem `data/database.json` para o GitHub: este último contém pedidos e dados dos clientes. O histórico de commits anteriores do repositório tinha um `database.json` e credenciais de teste conhecidas; não reutilize esses dados nem essas senhas para uma loja real. Use um backup privado e controle de acesso para cada funcionário.
+
+As regras antigas do Firebase foram removidas porque a aplicação não usa o SDK do Firestore; elas não protegiam o banco JSON nem as rotas do Express.

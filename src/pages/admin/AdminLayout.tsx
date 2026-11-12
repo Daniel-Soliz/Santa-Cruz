@@ -109,11 +109,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     { id: 'promocoes', label: 'Promoções & Cupons', icon: Tag, roles: ['Dono', 'Gerente'] },
     { id: 'loja', label: 'Dados da Loja & Horários', icon: Store, roles: ['Dono'] },
     { id: 'pagamentos', label: 'Meios de Pagamento', icon: CreditCard, roles: ['Dono'] },
-    { id: 'clientes', label: 'Clientes Cadastrados', icon: Users, roles: ['Dono', 'Gerente'] },
-    { id: 'avaliacoes', label: 'Moderação de Avaliações', icon: Star, roles: ['Dono', 'Gerente'] },
-    { id: 'relatorios', label: 'Relatórios & Vendas', icon: BarChart3, roles: ['Dono', 'Gerente'] },
+
     { id: 'usuarios', label: 'Usuários & Permissões', icon: ShieldCheck, roles: ['Dono'] },
-    { id: 'configuracoes', label: 'Checklist de Ativação', icon: CheckSquare, roles: ['Dono', 'Gerente'] },
+
   ];
 
   const allowedNavItems = navItems.filter(item => 
