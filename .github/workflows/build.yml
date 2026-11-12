@@ -1,7 +1,7 @@
 name: Verificar site e pedidos
 on:
   push:
-    branches: [main, "fix/**"]
+    branches: [main, "fix/**", "feat/**"]
   pull_request:
 jobs:
   build:
@@ -14,6 +14,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run lint
       - run: npm run build
+      - run: npm run test:payments
       - run: npm run test:smoke
       - run: npm run build:pages
       - run: npm run test:pages

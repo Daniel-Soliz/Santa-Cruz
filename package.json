@@ -12,7 +12,8 @@
     "lint": "tsc --noEmit",
     "test:smoke": "node scripts/smoke-test.mjs",
     "build:pages": "DEPLOY_TARGET=github-pages VITE_STATIC_PREVIEW=true vite build",
-    "test:pages": "node scripts/check-pages-build.mjs"
+    "test:pages": "node scripts/check-pages-build.mjs",
+    "test:payments": "node --import tsx scripts/payment-security-test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -54,6 +54,39 @@ npm start
 
 Por padrão, o banco é criado em `data/database.json` (ignorado pelo Git). Em desenvolvimento, o primeiro administrador é `dono@deliciadonordeste.com.br` com senha temporária `Nordeste@2026`; troque-a no primeiro login. **Em produção essas credenciais não funcionam**: configure `ADMIN_EMAIL` e `ADMIN_PASSWORD` (mínimo 12 caracteres).
 
+## Central de pedidos, entregas e Mercado Pago
+
+O **painel administrativo** fica em `/#/admin` quando você publica o servidor Express com banco de dados. Ele inclui uma central de pedidos em colunas, indicadores de pedidos ativos, entregas, pagamentos pendentes e despacho. A equipe pode registrar o nome, telefone e instruções do entregador; o status de entrega exige atribuir alguém antes do despacho.
+
+### Entregas por CEP
+
+Em **Admin → Loja**, cadastre e habilite regiões por prefixo do CEP, taxa e prazo. Um cliente só consegue finalizar uma entrega dentro de uma região ativa. Os CEPs fora das regiões cadastradas são recusados e o cliente pode escolher retirada. A taxa é calculada no servidor e a faixa mais específica tem prioridade. A prévia do carrinho só confirma o valor depois de validar o CEP.
+
+### Configuração do Mercado Pago
+
+O Checkout Pro usa a API de preferências e direciona o cliente ao site do Mercado Pago. Antes de ativar, configure as variáveis privadas no backend, preferencialmente pelo gerenciador de segredos da sua hospedagem:
+
+- `MERCADO_PAGO_ACCESS_TOKEN`: token privado da sua aplicação.
+- `MERCADO_PAGO_WEBHOOK_SECRET`: segredo de assinatura **Webhooks** da mesma aplicação, obtido no portal Mercado Pago Developers.
+- `APP_URL`: domínio público HTTPS do **servidor Express**, sem barra final (não use `github.io`).
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `DATA_DIR`: conforme as instruções de produção abaixo.
+
+No painel **Admin → Pagamentos**, escolha ambiente de testes ou produção e habilite Mercado Pago. A integração só aparece ao cliente quando o token, segredo, domínio HTTPS e a opção da loja estiverem configurados. Registre `https://SEU-BACKEND/api/payments/mercadopago/webhook` como Webhook de **payments** na aplicação correspondente.
+
+**O retorno da página de pagamento não confirma a compra.** O backend valida assinatura com HMAC e timestamp, consulta o pagamento diretamente no Mercado Pago, compara ID, pedido, valor, moeda e ambiente, e só então atualiza o status para pago, falhou ou reembolsado. A equipe não pode marcar pagamentos do Mercado Pago manualmente. Os eventos duplicados são tratados de forma idempotente.
+
+Referências oficiais:
+- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/configure-back-urls
+- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/payment-notifications
+
+### Pix, pagamento presencial e segurança
+
+**Pix manual não tem QR Code automático**: o cliente recebe somente a chave cadastrada e o valor do pedido. A equipe confere o recebimento antes de marcar como pago. Dinheiro e cartão na maquininha continuam disponíveis quando habilitados. O backend bloqueia pedidos com formas desativadas e não aceita produtos fictícios em produção. Para testes com dados descartáveis, o script de smoke usa `ALLOW_DEMO_ORDERS=true` exclusivamente no processo de teste.
+
+### Implantação pendente
+
+O GitHub Pages mostra a vitrine estática com link para WhatsApp. Ele **não roda o checkout automatizado**. O novo painel e a integração precisam do servidor publicado no Cloud Run (ou outra hospedagem Node), com banco persistente e preferencialmente uma migração do JSON para um banco transacional antes de escalar. Não é possível ativar cobranças reais sem credenciais, domínio e infraestrutura autorizados.
+
 ## Publicação no Google Cloud
 
 Este aplicativo precisa de **servidor Node.js**. O **Firebase Hosting estático sozinho não atende `/api/orders`**; use Cloud Run, com o Dockerfile incluído, ou outra hospedagem que execute o servidor Express.

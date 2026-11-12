@@ -22,7 +22,8 @@ const child = spawn(process.execPath, ['--import', 'tsx', 'server.ts'], {
     PORT: String(port),
     DATA_DIR: dataDir,
     ADMIN_EMAIL: 'admin@restaurante.teste',
-    ADMIN_PASSWORD: 'SenhaExclusivaTeste2026!'
+    ADMIN_PASSWORD: 'SenhaExclusivaTeste2026!',
+    ALLOW_DEMO_ORDERS: 'true'
   },
   stdio: ['ignore', 'pipe', 'pipe']
 });
@@ -73,6 +74,13 @@ try {
     paymentMethod: 'dinheiro'
   };
   await post('/api/orders/calculate', { ...payload, items: [{...payload.items[0], quantity: -1}] }, 400);
+  await post('/api/delivery/quote', { cep: '99999-999', subtotal: 42 }, 400);
+  const quote = await post('/api/delivery/quote', { cep: '02850-100', subtotal: 42 });
+  assert.equal(quote.zone, 'Parque Belém e Entorno');
+  assert.equal(quote.fee, 6);
+  await post('/api/orders/calculate', { ...payload, deliveryType: 'delivery',
+    address: { cep: '99999-999', street: 'Rua teste', number: '10', neighborhood: 'Fora' } }, 400);
+  await post('/api/orders', { ...payload, paymentMethod: 'mercadopago' }, 400);
   const calculation = await post('/api/orders/calculate', payload);
   assert.ok(calculation.total > 0 && Number.isFinite(calculation.total));
   const created = await post('/api/orders', payload, 201);
@@ -95,7 +103,27 @@ try {
   });
   const updated = await send(`/api/orders/${id}?token=${token}`);
   assert.equal(updated.status, 'Em preparo');
-  console.log('Teste aprovado: frontend, logo, API, cálculo, pedido, proteção do acompanhamento, login e atualização do pedido.');
+
+  const deliveryOrder = await post('/api/orders', { ...payload, deliveryType: 'delivery',
+    address: { cep: '02850-100', street: 'Rua de teste', number: '10', neighborhood: 'Parque Belém',
+      city: 'São Paulo', state: 'SP' } }, 201);
+  assert.equal(deliveryOrder.order.deliveryFee, 6);
+  await send(`/api/admin/orders/${deliveryOrder.orderId}/status`, {
+    method: 'PATCH', headers: authHeaders,
+    body: JSON.stringify({ status: 'Saiu para entrega' })
+  }, 400);
+  const assigned = await send(`/api/admin/orders/${deliveryOrder.orderId}/delivery`, {
+    method: 'PATCH', headers: authHeaders,
+    body: JSON.stringify({ driverName: 'Entregador de teste', driverPhone: '11999999999', note: 'Retirar no balcão' })
+  });
+  assert.equal(assigned.order.delivery.driverName, 'Entregador de teste');
+  await send(`/api/admin/orders/${deliveryOrder.orderId}/status`, {
+    method: 'PATCH', headers: authHeaders,
+    body: JSON.stringify({ status: 'Saiu para entrega' })
+  });
+  const dispatched = await send(`/api/orders/${deliveryOrder.orderId}?token=${deliveryOrder.accessToken}`);
+  assert.equal(dispatched.status, 'Saiu para entrega');
+  console.log('Teste aprovado: pedidos, segurança, CEP, entregas, atribuição do motoboy e atualização de status.');
 } catch (error) {
   console.error(output.slice(-3500));
   throw error;

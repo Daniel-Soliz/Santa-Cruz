@@ -464,7 +464,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
     }
 
     const enabledMethods: Record<string, boolean> = {
-      pix: !!db.settings.pixEnabled && db.settings.pixType === 'manual',
+      pix: !!db.settings.pixEnabled && db.settings.pixType === 'manual' && !!db.settings.pixKey?.trim(),
       mercadopago: mercadoPagoReady(),
       dinheiro: !!db.settings.cashOnDeliveryEnabled,
       cartao_entrega: !!db.settings.cardOnDeliveryEnabled
