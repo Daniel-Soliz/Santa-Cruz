@@ -6,6 +6,7 @@ import {categories as demoCats,demoProducts,defaultSettings,money,logo,mapsUrl,s
 import {AdminPanel} from './AdminPanel';
 import {Checkout} from './Checkout';
 import {Tracking} from './Tracking';
+import {Policies} from './Policies';
 
 type CartLine={key:string;id:string;name:string;image:string;price:number;quantity:number;optionId?:string;optionName?:string;notes:string;demo:boolean};
 type Method='pix'|'mercadopago'|'cash'|'cardOnDelivery';
@@ -82,7 +83,7 @@ function Header({count,openCart,route,open}:{count:number;openCart:()=>void;rout
 function Footer(){
  return <footer className="mt-16 bg-[#442833] px-5 py-10 text-white"><div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
   <div><b className="font-heading text-xl">Delícia do Nordeste</b><p className="mt-1 text-xs text-rose-100">Casa do Norte · Santa Cruz · Parque Belém</p></div>
-  <div className="flex flex-wrap gap-5 text-sm"><a href="#/como-chegar">Localização e horários</a><a href="#/admin">Acesso da equipe</a><a href={whatsapp} rel="noopener noreferrer" target="_blank" className="inline-flex items-center gap-1 text-rose-100"><MessageCircle size={15}/> Suporte no WhatsApp</a></div>
+  <div className="flex flex-wrap gap-5 text-sm"><a href="#/como-chegar">Localização e horários</a><a href="#/admin">Acesso da equipe</a><a href="#/privacidade">Privacidade</a><a href="#/termos">Condições de compra</a><a href={whatsapp} rel="noopener noreferrer" target="_blank" className="inline-flex items-center gap-1 text-rose-100"><MessageCircle size={15}/> Suporte no WhatsApp</a></div>
  </div><p className="mx-auto mt-7 max-w-7xl border-t border-white/20 pt-5 text-xs text-rose-100">© {new Date().getFullYear()} Delícia do Nordeste. Valores e disponibilidade são confirmados no checkout.</p></footer>;
 }
 function Home({products,onAdd,open}:{products:Product[];onAdd:(p:Product)=>void;open:boolean}){
@@ -140,6 +141,8 @@ export function StorefrontApp(){
    path.startsWith('/pedido/')?<Tracking id={path.split('/')[2]} />:
    path==='/cardapio'?<Catalog products={products} cats={cats} onAdd={addProduct}/>:
    path==='/como-chegar'?<Location settings={settings}/>:
+   path==='/privacidade'?<Policies kind="privacidade"/>:
+   path==='/termos'?<Policies kind="termos"/>:
    <Home products={products} onAdd={addProduct} open={open}/>}
   {!path.startsWith('/admin')&&<Footer/>}
   {!path.startsWith('/admin')&&count>0&&path!=='/checkout'&&<button className="fixed bottom-3 left-3 right-3 z-30 flex min-h-14 items-center justify-between rounded-2xl bg-[#722238] px-5 font-extrabold text-white shadow-2xl sm:hidden" onClick={()=>setDrawer(true)}><span className="flex items-center gap-2"><ShoppingBag size={18}/> Ver pedido ({count})</span><span>{money(subtotal)}</span></button>}
