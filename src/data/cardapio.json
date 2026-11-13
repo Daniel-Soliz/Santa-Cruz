@@ -1,0 +1,455 @@
+{
+  "aviso": "CATÁLOGO DE EXEMPLO: fotos e valores ilustrativos. PREENCHER com o cardápio oficial antes de receber pedidos reais.",
+  "categorias": [
+    {
+      "id": "pratos",
+      "nome": "Pratos do dia",
+      "ordem": 1
+    },
+    {
+      "id": "carnes",
+      "nome": "Carnes e Sertão",
+      "ordem": 2
+    },
+    {
+      "id": "peixes",
+      "nome": "Peixes e Frutos do mar",
+      "ordem": 3
+    },
+    {
+      "id": "porcoes",
+      "nome": "Porções",
+      "ordem": 4
+    },
+    {
+      "id": "acompanhamentos",
+      "nome": "Acompanhamentos",
+      "ordem": 5
+    },
+    {
+      "id": "tapiocas",
+      "nome": "Tapiocas e Cuscuz",
+      "ordem": 6
+    },
+    {
+      "id": "sobremesas",
+      "nome": "Sobremesas",
+      "ordem": 7
+    },
+    {
+      "id": "bebidas",
+      "nome": "Bebidas",
+      "ordem": 8
+    }
+  ],
+  "itens": [
+    {
+      "id": "ex-01",
+      "categoriaId": "pratos",
+      "nome": "Prato do sertão",
+      "descricao": "Arroz, feijão, carne desfiada e farofa.",
+      "preco": 32.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": true,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [
+        {
+          "id": "ovo",
+          "nome": "Ovo extra",
+          "preco": 4
+        },
+        {
+          "id": "farofa",
+          "nome": "Farofa extra",
+          "preco": 5
+        },
+        {
+          "id": "sem-pimenta",
+          "nome": "Sem pimenta",
+          "preco": 0
+        }
+      ],
+      "tags": []
+    },
+    {
+      "id": "ex-02",
+      "categoriaId": "pratos",
+      "nome": "Almoço da casa",
+      "descricao": "Prato completo com arroz, feijão e acompanhamento do dia.",
+      "preco": 29.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [
+        {
+          "id": "ovo",
+          "nome": "Ovo extra",
+          "preco": 4
+        },
+        {
+          "id": "farofa",
+          "nome": "Farofa extra",
+          "preco": 5
+        },
+        {
+          "id": "sem-pimenta",
+          "nome": "Sem pimenta",
+          "preco": 0
+        }
+      ],
+      "tags": []
+    },
+    {
+      "id": "ex-03",
+      "categoriaId": "carnes",
+      "nome": "Carne de sol na manteiga",
+      "descricao": "Carne de sol com cebola e guarnições.",
+      "preco": 54.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": true,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [
+        {
+          "id": "ovo",
+          "nome": "Ovo extra",
+          "preco": 4
+        },
+        {
+          "id": "farofa",
+          "nome": "Farofa extra",
+          "preco": 5
+        },
+        {
+          "id": "sem-pimenta",
+          "nome": "Sem pimenta",
+          "preco": 0
+        }
+      ],
+      "tags": []
+    },
+    {
+      "id": "ex-04",
+      "categoriaId": "carnes",
+      "nome": "Costela do sertão",
+      "descricao": "Costela cozida lentamente e servida com mandioca.",
+      "preco": 49.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [
+        {
+          "id": "ovo",
+          "nome": "Ovo extra",
+          "preco": 4
+        },
+        {
+          "id": "farofa",
+          "nome": "Farofa extra",
+          "preco": 5
+        },
+        {
+          "id": "sem-pimenta",
+          "nome": "Sem pimenta",
+          "preco": 0
+        }
+      ],
+      "tags": []
+    },
+    {
+      "id": "ex-05",
+      "categoriaId": "peixes",
+      "nome": "Peixe grelhado",
+      "descricao": "Filé de peixe com arroz e legumes.",
+      "preco": 46.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-06",
+      "categoriaId": "peixes",
+      "nome": "Moqueca do Nordeste",
+      "descricao": "Peixe com leite de coco e temperos típicos.",
+      "preco": 59.9,
+      "foto": "",
+      "disponivel": false,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-07",
+      "categoriaId": "porcoes",
+      "nome": "Macaxeira frita",
+      "descricao": "Mandioca crocante para compartilhar.",
+      "preco": 23.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": true,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-08",
+      "categoriaId": "porcoes",
+      "nome": "Queijo coalho na chapa",
+      "descricao": "Queijo grelhado e douradinho.",
+      "preco": 24.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [
+        {
+          "id": "individual",
+          "nome": "Individual",
+          "acrescimo": 0
+        },
+        {
+          "id": "duas-pessoas",
+          "nome": "Para 2 pessoas",
+          "acrescimo": 20
+        }
+      ],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-09",
+      "categoriaId": "acompanhamentos",
+      "nome": "Baião de dois",
+      "descricao": "Arroz, feijão e queijo coalho.",
+      "preco": 18.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": true,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-10",
+      "categoriaId": "acompanhamentos",
+      "nome": "Farofa da casa",
+      "descricao": "Farofa crocante temperada.",
+      "preco": 8.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-11",
+      "categoriaId": "tapiocas",
+      "nome": "Tapioca de queijo coalho",
+      "descricao": "Massa leve recheada com queijo.",
+      "preco": 21.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [
+        {
+          "id": "ovo",
+          "nome": "Ovo extra",
+          "preco": 4
+        },
+        {
+          "id": "farofa",
+          "nome": "Farofa extra",
+          "preco": 5
+        },
+        {
+          "id": "sem-pimenta",
+          "nome": "Sem pimenta",
+          "preco": 0
+        }
+      ],
+      "tags": []
+    },
+    {
+      "id": "ex-12",
+      "categoriaId": "tapiocas",
+      "nome": "Cuscuz com manteiga",
+      "descricao": "Cuscuz de milho no vapor com manteiga.",
+      "preco": 17.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": true,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [
+        {
+          "id": "ovo",
+          "nome": "Ovo extra",
+          "preco": 4
+        },
+        {
+          "id": "farofa",
+          "nome": "Farofa extra",
+          "preco": 5
+        },
+        {
+          "id": "sem-pimenta",
+          "nome": "Sem pimenta",
+          "preco": 0
+        }
+      ],
+      "tags": []
+    },
+    {
+      "id": "ex-13",
+      "categoriaId": "sobremesas",
+      "nome": "Pudim caseiro",
+      "descricao": "Pudim cremoso com calda de caramelo.",
+      "preco": 14.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-14",
+      "categoriaId": "sobremesas",
+      "nome": "Cocada cremosa",
+      "descricao": "Doce de coco servido em porção individual.",
+      "preco": 11.9,
+      "foto": "",
+      "disponivel": false,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-15",
+      "categoriaId": "bebidas",
+      "nome": "Suco natural (copo)",
+      "descricao": "Suco de fruta a consultar no atendimento.",
+      "preco": 12.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [],
+      "tags": []
+    },
+    {
+      "id": "ex-16",
+      "categoriaId": "bebidas",
+      "nome": "Refrigerante (lata)",
+      "descricao": "Sabor sujeito à disponibilidade.",
+      "preco": 7.9,
+      "foto": "",
+      "disponivel": true,
+      "destaque": false,
+      "exemplo": true,
+      "variacoes": [],
+      "opcionais": [],
+      "tags": []
+    }
+  ]
+}

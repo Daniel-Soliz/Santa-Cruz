@@ -1,4 +1,4 @@
-name: Verificar site e pedidos
+name: Testar catálogo e pedidos estáticos
 on:
   push:
     branches: [main, "fix/**", "feat/**"]
@@ -13,8 +13,6 @@ jobs:
           node-version: "22"
       - run: npm install --no-audit --no-fund
       - run: npm run lint
-      - run: npm run build
-      - run: npm run test:payments
-      - run: npm run test:smoke
+      - run: npm run test:pedido
       - run: npm run build:pages
       - run: npm run test:pages
