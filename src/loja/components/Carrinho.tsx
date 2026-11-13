@@ -4,7 +4,7 @@ import type { LinhaCarrinho, Produto } from '../types';
 import { precoLinha, reais, totalCarrinho } from '../pedido';
 import { FotoPrato } from './ProdutoCard';
 
-export function Carrinho({linhas,produtos,fechar,atualizar,remover,editar,finalizar}:{linhas:LinhaCarrinho[];produtos:Produto[];fechar:()=>void;atualizar:(chave:string,delta:number)=>void;remover:(chave:string)=>void;editar:(linha:LinhaCarrinho)=>void;finalizar:()=>void}){
+export function Carrinho({linhas,produtos,fechar,atualizar,remover,limpar,editar,finalizar}:{linhas:LinhaCarrinho[];produtos:Produto[];fechar:()=>void;atualizar:(chave:string,delta:number)=>void;remover:(chave:string)=>void;limpar:()=>void;editar:(linha:LinhaCarrinho)=>void;finalizar:()=>void}){
  const focus=useRef<HTMLButtonElement>(null);
  useEffect(()=>{const before=document.body.style.overflow;document.body.style.overflow='hidden';focus.current?.focus();const handle=(e:KeyboardEvent)=>{if(e.key==='Escape')fechar();};window.addEventListener('keydown',handle);return()=>{document.body.style.overflow=before;window.removeEventListener('keydown',handle);};},[fechar]);
  const itens=linhas.map(l=>({linha:l,produto:produtos.find(p=>p.id===l.produtoId)})).filter(x=>!!x.produto);
@@ -12,6 +12,7 @@ export function Carrinho({linhas,produtos,fechar,atualizar,remover,editar,finali
   <aside role="dialog" aria-modal="true" aria-label="Sua sacola" className="carrinho-painel">
    <header className="carrinho-topo"><div><span className="micro-label">Seu pedido</span><h2>Minha sacola</h2></div><button ref={focus} aria-label="Fechar sacola" onClick={fechar} type="button" className="icone-circulo"><X size={21}/></button></header>
    <div className="carrinho-itens">
+    {itens.length>0&&<button type="button" className="carrinho-limpar" onClick={()=>{if(window.confirm('Esvaziar toda a sacola?'))limpar();}}><Trash2 size={16}/> Esvaziar sacola</button>}
     {itens.length?itens.map(({linha,produto})=>produto&&<div className="item-sacola" key={linha.chave}>
      <div className="item-sacola__foto"><FotoPrato foto={produto.foto} nome={produto.nome}/></div>
      <div className="item-sacola__texto">
@@ -34,7 +35,7 @@ export function Carrinho({linhas,produtos,fechar,atualizar,remover,editar,finali
    </div>
    <footer className="carrinho-rodape">
     <p><span>Subtotal</span><strong>{reais(totalCarrinho(linhas,produtos))}</strong></p>
-    <small>A taxa de entrega, quando disponível, aparece no checkout. Os valores dos itens demonstrativos são ilustrativos.</small>
+    <small>A taxa de entrega, quando disponível, aparece no checkout. {linhas.some(l=>produtos.find(p=>p.id===l.produtoId)?.exemplo)&&'Os valores demonstrativos são ilustrativos.'}</small>
     <button disabled={!itens.length} className="botao botao--rosa botao--full" type="button" onClick={finalizar}>Finalizar pedido <ArrowRight size={20}/></button>
    </footer>
   </aside>
