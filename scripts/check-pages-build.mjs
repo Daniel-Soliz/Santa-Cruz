@@ -26,3 +26,12 @@ assert.ok(!('priceRange' in restaurante),'Faixa de preço não confirmada deve s
 assert.match(fs.readFileSync(path.join(dist,'sitemap.xml'),'utf8'),/daniel-soliz\.github\.io\/Santa-Cruz/);
 assert.match(fs.readFileSync(path.join(dist,'robots.txt'),'utf8'),/sitemap\.xml/);
 console.log('SEO vindo do config.json: Restaurant, menu, sitemap e robots sem dados fictícios.');
+
+const fundo=fs.readdirSync(path.join(dist,'assets')).find(name=>/^moldura-xilogravura-renda-[\w-]+\.webp$/.test(name));
+assert.ok(fundo,'Textura da xilogravura e renda não emitida pelo Vite');
+const cssName=fs.readdirSync(path.join(dist,'assets')).find(name=>/^index-[\w-]+\.css$/.test(name));
+assert.ok(cssName,'CSS compilado não encontrado');
+const cssBuild=fs.readFileSync(path.join(dist,'assets',cssName),'utf8');
+assert.match(cssBuild,/moldura-xilogravura-renda-[\w-]+\.webp/,'Imagem não referenciada no CSS');
+assert.ok(fs.statSync(path.join(dist,'assets',fundo)).size<150000,'Textura não otimizada');
+console.log('Fundo xilogravura/renda incorporado e otimizado no build.');

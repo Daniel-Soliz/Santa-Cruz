@@ -452,3 +452,88 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
 @media(min-width:780px){
  .consulta-entrega{grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:32px;padding:26px 32px}
 }
+
+/* ==============================================================
+   FUNDO GLOBAL — XILOGRAVURA DO SERTÃO + RENDA RENASCENÇA
+   A imagem é um recurso local compilado pelo Vite; mantém
+   /Santa-Cruz/ no GitHub Pages e também funciona em domínio próprio.
+   ============================================================== */
+:root,html,#root,.site-loja{
+  background-color:transparent;
+}
+html{min-height:100%;background-color:#FDF6EC;}
+body{
+  min-height:100vh;
+  background-color:#FDF6EC;
+  background-image:url("./assets/moldura-xilogravura-renda.webp");
+  background-position:center top;
+  background-size:calc(100% + 12px) auto;
+  background-repeat:repeat-y;
+  background-attachment:fixed;
+}
+/* Um único fundo da primeira seção até o rodapé. */
+.hero,
+.catalogo,
+.localizacao,
+.avaliacoes,
+.rodape,
+.checkout-pagina,
+.pagina-confirmacao,
+.site-loja{
+  background:transparent;
+}
+/* Separadores e alertas acompanham o fundo, sem faixas sólidas. */
+.barra-aviso{
+  background:transparent;
+  color:var(--vinho);
+  border-block:1px solid rgba(114,34,56,.12);
+}
+.barra-aviso span{color:var(--rosa-escuro);}
+.barra-categorias{
+  background:rgba(255,253,250,.32);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+/* Cabeçalho branco translúcido, único fundo de largura total. */
+.cabecalho{
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+/* Os produtos e as avaliações permanecem em branco puro. */
+.produto-card,.avaliacao-card{
+  background:#FFFFFF;
+  box-shadow:0 10px 26px rgba(91,40,42,.085);
+}
+.produto-card:hover{box-shadow:0 15px 30px rgba(91,40,42,.13);}
+/* Painéis menores continuam legíveis sem ocultar completamente a arte. */
+.informacoes-pedido article,
+.passos__grade article,
+.consulta-entrega,
+.checkout-bloco,
+.checkout-resumo,
+.confirmacao__caixa{
+  background:rgba(255,255,255,.93);
+}
+/* O rodapé deixa a xilogravura e a renda aparecerem até o fim. */
+.rodape{
+  color:var(--vinho);
+  border-top:1px solid rgba(114,34,56,.16);
+}
+.rodape h3{color:var(--vinho);}
+.rodape p,.rodape a{color:#584149;}
+.rodape__marca span{color:#7A4353;}
+.rodape__base{
+  color:#74545B;
+  border-top-color:rgba(114,34,56,.16);
+}
+@media(max-width:600px){
+  body{background-size:calc(100% + 8px) auto;}
+}
+/* Safari/iOS: evita saltos ao rolar quando o motor ignora fundo fixed.
+   Outros navegadores preservam o fundo fixo solicitado. */
+@supports(-webkit-touch-callout:none){
+  @media(max-width:767px){
+    body{background-attachment:scroll;}
+  }
+}
