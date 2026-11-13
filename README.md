@@ -1,117 +1,76 @@
-# Santa Cruz | Pedidos do restaurante
+# Delícia do Nordeste · Casa do Norte · Santa Cruz
 
-## Por que a página ficava branca?
+Site de cardápio com sacola e pedido montado no próprio navegador. **100% estático**, feito em React + Vite + Tailwind e publicado no GitHub Pages.
 
-O endereço `https://daniel-soliz.github.io/Santa-Cruz/` estava usando o código fonte do React/TypeScript diretamente. Navegadores não executam arquivos `.tsx` desse jeito. Também faltava configurar o caminho `/Santa-Cruz/` para CSS, JavaScript e imagens.
+**Endereço:** https://daniel-soliz.github.io/Santa-Cruz/
 
-Foi adicionada uma publicação compilada no GitHub Actions (`.github/workflows/deploy-pages.yml`), além de uma apresentação estática de segurança no `index.html`, que aparece mesmo se o JavaScript falhar.
+## Como editar (sem saber programar)
 
-### Como configurar a publicação
+### 1. Trocar pratos, fotos, descrições e preços
+Abra **`src/data/cardapio.json`** no GitHub e clique no lápis (Editar). É o **único arquivo** com o cardápio. Cada item possui:
 
-1. Abra **GitHub → Santa-Cruz → Settings → Pages**.
-2. Em **Build and deployment → Source**, selecione **GitHub Actions** (em vez de *Deploy from a branch*).
-3. Vá a **Actions → Publicar apresentação no GitHub Pages → Run workflow**, caso o fluxo não tenha começado.
-4. Verifique a conclusão verde do fluxo. Abra `https://daniel-soliz.github.io/Santa-Cruz/` e recarregue com Ctrl+F5.
+- `nome`, `descricao`, `categoriaId` e `preco`: preço numérico (use `29.90`, com ponto, sem símbolo R$);
+- `foto`: comece com `imagens/meu-prato.webp` e envie o arquivo para `public/imagens/` no repositório. Deixe `""` para mostrar um placeholder;
+- `disponivel`: `true` para vender; `false` para mostrar “Indisponível hoje”;
+- `destaque`: `true` para aparecer nos pratos em destaque;
+- `variacoes`: tamanhos (ex.: individual, para duas pessoas) com `acrescimo`;
+- `opcionais`: extras e preferências com `preco`;
+- `exemplo`: deixe `true` enquanto o valor e o produto forem fictícios. Troque para `false` após conferência real.
 
-Se a configuração continuar como publicação por branch, o `index.html` já inclui uma página básica para evitar a tela branca, mas a versão React compilada exige **GitHub Actions**. Confira se não existe uma configuração antiga de publicação por Jekyll.
+**Importante:** os 16 pratos distribuídos nas 8 categorias foram inventados **exclusivamente como EXEMPLO**, com preços **fictícios**, sem fotos reais. Antes de anunciar para clientes, substitua todos pelo cardápio e valores oficiais e remova o aviso de demonstração na interface quando não houver mais itens fictícios. Os pedidos com itens fictícios são marcados como demonstrativos no WhatsApp.
 
-### Limite importante
+Se a foto ainda não existe, o site deixa um espaço bonito indicando **PREENCHER**, sem utilizar imagens falsas do restaurante. Prefira fotos WebP comprimidas (p.ex. largura 800 px ou menos).
 
-No GitHub Pages, o site é **uma apresentação visual com atendimento pelo WhatsApp**, sem envio automático de pedidos. O Pages não executa o servidor Express, não persiste pedidos e não conecta pagamentos. Para ativar o fluxo completo de cardápio, sacola, checkout e painel, é obrigatório hospedar a API e usar banco persistente. **Não trate a versão do Pages como um sistema de pedidos automatizado.**
+### 2. Horários, telefone, entrega e pedidos online
+Abra **`src/config/loja.ts`**.
 
-Comandos para validar:
+- `pedidosOnlineAtivos: true` liga os pedidos; `false` pausa os pedidos e mantém o catálogo visível;
+- `taxaEntregaFixa: null` significa **PREENCHER**: substitua `null` pela taxa verdadeira, por exemplo `8.50`; este exemplo numérico **não é a taxa oficial**;
+- `pedidoMinimoDelivery: null` também precisa ser preenchido. Use `0` se realmente não houver mínimo;
+- `horarios` já está configurado com os dados fornecidos: **terça a domingo das 08:00 às 22:00**, segunda fechado; o relógio usa `America/Sao_Paulo`;
+- `heroFoto`: caminho de uma foto real em `public/imagens/`; sem foto, mostra um placeholder com indicação **PREENCHER**;
+- `tempoMedioMinutos`: `null` até você informar um prazo real;
+- `instagram`: vazio até você fornecer um perfil oficial.
 
-```bash
-npm install
-npm run lint
-npm run build
-npm run test:smoke
-npm run build:pages
-npm run test:pages
-```
+Os dados confirmados permanecem: **Delícia do Nordeste · Casa do Norte · Santa Cruz**, WhatsApp **(11) 96014-9521**, Rua Santa Cruz da Conceição, Parque Belém, São Paulo – SP, CEP **02850-100**.
 
-O site usa largura máxima consistente, grades responsivas para celular e computador, botão de contato acessível e imagens com caminho ajustado pelo Vite. Mantenha `DEPLOY_TARGET=github-pages` e `VITE_STATIC_PREVIEW=true` somente na versão estática.
+**Entrega:** enquanto taxa fixa ou mínimo estiverem em `null`, o checkout permite escolher delivery, mas **não deixa enviar** até serem configurados. Retirada e consumo no local podem ser testados sem esses valores. Os cálculos e valores finais desta Fase 1 são ilustrativos e exigem confirmação no WhatsApp.
 
+### 3. Como o cliente faz o pedido
+1. Abre o catálogo, escolhe variações e opcionais e adiciona à sacola.
+2. Confere quantidades, observações e preenche nome, telefone, tipo, endereço e pagamento em **uma tela**. O CEP pode ser consultado pelo ViaCEP (se falhar, o preenchimento manual continua disponível).
+3. Clica **Preparar pedido no WhatsApp**. O site cria um número de pedido e abre uma conversa com a mensagem completa, incluindo emojis, itens, subtotal, taxa e total. **O cliente precisa tocar em Enviar no WhatsApp.** A equipe confirma o recebimento e o pagamento. O site **não** registra pedidos em servidor nem confirma pagamento.
 
-Aplicação de cardápio e pedidos da Delícia do Nordeste. O cliente escolhe produtos, informa nome e telefone, opta por entrega ou retirada, seleciona o pagamento e acompanha o pedido. A equipe recebe e atualiza pedidos em `#/admin`.
+O carrinho é salvo no armazenamento do navegador. Se o navegador bloquear armazenamento, a loja mostra um aviso. Fora de horário, é possível montar e enviar a mensagem, com indicação de que a confirmação só ocorrerá após a próxima abertura.
 
-## Rodar localmente
+Pix nesta fase significa **pagamento a combinar no WhatsApp**; não existe QR Code nem cobrança automatizada. Cartão/dinheiro são presenciais.
 
-Requer **Node.js 22**. Na primeira execução, instale as dependências e inicie:
+### 4. Testar antes de publicar
+No computador com Node.js 22:
 
 ```bash
 npm install
 npm run dev
-```
-
-Abra `http://localhost:3000`. Confira a API em `http://localhost:3000/api/health`. Para validar o código:
-
-```bash
 npm run lint
-npm run build
-npm start
+npm run test:pedido
+npm run build:pages
+npm run test:pages
 ```
 
-Por padrão, o banco é criado em `data/database.json` (ignorado pelo Git). Em desenvolvimento, o primeiro administrador é `dono@deliciadonordeste.com.br` com senha temporária `Nordeste@2026`; troque-a no primeiro login. **Em produção essas credenciais não funcionam**: configure `ADMIN_EMAIL` e `ADMIN_PASSWORD` (mínimo 12 caracteres).
+Abra a URL local indicada pelo Vite. Teste busca, chips de categoria, modal e sacola no celular, endereço pelo CEP, valores de troco, status fechado, mensagem com acentos e o link do WhatsApp. O CI do GitHub valida a compilação e a estrutura do build, mas não mede automaticamente o Lighthouse no seu aparelho.
 
-## Central de pedidos, entregas e Mercado Pago
+### 5. Publicar no GitHub Pages
+1. Faça as alterações no GitHub e confirme (Commit).
+2. Ao integrar a branch à **`main`**, o workflow **`.github/workflows/deploy-pages.yml`** compila e publica automaticamente.
+3. Em **Settings → Pages → Build and deployment**, escolha **GitHub Actions**.
+4. Abra **https://daniel-soliz.github.io/Santa-Cruz/** e faça **Ctrl+F5** se aparecer cache antigo.
 
-O **painel administrativo** fica em `/#/admin` quando você publica o servidor Express com banco de dados. Ele inclui uma central de pedidos em colunas, indicadores de pedidos ativos, entregas, pagamentos pendentes e despacho. A equipe pode registrar o nome, telefone e instruções do entregador; o status de entrega exige atribuir alguém antes do despacho.
+O Vite mantém a base **`/Santa-Cruz/`**. Imagens em `public/` ficam disponíveis usando caminho relativo. Não há rotas de servidor, portanto não há URLs de páginas que causem 404.
 
-### Entregas por CEP
+## Fase 2 — não implementada
+- **Supabase Auth, Postgres e RLS**: contas administrativas, dados centralizados, categorias, fotos, preços, estoque, CEP/taxa e pedidos com status em tempo real.
+- **Mercado Pago**: Pix QR Code/copia e cola e cartão online, com webhook em Supabase Edge Function ou Cloudflare Worker.
+- **Notificações**: novo pedido por WhatsApp/e-mail e atualização de status.
+- **Segurança**: usar variáveis privadas e segredos no servidor; **NUNCA** enviar senha de administrador, Access Token do Mercado Pago, chave `service_role` do Supabase ou outro segredo para o GitHub Pages.
 
-Em **Admin → Loja**, cadastre e habilite regiões por prefixo do CEP, taxa e prazo. **Entregas começam desligadas** e as regiões demonstrativas começam inativas. Confirme os bairros reais, ative as regiões e marque “Receber pedidos para entrega” antes de divulgar o serviço. A retirada começa habilitada. Um cliente só consegue finalizar uma entrega dentro de uma região ativa. Os CEPs fora das regiões cadastradas são recusados e o cliente pode escolher retirada. A taxa é calculada no servidor e a faixa mais específica tem prioridade. A prévia do carrinho só confirma o valor depois de validar o CEP.
-
-### Configuração do Mercado Pago
-
-O Checkout Pro usa a API de preferências e direciona o cliente ao site do Mercado Pago. Antes de ativar, configure as variáveis privadas no backend, preferencialmente pelo gerenciador de segredos da sua hospedagem:
-
-- `MERCADO_PAGO_ACCESS_TOKEN`: token privado da sua aplicação.
-- `MERCADO_PAGO_WEBHOOK_SECRET`: segredo de assinatura **Webhooks** da mesma aplicação, obtido no portal Mercado Pago Developers.
-- `APP_URL`: domínio público HTTPS do **servidor Express**, sem barra final (não use `github.io`).
-- `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `DATA_DIR`: conforme as instruções de produção abaixo.
-
-No painel **Admin → Pagamentos**, escolha ambiente de testes ou produção e habilite Mercado Pago. A integração só aparece ao cliente quando o token, segredo, domínio HTTPS e a opção da loja estiverem configurados. Registre `https://SEU-BACKEND/api/payments/mercadopago/webhook` como Webhook de **payments** na aplicação correspondente.
-
-**O retorno da página de pagamento não confirma a compra.** O backend valida assinatura com HMAC e timestamp, consulta o pagamento diretamente no Mercado Pago, compara ID, pedido, valor, moeda e ambiente, e só então atualiza o status para pago, falhou ou reembolsado. A equipe não pode marcar pagamentos do Mercado Pago manualmente. Os eventos duplicados são tratados de forma idempotente.
-
-Referências oficiais:
-- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/configure-back-urls
-- https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/payment-notifications
-
-### Pix, pagamento presencial e segurança
-
-**O Pix manual começa desativado e sem chave cadastrada.** Confirme sua chave bancária antes de ativar. **Pix manual não tem QR Code automático**: o cliente recebe somente a chave cadastrada e o valor do pedido. A equipe confere o recebimento antes de marcar como pago. Dinheiro e cartão na maquininha continuam disponíveis quando habilitados. O backend bloqueia pedidos com formas desativadas e não aceita produtos fictícios em produção. Para testes com dados descartáveis, o script de smoke usa `ALLOW_DEMO_ORDERS=true` exclusivamente no processo de teste.
-
-### Implantação pendente
-
-O GitHub Pages mostra a vitrine estática com link para WhatsApp. Ele **não roda o checkout automatizado**. O novo painel e a integração precisam do servidor publicado no Cloud Run (ou outra hospedagem Node), com banco persistente e preferencialmente uma migração do JSON para um banco transacional antes de escalar. Não é possível ativar cobranças reais sem credenciais, domínio e infraestrutura autorizados.
-
-## Publicação no Google Cloud
-
-Este aplicativo precisa de **servidor Node.js**. O **Firebase Hosting estático sozinho não atende `/api/orders`**; use Cloud Run, com o Dockerfile incluído, ou outra hospedagem que execute o servidor Express.
-
-**Atenção: ainda não publique para receber pedidos reais sem armazenamento persistente.** O banco atual é um arquivo JSON; no Cloud Run o sistema só inicia em produção com `DATA_DIR` apontando para um volume persistente montado. A arquitetura de arquivo requer apenas uma instância e requisições serializadas para evitar conflito, além de backup e controle de acesso. Para operação maior, migre o banco para Firestore ou Cloud SQL antes de publicar. Não use um diretório temporário do contêiner como banco de pedidos.
-
-Configure também:
-- `ADMIN_EMAIL`, `ADMIN_PASSWORD`: credenciais privadas do responsável pela loja.
-- `DATA_DIR`: caminho montado e persistente do banco (ex.: `/mnt/pedidos`).
-- `PORT`: definida pela plataforma, normalmente `8080`.
-- `MERCADO_PAGO_ACCESS_TOKEN`: apenas caso queira ativar Mercado Pago em produção.
-
-Antes de vender, substitua **todos os nove pratos de demonstração**, identificados como `[EXEMPLO]`, pelos produtos e preços reais no painel. Confirme WhatsApp, endereço, horários, entrega, Pix e meios de pagamento. O QR Code, a finalização do pedido e o painel dependem das rotas da API em execução.
-
-## Estrutura
-
-- `src/pages`: cardápio, acompanhamento e páginas públicas.
-- `src/pages/admin`: pedidos, cardápio, pagamentos, loja, cupons e usuários.
-- `src/components`: carrinho, personalizações e componentes visuais.
-- `src/context` e `src/services`: estado do pedido e acesso à API.
-- `server.ts`: API Express, validação de valores e persistência.
-- `public`: imagens e manifest para o navegador.
-
-## Segurança e dados
-
-Não envie `.env` nem `data/database.json` para o GitHub: este último contém pedidos e dados dos clientes. O histórico de commits anteriores do repositório tinha um `database.json` e credenciais de teste conhecidas; não reutilize esses dados nem essas senhas para uma loja real. Use um backup privado e controle de acesso para cada funcionário.
-
-As regras antigas do Firebase foram removidas porque a aplicação não usa o SDK do Firestore; elas não protegiam o banco JSON nem as rotas do Express.
+Será necessário fornecer: fotos reais, nomes/preços reais, adicionais, taxa e mínimo de entrega, prazo médio (se quiser exibir), Instagram oficial (se houver) e dados seguros das contas Supabase/Mercado Pago. O layout está separado dos dados para facilitar essa migração futura.

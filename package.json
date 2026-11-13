@@ -4,16 +4,15 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "start": "NODE_ENV=production tsx server.ts",
+    "start": "vite preview --host 0.0.0.0",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test:smoke": "node scripts/smoke-test.mjs",
-    "build:pages": "DEPLOY_TARGET=github-pages VITE_STATIC_PREVIEW=true vite build",
+    "build:pages": "DEPLOY_TARGET=github-pages vite build",
     "test:pages": "node scripts/check-pages-build.mjs",
-    "test:payments": "node --import tsx scripts/payment-security-test.mjs"
+    "dev:legacy": "tsx server.ts",
+    "test:pedido": "node --import tsx --test tests/pedido.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
