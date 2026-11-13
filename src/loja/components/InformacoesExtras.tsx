@@ -2,6 +2,7 @@ import { Clock3, CreditCard, MapPin, ShieldCheck, ShoppingBag, Star, Truck, Uten
 import avaliacoes from '../../data/avaliacoes.json';
 import { loja, logoUrl } from '../../config/loja';
 import { reais } from '../pedido';
+import { entregaConfigurada } from '../entrega';
 
 /** Bloco de informações: só aparecem os dados efetivamente configurados. */
 export function InformacoesPedido(){
@@ -13,7 +14,7 @@ export function InformacoesPedido(){
  return <section className="informacoes-pedido container-padrao" aria-labelledby="informacoes-titulo">
   <div className="informacoes-pedido__titulo"><span className="micro-label">Antes de pedir</span><h2 id="informacoes-titulo">Tudo claro, do início ao fim</h2></div>
   <div className="informacoes-pedido__grade">
-   <article><Truck size={23}/><div><strong>Delivery</strong><span>Peça em poucos toques</span></div></article>
+   {entregaConfigurada(loja)&&<article><Truck size={23}/><div><strong>Delivery</strong><span>Peça em poucos toques</span></div></article>}
    <article><ShoppingBag size={23}/><div><strong>Retirada</strong><span>Busque na unidade Santa Cruz</span></div></article>
    {loja.taxaEntregaFixa!==null&&<article><Truck size={23}/><div><strong>Taxa de entrega</strong><span>{reais(loja.taxaEntregaFixa)}</span></div></article>}
    {loja.pedidoMinimoDelivery!==null&&<article><ShoppingBag size={23}/><div><strong>Pedido mínimo</strong><span>{reais(loja.pedidoMinimoDelivery)}</span></div></article>}

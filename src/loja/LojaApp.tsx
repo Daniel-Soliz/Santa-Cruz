@@ -9,6 +9,8 @@ import { ProdutoModal } from './components/ProdutoModal';
 import { Carrinho } from './components/Carrinho';
 import { Checkout, type Preparado } from './components/Checkout';
 import { InformacoesPedido, SobreCasa, Avaliacoes, Galeria } from './components/InformacoesExtras';
+import { ConsultaEntrega } from './components/ConsultaEntrega';
+import { entregaConfigurada } from './entrega';
 
 const categorias=cardapio.categorias as Categoria[];
 const produtos=cardapio.itens as Produto[];
@@ -42,7 +44,7 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
     <p>Comida nordestina, feita com carinho. Escolha seus pratos, personalize do seu jeito e monte o pedido em poucos toques.</p>
     <div className="hero__acoes"><button className="botao botao--rosa" type="button" onClick={()=>irPara('cardapio')}>Ver cardápio e pedir <ArrowRight size={21}/></button><a className="botao botao--claro" href="#como-funciona">Como funciona</a></div>
     <div className="hero__selos">
-     <span><Truck size={16}/> Delivery</span><span><ShoppingBag size={16}/> Retirada</span>
+     {entregaConfigurada(loja)&&<span><Truck size={16}/> Delivery</span>}<span><ShoppingBag size={16}/> Retirada</span>
      {loja.tempoMedioMinutos!==null&&<span><Clock3 size={16}/> Previsão: {loja.tempoMedioMinutos} min</span>}
      <span className={status.aberto?'aberto':'fechado'}><span className="ponto-status"/>{status.aberto?'Aberto agora':'Fechado agora'}</span>
     </div>
@@ -150,6 +152,7 @@ export default function LojaApp(){
    <main id="conteudo">
     <Hero status={horario}/>
     {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
+    <ConsultaEntrega/>
     <InformacoesPedido/>
     {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
     {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
@@ -183,7 +186,7 @@ export default function LojaApp(){
   {!checkout&&!confirmacao&&quantidade>0&&<button className="barra-sacola-mobile" type="button" onClick={()=>setCarrinhoAberto(true)} aria-label={`Abrir sacola com ${quantidade} itens e total ${reais(total)}`}>
    <span className="barra-sacola-mobile__icon"><ShoppingBag size={21}/><b>{quantidade}</b></span><span>Ver pedido</span><strong>{reais(total)}</strong><ArrowRight size={19}/>
   </button>}
-  {carrinhoAberto&&<Carrinho linhas={carrinho} produtos={produtos} fechar={()=>setCarrinhoAberto(false)} atualizar={mudarQuantidade} remover={chave=>setCarrinho(itens=>itens.filter(i=>i.chave!==chave))} editar={abrirEditor} finalizar={irCheckout}/>}
+  {carrinhoAberto&&<Carrinho linhas={carrinho} produtos={produtos} fechar={()=>setCarrinhoAberto(false)} atualizar={mudarQuantidade} remover={chave=>setCarrinho(itens=>itens.filter(i=>i.chave!==chave))} limpar={()=>setCarrinho([])} editar={abrirEditor} finalizar={irCheckout}/>}
   {editando&&<ProdutoModal key={editando.linha?.chave||editando.produto.id} produto={editando.produto} linha={editando.linha} fechar={()=>setEditando(null)} salvar={salvarItem}/>}
  </div>;
 }

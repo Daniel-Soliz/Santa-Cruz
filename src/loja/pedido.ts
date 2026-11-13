@@ -5,6 +5,8 @@ type Configuracao={
  whatsapp:string;taxaEntregaFixa:number|null;pedidoMinimoDelivery:number|null;
  pedidosOnlineAtivos:boolean;
  bairrosAtendidos?:string[];
+ cidadeAtendimento?:string;
+ ufAtendimento?:string;
  formasPagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};
 };
 const moeda=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
@@ -44,6 +46,49 @@ export function situacaoLoja(horarios:readonly Horario[],data=new Date()){
  }
  return {aberto:false,mensagem:'Estamos fechados no momento'};
 }
+export type ErrosCampos=Partial<Record<keyof Cliente|'trocoPara',string>>;
+
+/** Conversão de reais digitados: 100,50 ou 100.50. */
+export function valorDigitado(texto:string):number|null{
+ const limpo=texto.trim().replace(/^R\$\s*/i,'').replace(/\s+/g,'');
+ if(!limpo)return null;
+ const decimal=limpo.includes(',')?limpo.replace(/\./g,'').replace(',','.'):limpo;
+ if(!/^\d+(?:\.\d{1,2})?$/.test(decimal))return null;
+ const numero=Number(decimal);
+ return Number.isFinite(numero)&&numero>=0?dinheiro(numero):null;
+}
+export function errosCamposPedido(p:PedidoCheckout,config:Configuracao,subtotal:number):ErrosCampos{
+ const c=p.cliente;
+ const erros:ErrosCampos={};
+ if(c.nome.trim().length<2)erros.nome='Informe seu nome (pelo menos 2 caracteres).';
+ if(!/^\d{10,11}$/.test(somenteNumeros(c.telefone)))erros.telefone='Informe um telefone válido com DDD (10 ou 11 números).';
+ if(p.tipo==='entrega'){
+  if(!/^\d{8}$/.test(somenteNumeros(c.cep)))erros.cep='Informe um CEP válido com 8 números.';
+  if(!c.bairro.trim())erros.bairro='Informe seu bairro.';
+  if(!c.rua.trim())erros.rua='Informe a rua ou avenida da entrega.';
+  if(!c.numero.trim())erros.numero='Informe o número do endereço (ou S/N).';
+  if(!c.cidade.trim())erros.cidade='Informe a cidade.';
+  if(!/^[A-Za-z]{2}$/.test(c.uf.trim()))erros.uf='Informe a UF com duas letras.';
+  const {bairrosAtendidos=[]}=config;
+  if(config.cidadeAtendimento&&c.cidade.trim()&&
+    c.cidade.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR')!==
+    config.cidadeAtendimento.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR'))
+   erros.cidade='A cidade informada está fora da região configurada para entrega.';
+  if(config.ufAtendimento&&c.uf.trim().toUpperCase()!==config.ufAtendimento.toUpperCase())
+   erros.uf='A UF informada está fora da região configurada para entrega.';
+  if(bairrosAtendidos.length&&c.bairro.trim()){
+   const normal=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR');
+   if(!bairrosAtendidos.some(b=>normal(b)===normal(c.bairro)))
+    erros.bairro='Esse bairro não está na área de entrega cadastrada. Escolha retirada ou consulte a equipe.';
+  }
+ }
+ if(p.pagamento==='dinheiro'&&p.trocoPara.trim()){
+  const troco=valorDigitado(p.trocoPara);
+  if(troco===null||troco<totalComEntrega(subtotal,p.tipo,config.taxaEntregaFixa))
+   erros.trocoPara='O valor para troco deve ser igual ou maior que o total do pedido.';
+ }
+ return erros;
+}
 export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configuracao){
  const erros:string[]=[];
  if(!config.pedidosOnlineAtivos)erros.push('Os pedidos online estão pausados no momento.');
@@ -52,28 +97,22 @@ export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configu
  for(const linha of p.linhas){
   const item=mapa.get(linha.produtoId);
   if(!item||!item.disponivel)erros.push('Um dos pratos foi removido ou está indisponível.');
-  if(!Number.isInteger(linha.quantidade)||linha.quantidade<1||linha.quantidade>99)erros.push('Confira as quantidades dos itens.');
+  if(!Number.isInteger(linha.quantidade)||linha.quantidade<1||linha.quantidade>99)
+   erros.push('Confira as quantidades dos itens.');
  }
- if(p.cliente.nome.trim().length<2)erros.push('Informe seu nome (pelo menos 2 caracteres).');
- const telefone=somenteNumeros(p.cliente.telefone);
- if(!/^\d{10,11}$/.test(telefone))erros.push('Informe um telefone válido com DDD (10 ou 11 números).');
+ const subtotal=totalCarrinho(p.linhas,produtos);
+ const falhasCampos=errosCamposPedido(p,config,subtotal);
+ erros.push(...Object.values(falhasCampos).filter((m):m is string=>!!m));
  if(config.formasPagamento?.[p.pagamento]===false)erros.push('Esta forma de pagamento está indisponível.');
  if(p.tipo==='entrega'){
-  const c=p.cliente;
-  if(config.bairrosAtendidos?.length){
-   const normal=(valor:string)=>valor.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-   if(!config.bairrosAtendidos.some(b=>normal(b)===normal(c.bairro)))erros.push('Este bairro não está na área de entrega informada.');
-  }
-  if(!/^\d{8}$/.test(somenteNumeros(c.cep)))erros.push('Informe um CEP válido com 8 números.');
-  if(!c.rua.trim()||!c.numero.trim()||!c.bairro.trim()||!c.cidade.trim()||!/^\w{2}$/.test(c.uf.trim()))erros.push('Preencha rua, número, bairro, cidade e UF para entrega.');
-  if(config.taxaEntregaFixa===null||config.taxaEntregaFixa<0)erros.push('Taxa de entrega não configurada. PREENCHER em src/config/loja.ts.');
-  if(config.pedidoMinimoDelivery===null||config.pedidoMinimoDelivery<0)erros.push('Pedido mínimo do delivery não configurado. PREENCHER em src/config/loja.ts.');
-  else if(totalCarrinho(p.linhas,produtos)<config.pedidoMinimoDelivery)erros.push(`Pedido mínimo para entrega: ${reais(config.pedidoMinimoDelivery)}.`);
- }
- if(p.pagamento==='dinheiro'&&p.trocoPara.trim()){
-  const troco=Number(p.trocoPara.replace(',','.'));
-  if(!Number.isFinite(troco)||troco<totalComEntrega(totalCarrinho(p.linhas,produtos),p.tipo,config.taxaEntregaFixa))
-   erros.push('O valor para troco deve ser igual ou maior que o total do pedido.');
+  if(config.taxaEntregaFixa===null||config.taxaEntregaFixa<0)
+   erros.push('Taxa de entrega indisponível no momento. Escolha retirada ou fale com a equipe.');
+  if(config.pedidoMinimoDelivery===null||config.pedidoMinimoDelivery<0)
+   erros.push('Pedido mínimo de entrega ainda não definido. Escolha retirada ou fale com a equipe.');
+  if(!config.bairrosAtendidos?.length)
+   erros.push('Bairros atendidos ainda não cadastrados. Escolha retirada ou fale com a equipe.');
+  if(config.pedidoMinimoDelivery!==null&&subtotal<config.pedidoMinimoDelivery)
+   erros.push(`Pedido mínimo para entrega: ${reais(config.pedidoMinimoDelivery)}.`);
  }
  return [...new Set(erros)];
 }
@@ -104,7 +143,7 @@ export function montarMensagem(p:PedidoCheckout,produtos:Produto[],config:Config
  `Taxa de entrega: ${p.tipo==='entrega'?reais(taxa):'Não se aplica'}`,
  `*TOTAL: ${reais(totalComEntrega(subtotal,p.tipo,config.taxaEntregaFixa))}*`,
  `💳 *Pagamento:* ${pagamentoLabel[p.pagamento]}`,
- p.pagamento==='dinheiro'?`💵 *Troco para:* ${p.trocoPara.trim()?reais(Number(p.trocoPara.replace(',','.'))):'Não precisa'}`:null,
+ p.pagamento==='dinheiro'?`💵 *Troco para:* ${p.trocoPara.trim()?reais(valorDigitado(p.trocoPara)??0):'Não precisa'}`:null,
  p.observacoesGerais?`📝 *Observações gerais:* ${p.observacoesGerais.trim()}`:null,
  p.foraHorario?'🕗 *Fora do horário:* confirmar o pedido na próxima abertura.':null,
  demo?'⚠️ *PEDIDO DEMONSTRATIVO — ITENS E VALORES FICTÍCIOS. Confirmar preços, disponibilidade e total com a equipe.*':null,

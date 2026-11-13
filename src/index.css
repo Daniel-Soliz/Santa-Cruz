@@ -411,3 +411,44 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
  .sobre-casa{grid-template-columns:.9fr 1.1fr;gap:55px}
  .sobre-casa__arte{min-height:330px}
 }
+
+/* Consulta antecipada de CEP e mensagens acessíveis do checkout */
+.consulta-entrega{
+ display:grid;grid-template-columns:1fr;gap:19px;align-items:center;
+ margin-top:25px;padding:22px;background:#fffdfb;border:1px solid var(--borda);
+ border-radius:23px;box-shadow:0 12px 28px rgba(86,39,32,.07);
+ scroll-margin-top:145px;
+}
+.consulta-entrega__texto{display:flex;align-items:flex-start;gap:14px}
+.consulta-entrega__icone{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;
+ background:#ffe5d4;color:var(--rosa-escuro);border-radius:15px}
+.consulta-entrega h2{color:var(--vinho);font-size:clamp(1.35rem,3.4vw,1.8rem);margin:4px 0}
+.consulta-entrega__texto p{color:var(--suave);font-size:.76rem;line-height:1.65;margin:0}
+.consulta-entrega__form>label,.consulta-entrega__bairro label{display:block;color:var(--vinho);font-weight:800;font-size:.76rem;margin-bottom:7px}
+.consulta-entrega__campos{display:flex;gap:8px;min-width:0}
+.consulta-entrega__campos input,.consulta-entrega__bairro input{min-width:0;flex:1;min-height:47px;border:1px solid #dfcbc4;
+ border-radius:12px;background:white;color:var(--texto);padding:10px 12px;font-size:.87rem}
+.consulta-entrega__campos button{flex:0 0 auto;padding-inline:15px}
+.consulta-entrega__form>small{display:block;font-size:.65rem;color:var(--suave);line-height:1.5;margin-top:7px}
+.consulta-entrega__resposta{display:flex;align-items:flex-start;gap:9px;line-height:1.55;font-size:.75rem;
+ border-radius:12px;padding:12px;margin:12px 0 0}
+.consulta-entrega__resposta svg{flex:0 0 18px;margin-top:2px}
+.consulta-entrega__resposta--ok{background:#e8f6ec;color:#195b34}
+.consulta-entrega__resposta--aviso{background:#fff2df;color:#7d3f23}
+.consulta-entrega__resposta--erro{background:#ffedec;color:#953544}
+.consulta-entrega__bairro{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.consulta-entrega__bairro button{align-self:flex-start;border:1px solid var(--vinho);background:white;color:var(--vinho);
+ border-radius:10px;min-height:44px;padding:8px 15px;font-weight:800;font-size:.78rem}
+.erro-campo{display:block;font-size:.73rem;font-weight:700;line-height:1.5;margin-top:6px;color:#a32739}
+.form-campo input[aria-invalid="true"],.form-campo textarea[aria-invalid="true"]{
+ border-color:#b92b48;box-shadow:0 0 0 2px rgba(185,43,72,.08);
+}
+.aviso-entrega-checkout{margin:12px 0 0;padding:12px 14px;background:#fff2e1;
+ border-radius:11px;color:#75412b;font-size:.77rem;line-height:1.55}
+.troco-detalhe{display:block;margin-top:8px;font-size:.77rem;font-weight:800;color:#206743}
+.carrinho-limpar{display:flex;align-items:center;gap:7px;min-height:44px;margin:10px 0 0 auto;
+ background:transparent;border:0;color:var(--rosa-escuro);font-size:.75rem;font-weight:800;padding:8px 3px}
+.tipo-opcao:disabled{opacity:.45;cursor:not-allowed}
+@media(min-width:780px){
+ .consulta-entrega{grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:32px;padding:26px 32px}
+}
