@@ -4,9 +4,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # O GitHub Pages configurado por branch também publica automaticamente.
+  # Esta segunda execução restaura o build Vite depois do deploy por branch.
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -16,6 +22,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     steps:
       - name: Baixar código
@@ -52,6 +59,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Aguardar publicação concorrente do GitHub Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          # Se o Pages ainda publica a branch diretamente, o build fonte pode
+          # sobrescrever os assets do Vite. Garantimos que ele termine primeiro.
+          for attempt in $(seq 1 36); do
+            state=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=30" | jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.name=="pages build and deployment" and .head_sha==$sha)] | .[0].status // "completed"')
+            if [ "$state" = "completed" ]; then
+              echo "Publicação por branch concluída ou inexistente."
+              break
+            fi
+            echo "Aguardando publicação por branch (tentativa $attempt)..."
+            sleep 5
+          done
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
