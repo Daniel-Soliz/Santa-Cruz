@@ -49,7 +49,8 @@ test('checkout exige nome e telefone, bloqueia entrega sem taxa e pedido mínimo
  assert.ok(faltando.length>=2);
  const delivery={...base,tipo:'entrega' as const};
  const faltaTaxa=validarPedido(delivery,catalog.itens,config);
- assert.ok(faltaTaxa.some(s=>s.includes('Taxa de entrega')));\n assert.ok(faltaTaxa.every(s=>!s.includes('src/config/')&&!s.includes('PREENCHER')));
+ assert.ok(faltaTaxa.some(s=>s.includes('Taxa de entrega')));
+ assert.ok(faltaTaxa.every(s=>!s.includes('src/config/')&&!s.includes('PREENCHER')));
  assert.ok(faltaTaxa.some(s=>s.includes('mínimo')));
  assert.deepEqual(validarPedido(delivery,catalog.itens,{...config,taxaEntregaFixa:8,pedidoMinimoDelivery:30,bairrosAtendidos:['Parque Belém']}),[]);
  assert.ok(validarPedido({...base,pagamento:'dinheiro',trocoPara:'30'},catalog.itens,config).some(s=>s.includes('troco')));

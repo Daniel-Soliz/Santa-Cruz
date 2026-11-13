@@ -48,10 +48,10 @@ export type ErrosCampos=Partial<Record<keyof Cliente|'trocoPara',string>>;
 
 /** Conversão de reais digitados: 100,50 ou 100.50. */
 export function valorDigitado(texto:string):number|null{
- const limpo=texto.trim().replace(/^R\\$\\s*/i,'').replace(/\\s+/g,'');
+ const limpo=texto.trim().replace(/^R\$\s*/i,'').replace(/\s+/g,'');
  if(!limpo)return null;
- const decimal=limpo.includes(',')?limpo.replace(/\\./g,'').replace(',','.'):limpo;
- if(!/^\\d+(?:\\.\\d{1,2})?$/.test(decimal))return null;
+ const decimal=limpo.includes(',')?limpo.replace(/\./g,'').replace(',','.'):limpo;
+ if(!/^\d+(?:\.\d{1,2})?$/.test(decimal))return null;
  const numero=Number(decimal);
  return Number.isFinite(numero)&&numero>=0?dinheiro(numero):null;
 }
@@ -59,9 +59,9 @@ export function errosCamposPedido(p:PedidoCheckout,config:Configuracao,subtotal:
  const c=p.cliente;
  const erros:ErrosCampos={};
  if(c.nome.trim().length<2)erros.nome='Informe seu nome (pelo menos 2 caracteres).';
- if(!/^\\d{10,11}$/.test(somenteNumeros(c.telefone)))erros.telefone='Informe um telefone válido com DDD (10 ou 11 números).';
+ if(!/^\d{10,11}$/.test(somenteNumeros(c.telefone)))erros.telefone='Informe um telefone válido com DDD (10 ou 11 números).';
  if(p.tipo==='entrega'){
-  if(!/^\\d{8}$/.test(somenteNumeros(c.cep)))erros.cep='Informe um CEP válido com 8 números.';
+  if(!/^\d{8}$/.test(somenteNumeros(c.cep)))erros.cep='Informe um CEP válido com 8 números.';
   if(!c.bairro.trim())erros.bairro='Informe seu bairro.';
   if(!c.rua.trim())erros.rua='Informe a rua ou avenida da entrega.';
   if(!c.numero.trim())erros.numero='Informe o número do endereço (ou S/N).';
@@ -69,7 +69,7 @@ export function errosCamposPedido(p:PedidoCheckout,config:Configuracao,subtotal:
   if(!/^[A-Za-z]{2}$/.test(c.uf.trim()))erros.uf='Informe a UF com duas letras.';
   const {bairrosAtendidos=[]}=config;
   if(bairrosAtendidos.length&&c.bairro.trim()){
-   const normal=(s:string)=>s.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().replace(/\\s+/g,' ').toLocaleLowerCase('pt-BR');
+   const normal=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR');
    if(!bairrosAtendidos.some(b=>normal(b)===normal(c.bairro)))
     erros.bairro='Esse bairro não está na área de entrega cadastrada. Escolha retirada ou consulte a equipe.';
   }
