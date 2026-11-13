@@ -16,3 +16,5 @@ jobs:
       - run: npm run test:pedido
       - run: npm run build:pages
       - run: npm run test:pages
+      - run: PAGES_CUSTOM_DOMAIN=true npm run build:pages
+      - run: node scripts/check-custom-domain-build.mjs

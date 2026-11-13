@@ -15,3 +15,14 @@ const manifest=JSON.parse(fs.readFileSync(path.join(dist,'manifest.json'),'utf8'
 assert.equal(manifest.start_url,'./');
 assert.equal(manifest.scope,'./');
 console.log('Build válido para GitHub Pages: base, scripts, CSS, logo, manifest, SEO e .nojekyll.');
+
+const schema=index.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+assert.ok(schema,'Dados estruturados Restaurant não gerados');
+const restaurante=JSON.parse(schema[1]);
+assert.equal(restaurante['@type'],'Restaurant');
+assert.equal(restaurante.name,'Delícia do Nordeste · Casa do Norte · Santa Cruz');
+assert.equal(restaurante.address.postalCode,'02850-100');
+assert.ok(!('priceRange' in restaurante),'Faixa de preço não confirmada deve ser omitida');
+assert.match(fs.readFileSync(path.join(dist,'sitemap.xml'),'utf8'),/daniel-soliz\.github\.io\/Santa-Cruz/);
+assert.match(fs.readFileSync(path.join(dist,'robots.txt'),'utf8'),/sitemap\.xml/);
+console.log('SEO vindo do config.json: Restaurant, menu, sitemap e robots sem dados fictícios.');

@@ -80,3 +80,37 @@ test('armazenamento bloqueado não causa tela branca nem exceção',()=>{
  assert.deepEqual(carregarCarrinho(),[]);
  assert.equal(salvarCarrinho([linha]),false);
 });
+
+test('fotos ilustrativas WebP aparecem nos 16 itens e imagens reais são identificáveis',()=>{
+ for(const item of catalog.itens){
+  assert.ok(item.foto.startsWith('https://images.unsplash.com/'),item.nome);
+  const url=new URL(item.foto);
+  assert.equal(url.searchParams.get('fm'),'webp');
+  assert.equal(url.searchParams.get('w'),'720');
+  assert.equal((item as Produto & {imagemIlustrativa:boolean}).imagemIlustrativa,true);
+ }
+});
+test('configuração mantém somente dados confirmados e sinaliza ausências',()=>{
+ const config=JSON.parse(readFileSync(new URL('../src/data/config.json',import.meta.url),'utf8'));
+ assert.equal(config.nome,'Delícia do Nordeste · Casa do Norte · Santa Cruz');
+ assert.equal(config.whatsapp,'5511960149521');
+ assert.equal(config.endereco.cep,'02850-100');
+ assert.equal(config.endereco.numero,'PREENCHER');
+ assert.equal(config.taxaEntregaFixa,'PREENCHER');
+ assert.equal(config.pedidoMinimoDelivery,'PREENCHER');
+ assert.equal(config.instagram,'PREENCHER');
+ assert.equal(config.galeria.fachada,'PREENCHER');
+ assert.equal(config.horarios.length,7);
+});
+test('avaliações fictícias são sinalizadas e não devem ser exibidas como reais',()=>{
+ const avaliacoes=JSON.parse(readFileSync(new URL('../src/data/avaliacoes.json',import.meta.url),'utf8'));
+ assert.equal(avaliacoes.length,3);
+ assert.ok(avaliacoes.every((x:{exemplo:boolean;nota:number})=>x.exemplo && x.nota>=1 && x.nota<=5));
+});
+test('bairro de entrega e formas de pagamento respeitam o arquivo de configuração',()=>{
+ const configComArea={...config,bairrosAtendidos:['Parque Belém'],taxaEntregaFixa:8,pedidoMinimoDelivery:0,formasPagamento:{pix:true,cartao:false,dinheiro:true}};
+ const entrega:PedidoCheckout={...base,tipo:'entrega',cliente:{...cliente,bairro:'Vila outro bairro'}};
+ assert.ok(validarPedido(entrega,catalog.itens,configComArea).some(e=>e.includes('bairro')));
+ assert.deepEqual(validarPedido({...entrega,cliente:{...cliente,bairro:'Parque Belém'}},catalog.itens,configComArea),[]);
+ assert.ok(validarPedido({...base,pagamento:'cartao'},catalog.itens,configComArea).some(e=>e.includes('pagamento')));
+});
