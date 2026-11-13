@@ -45,6 +45,16 @@ Mude `exemplo` para `false` somente depois de corrigir **nome, descrição, tama
 
 A Unsplash permite uso comercial de fotos sob sua licença (https://unsplash.com/license), mas recomendamos substituir as imagens por fotos reais para representar corretamente os pratos.
 
+## Melhorias técnicas do checkout (sem servidor)
+
+- **Conferência de CEP antes da sacola:** o bloco “Confira a entrega pelo CEP” consulta o endereço no ViaCEP e só indica cobertura quando a taxa, o pedido mínimo **e os bairros atendidos** estão preenchidos em `src/data/config.json`. Consultar CEP **não significa reservar entrega nem enviar pedido**.
+- **Entrega desativada quando faltam dados:** no checkout, o tipo Delivery fica indisponível até as regras acima estarem completas; retirada e consumo no local continuam disponíveis.
+- **Erros de formulário claros:** mensagens aparecem abaixo dos campos e o foco vai ao primeiro erro. Nenhum caminho de arquivo ou texto `PREENCHER` é mostrado ao cliente.
+- **Dinheiro e troco:** aceita `100,00` ou `100.00` e calcula o troco estimado na mesma tela.
+- **Sacola:** agora pode ser esvaziada de uma vez, após confirmação.
+- **Pedido enviado ao WhatsApp:** o navegador abre a conversa com a mensagem, mas o cliente **precisa tocar em Enviar**. O número e a tela final não provam recebimento nem pagamento. A equipe precisa confirmar.
+- **Sem mudanças comerciais:** preços, fotos, taxas e avaliações demonstrativos permanecem identificados; a implantação de painel, pagamento automático e notificações exige backend seguro e contas reais.
+
 ## 3. Como funciona o pedido
 
 O cliente escolhe pratos e opcionais, monta a sacola e digita nome, telefone e modalidade. Para entrega, informa CEP (consulta ViaCEP) e endereço; a taxa e o mínimo são lidos do JSON. Se estiverem sem configurar, **delivery não pode ser enviado**, evitando informar preços errados.

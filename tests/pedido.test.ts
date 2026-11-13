@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { montarMensagem, urlWhatsApp, validarPedido, situacaoLoja, totalCarrinho, precoLinha, gerarNumeroPedido, carregarCarrinho, salvarCarrinho } from '../src/loja/pedido';
+import { montarMensagem, urlWhatsApp, validarPedido, errosCamposPedido, valorDigitado, situacaoLoja, totalCarrinho, precoLinha, gerarNumeroPedido, carregarCarrinho, salvarCarrinho } from '../src/loja/pedido';
 import type { LinhaCarrinho, PedidoCheckout, Produto } from '../src/loja/types';
 
 const catalog=JSON.parse(readFileSync(new URL('../src/data/cardapio.json',import.meta.url),'utf8')) as {categorias:Array<{id:string}>;itens:Produto[]};
@@ -114,4 +114,24 @@ test('bairro de entrega e formas de pagamento respeitam o arquivo de configuraç
  assert.ok(validarPedido(entrega,catalog.itens,configComArea).some(e=>e.includes('bairro')));
  assert.deepEqual(validarPedido({...entrega,cliente:{...cliente,bairro:'Parque Belém'}},catalog.itens,configComArea),[]);
  assert.ok(validarPedido({...base,pagamento:'cartao'},catalog.itens,configComArea).some(e=>e.includes('pagamento')));
+});
+
+test('troco aceita reais brasileiros e rejeita valores mal formatados',()=>{
+ assert.equal(valorDigitado('100,50'),100.5);
+ assert.equal(valorDigitado('R$ 1.000,00'),1000);
+ assert.equal(valorDigitado('100.50'),100.5);
+ assert.equal(valorDigitado(''),null);
+ assert.equal(valorDigitado('abc'),null);
+ assert.equal(valorDigitado('-5'),null);
+});
+test('erros de formulário identificam cada campo sem conteúdo técnico',()=>{
+ const cfg={...config,taxaEntregaFixa:8,pedidoMinimoDelivery:0,bairrosAtendidos:['Parque Belém']};
+ const delivery:PedidoCheckout={...base,tipo:'entrega',pagamento:'dinheiro',trocoPara:'1,00',cliente:{
+  ...cliente,nome:'A',telefone:'123',cep:'12',rua:'',numero:'',bairro:'Outro bairro',cidade:'',uf:''
+ }};
+ const erros=errosCamposPedido(delivery,cfg,70);
+ for(const chave of ['nome','telefone','cep','rua','numero','bairro','cidade','uf','trocoPara'] as const){
+  assert.ok(erros[chave],chave);
+  assert.doesNotMatch(erros[chave]!,/PREENCHER|src\/config|\.ts/);
+ }
 });

@@ -22,6 +22,8 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
  const entregaAtiva=entregaConfigurada(loja);
  const subtotal=totalCarrinho(linhas,produtos);
  const total=totalComEntrega(subtotal,tipo,loja.taxaEntregaFixa);
+ const trocoInformado=valorDigitado(trocoPara);
+ const trocoEstimado=pagamento==='dinheiro'&&trocoInformado!==null&&trocoInformado>=total?trocoInformado-total:null;
  const status=situacaoLoja(loja.horarios);
  const atualizar=(campo:keyof Cliente,valor:string)=>{
   setCliente(c=>({...c,[campo]:valor}));
@@ -109,7 +111,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
        .filter(([id])=>loja.formasPagamento[id]).map(([id,nome,Icon,descricao])=>
        <label key={id} className={`pagamento-opcao ${pagamento===id?'pagamento-opcao--ativa':''}`}><input type="radio" name="pagamento" checked={pagamento===id} onChange={()=>setPagamento(id)}/><Icon size={22}/><span><strong>{nome}</strong><small>{descricao}</small></span></label>)}
       </div>
-      {pagamento==='dinheiro'&&<label className="form-campo campo-troco">Troco para quanto? (R$)<input inputMode="decimal" {...propsErro('trocoPara')} value={trocoPara} onChange={e=>{setTrocoPara(e.target.value);setCamposInvalidos(c=>({...c,trocoPara:undefined}));}} placeholder="Ex.: 100,00 · deixe vazio se não precisar"/>{mostrarErro('trocoPara')}{trocoPara.trim()&&valorDigitado(trocoPara)!==null&&valorDigitado(trocoPara)!>=total&&<small className="troco-detalhe">Troco estimado: {reais(valorDigitado(trocoPara)!-total)}</small>}</label>}
+      {pagamento==='dinheiro'&&<label className="form-campo campo-troco">Troco para quanto? (R$)<input inputMode="decimal" {...propsErro('trocoPara')} value={trocoPara} onChange={e=>{setTrocoPara(e.target.value);setCamposInvalidos(c=>({...c,trocoPara:undefined}));}} placeholder="Ex.: 100,00 · deixe vazio se não precisar"/>{mostrarErro('trocoPara')}{trocoPara.trim()&&trocoEstimado!==null&&<small className="troco-detalhe">Troco estimado: {reais(trocoEstimado)}</small>}</label>}
       {pagamento==='pix'&&loja.formasPagamento.pix&&<p className="info-pix"><ShieldCheck size={18}/> Para pagar com Pix, solicite os dados à equipe pelo WhatsApp depois de enviar o pedido. Não há cobrança automática neste site.</p>}
      </section>
      <section className="checkout-bloco" aria-labelledby="etapa-observacoes"><div className="checkout-bloco__titulo"><span className="etapa-numero">04</span><div><h2 id="etapa-observacoes">Alguma observação?</h2><p>Opcional: informações para o pedido completo</p></div></div>
