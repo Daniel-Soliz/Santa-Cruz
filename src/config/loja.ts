@@ -19,6 +19,8 @@ export const loja={
  endereco:`${endereco.logradouro}${numero}, ${endereco.bairro}, ${endereco.cidade} – ${endereco.uf}`,
  enderecoNumero:temValor(endereco.numero)?endereco.numero:null,
  cep:endereco.cep,
+ cidadeAtendimento:endereco.cidade,
+ ufAtendimento:endereco.uf,
  mapsUrl:dados.googleMapsUrl,
  instagram:temValor(dados.instagram)?dados.instagram:'',
  avaliacoesGoogleUrl:temValor(dados.avaliacoesGoogleUrl)?dados.avaliacoesGoogleUrl:'',

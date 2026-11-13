@@ -16,7 +16,7 @@ export function ConsultaEntrega(){
   try{
    const endereco=await consultarCep(cep);
    setBairro(endereco.bairro);
-   setResultado(avaliarCobertura(endereco.bairro,loja));
+   setResultado(avaliarCobertura(endereco.bairro,loja,{cidade:endereco.cidade,uf:endereco.uf}));
   }catch(e){setErro((e as Error).message||'Não foi possível consultar o CEP.');}
   finally{setConsultando(false);}
  };

@@ -5,6 +5,8 @@ type Configuracao={
  whatsapp:string;taxaEntregaFixa:number|null;pedidoMinimoDelivery:number|null;
  pedidosOnlineAtivos:boolean;
  bairrosAtendidos?:string[];
+ cidadeAtendimento?:string;
+ ufAtendimento?:string;
  formasPagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};
 };
 const moeda=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
@@ -68,6 +70,12 @@ export function errosCamposPedido(p:PedidoCheckout,config:Configuracao,subtotal:
   if(!c.cidade.trim())erros.cidade='Informe a cidade.';
   if(!/^[A-Za-z]{2}$/.test(c.uf.trim()))erros.uf='Informe a UF com duas letras.';
   const {bairrosAtendidos=[]}=config;
+  if(config.cidadeAtendimento&&c.cidade.trim()&&
+    c.cidade.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR')!==
+    config.cidadeAtendimento.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR'))
+   erros.cidade='A cidade informada está fora da região configurada para entrega.';
+  if(config.ufAtendimento&&c.uf.trim().toUpperCase()!==config.ufAtendimento.toUpperCase())
+   erros.uf='A UF informada está fora da região configurada para entrega.';
   if(bairrosAtendidos.length&&c.bairro.trim()){
    const normal=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR');
    if(!bairrosAtendidos.some(b=>normal(b)===normal(c.bairro)))

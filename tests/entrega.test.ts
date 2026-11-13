@@ -30,3 +30,9 @@ test('ViaCEP reporta erros sem inventar endereço',async()=>{
  const inexistente=async()=>({ok:true,json:async()=>({erro:true})}) as Response;
  await assert.rejects(()=>consultarCep('02850-100',inexistente as typeof fetch),/não encontrado/);
 });
+
+test('não promete delivery para CEP de outra cidade com bairro homônimo',()=>{
+ const cfg={...completa,cidadeAtendimento:'São Paulo',ufAtendimento:'SP'};
+ assert.equal(avaliarCobertura('Parque Belém',cfg,{cidade:'São Paulo',uf:'SP'}).estado,'disponivel');
+ assert.equal(avaliarCobertura('Parque Belém',cfg,{cidade:'Rio de Janeiro',uf:'RJ'}).estado,'nao-atendido');
+});

@@ -8,6 +8,8 @@ export type DadosEntrega={
  taxaEntregaFixa:number|null;
  pedidoMinimoDelivery:number|null;
  bairrosAtendidos:readonly string[];
+ cidadeAtendimento?:string;
+ ufAtendimento?:string;
 };
 export type EnderecoCep={cep:string;rua:string;bairro:string;cidade:string;uf:string};
 export type Cobertura={estado:'disponivel'|'indisponivel'|'nao-atendido'|'verificar-bairro';mensagem:string};
@@ -21,10 +23,16 @@ export function entregaConfigurada(config:DadosEntrega):boolean{
   &&config.pedidoMinimoDelivery!==null&&Number.isFinite(config.pedidoMinimoDelivery)&&config.pedidoMinimoDelivery>=0
   &&config.bairrosAtendidos.some(b=>!!normalizarBairro(b));
 }
-export function avaliarCobertura(bairro:string,config:DadosEntrega):Cobertura{
+export function avaliarCobertura(bairro:string,config:DadosEntrega,local?:{cidade:string;uf:string}):Cobertura{
  if(!entregaConfigurada(config))return {
   estado:'indisponivel',
   mensagem:'A entrega online não está disponível no momento. Você ainda pode pedir para retirada ou consumo no local.'
+ };
+ if(local&&config.ufAtendimento&&config.cidadeAtendimento&&
+   (local.uf.toUpperCase()!==config.ufAtendimento.toUpperCase()||
+    normalizarBairro(local.cidade)!==normalizarBairro(config.cidadeAtendimento)))return {
+  estado:'nao-atendido',
+  mensagem:'Este CEP fica fora da cidade e UF atendidas pela unidade. Escolha retirada ou consulte a equipe.'
  };
  if(!normalizarBairro(bairro))return {
   estado:'verificar-bairro',
