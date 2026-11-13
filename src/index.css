@@ -530,6 +530,73 @@ body{
 @media(max-width:600px){
   body{background-size:calc(100% + 8px) auto;}
 }
+/* Correção mobile — busca de CEP:
+   Itens flex/grid precisam poder encolher para que o texto e o botão
+   não aumentem a largura da página em telas de 320–430px. */
+.consulta-entrega{
+  grid-template-columns:minmax(0,1fr);
+  max-width:100%;
+  min-width:0;
+}
+.consulta-entrega__texto,
+.consulta-entrega__texto > div:last-child,
+.consulta-entrega__form,
+.consulta-entrega__campos,
+.consulta-entrega__resposta,
+.consulta-entrega__bairro{
+  min-width:0;
+  max-width:100%;
+}
+.consulta-entrega__form{width:100%;}
+.consulta-entrega__texto > div:last-child{flex:1;}
+.consulta-entrega__texto p,
+.consulta-entrega__form > small,
+.consulta-entrega__resposta{
+  overflow-wrap:anywhere;
+}
+.consulta-entrega__campos{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:stretch;
+  gap:10px;
+}
+.consulta-entrega__campos input{
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.consulta-entrega__campos button{
+  min-width:0;
+  max-width:100%;
+  white-space:nowrap;
+}
+@media(max-width:600px){
+  .consulta-entrega{
+    padding:18px;
+    gap:16px;
+  }
+  .consulta-entrega__texto{gap:11px;}
+  .consulta-entrega__icone{
+    width:42px;
+    height:42px;
+    flex-basis:42px;
+  }
+  .consulta-entrega__campos{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .consulta-entrega__campos button{
+    width:100%;
+    min-height:48px;
+  }
+}
+@media(min-width:780px){
+  .consulta-entrega{
+    grid-template-columns:minmax(0,1fr) minmax(0,.95fr);
+  }
+}
+
 /* Safari/iOS: evita saltos ao rolar quando o motor ignora fundo fixed.
    Outros navegadores preservam o fundo fixo solicitado. */
 @supports(-webkit-touch-callout:none){
