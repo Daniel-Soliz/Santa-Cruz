@@ -1,0 +1,23 @@
+[
+  {
+    "id": "avaliacao-ex-01",
+    "nome": "Depoimento ilustrativo 1",
+    "nota": 5,
+    "texto": "Exemplo de avaliação sobre o sabor e o carinho no preparo.",
+    "exemplo": true
+  },
+  {
+    "id": "avaliacao-ex-02",
+    "nome": "Depoimento ilustrativo 2",
+    "nota": 5,
+    "texto": "Exemplo de comentário sobre uma experiência acolhedora.",
+    "exemplo": true
+  },
+  {
+    "id": "avaliacao-ex-03",
+    "nome": "Depoimento ilustrativo 3",
+    "nota": 4,
+    "texto": "Exemplo de opinião sobre atendimento e opções do cardápio.",
+    "exemplo": true
+  }
+]

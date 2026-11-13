@@ -347,3 +347,67 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
 @media(prefers-reduced-motion:reduce){
  *,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* Extensões da vitrine: fotos, informações úteis, história e avaliações. */
+.tag-foto-ilustrativa{
+ position:absolute;right:9px;bottom:8px;border-radius:8px;padding:5px 8px;
+ background:rgba(43,28,32,.82);color:white;font-weight:700;font-size:.57rem;
+ letter-spacing:.01em;backdrop-filter:blur(5px);
+}
+.hero__legenda{
+ position:absolute;bottom:16px;left:18px;padding:5px 10px;border-radius:9px;
+ background:rgba(47,26,33,.77);color:white;font-size:.7rem;font-weight:700;
+}
+.informacoes-pedido{padding-block:37px 21px;}
+.informacoes-pedido__titulo{margin-bottom:15px}
+.informacoes-pedido h2{color:var(--vinho);font-size:clamp(1.45rem,3.7vw,2rem);margin:4px 0 0}
+.informacoes-pedido__grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.informacoes-pedido article{
+ min-height:96px;display:flex;align-items:flex-start;gap:10px;border-radius:16px;
+ border:1px solid var(--borda);background:#fffefa;padding:15px;
+ box-shadow:0 5px 15px rgba(100,48,38,.035);
+}
+.informacoes-pedido article>svg{flex:0 0 22px;color:var(--rosa-escuro);}
+.informacoes-pedido article strong{display:block;margin-bottom:3px;color:var(--vinho);font-size:.78rem}
+.informacoes-pedido article span{display:block;font-size:.7rem;color:var(--suave);line-height:1.5;overflow-wrap:anywhere}
+.sobre-casa{display:grid;grid-template-columns:1fr;gap:23px;align-items:center;padding-block:62px}
+.sobre-casa__arte{position:relative;min-height:245px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+ background:radial-gradient(circle at 12% 19%,rgba(255,243,162,.32) 0 7%,transparent 8%),
+ repeating-linear-gradient(35deg,transparent 0 21px,rgba(255,220,170,.12) 22px 23px),linear-gradient(135deg,#B7374D,#E07A42);
+ border-radius:26px;text-align:center;color:white;overflow:hidden;
+ box-shadow:0 16px 34px rgba(115,35,57,.11)}
+.sobre-casa__arte:before{content:"";position:absolute;inset:14px;border:1px dashed rgba(255,255,255,.43);border-radius:19px}
+.sobre-casa__arte>span{font-size:3rem;color:var(--amarelo);line-height:1}
+.sobre-casa__arte b{font-size:2rem;line-height:1.05;font-family:"Baloo 2",sans-serif;max-width:230px}
+.sobre-casa__arte small{font-size:.74rem;color:#ffe7d4}
+.sobre-casa__texto h2{font-size:clamp(2rem,4vw,3rem);color:var(--vinho);line-height:1.07;margin:8px 0 13px}
+.sobre-casa__texto p{font-size:.89rem;line-height:1.85;color:var(--suave)}
+.sobre-casa__pontos{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.sobre-casa__pontos span{display:flex;gap:6px;align-items:center;padding:10px 12px;border:1px solid #eed6d0;border-radius:999px;color:var(--vinho);font-weight:700;font-size:.72rem;background:#fffefa}
+.sobre-casa__pontos svg{color:var(--rosa-escuro)}
+.avaliacoes{background:linear-gradient(135deg,#FFF0DD,#FFE7D8);padding-block:65px 74px}
+.avaliacoes__grade{display:grid;grid-template-columns:1fr;gap:15px}
+.avaliacao-card{display:flex;flex-direction:column;min-height:218px;padding:24px 22px;border-radius:22px;background:#fffdfb;
+ border:1px solid #f0dcd2;box-shadow:0 8px 20px rgba(92,44,30,.05)}
+.avaliacao-card__estrelas{display:flex;gap:4px;color:#BA5B1A}
+.avaliacao-card>p{font-size:.85rem;line-height:1.8;color:#635153;margin:14px 0 19px}
+.avaliacao-card__rodape{margin-top:auto;padding-top:12px;border-top:1px solid #efdfd8;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.avaliacao-card__rodape strong{font-size:.75rem;color:var(--vinho)}
+.avaliacao-card__rodape span{padding:5px 9px;border-radius:999px;background:#fff1dc;color:#8b4530;font-size:.64rem;font-weight:800}
+.avaliacoes__botao{margin-top:26px}
+.galeria-espaco{padding-block:64px}
+.galeria-espaco__grade{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:17px}
+.galeria-espaco figure{position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:21px;margin:0;background:#f1e2d4}
+.galeria-espaco img{display:block;width:100%;height:100%;object-fit:cover}
+.galeria-espaco figcaption{position:absolute;bottom:12px;left:12px;color:white;font-weight:800;font-size:.82rem;
+ padding:8px 12px;border-radius:10px;background:rgba(65,29,39,.82)}
+@media(min-width:620px){
+ .informacoes-pedido__grade{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .avaliacoes__grade{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .galeria-espaco__grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:870px){
+ .informacoes-pedido__grade{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .sobre-casa{grid-template-columns:.9fr 1.1fr;gap:55px}
+ .sobre-casa__arte{min-height:330px}
+}

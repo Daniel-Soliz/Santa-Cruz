@@ -32,6 +32,8 @@ jobs:
         run: npm run test:pedido
       - name: Compilar para /Santa-Cruz/
         run: npm run build:pages
+        env:
+          PAGES_CUSTOM_DOMAIN: ${{ vars.PAGES_CUSTOM_DOMAIN }}
       - name: Verificar arquivos da publicação
         run: npm run test:pages
       - name: Configurar GitHub Pages

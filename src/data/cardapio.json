@@ -1,5 +1,5 @@
 {
-  "aviso": "CATÁLOGO DE EXEMPLO: fotos e valores ilustrativos. PREENCHER com o cardápio oficial antes de receber pedidos reais.",
+  "aviso": "Cardápio de demonstração com pratos, preços e fotografias ilustrativos; substituir pelos dados reais antes de divulgar.",
   "categorias": [
     {
       "id": "pratos",
@@ -49,7 +49,7 @@
       "nome": "Prato do sertão",
       "descricao": "Arroz, feijão, carne desfiada e farofa.",
       "preco": 32.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": true,
       "exemplo": true,
@@ -82,7 +82,8 @@
           "preco": 0
         }
       ],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-02",
@@ -90,7 +91,7 @@
       "nome": "Almoço da casa",
       "descricao": "Prato completo com arroz, feijão e acompanhamento do dia.",
       "preco": 29.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
@@ -123,7 +124,8 @@
           "preco": 0
         }
       ],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-03",
@@ -131,7 +133,7 @@
       "nome": "Carne de sol na manteiga",
       "descricao": "Carne de sol com cebola e guarnições.",
       "preco": 54.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": true,
       "exemplo": true,
@@ -164,7 +166,8 @@
           "preco": 0
         }
       ],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-04",
@@ -172,7 +175,7 @@
       "nome": "Costela do sertão",
       "descricao": "Costela cozida lentamente e servida com mandioca.",
       "preco": 49.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
@@ -205,7 +208,8 @@
           "preco": 0
         }
       ],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-05",
@@ -213,7 +217,7 @@
       "nome": "Peixe grelhado",
       "descricao": "Filé de peixe com arroz e legumes.",
       "preco": 46.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
@@ -230,7 +234,8 @@
         }
       ],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-06",
@@ -238,7 +243,7 @@
       "nome": "Moqueca do Nordeste",
       "descricao": "Peixe com leite de coco e temperos típicos.",
       "preco": 59.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": false,
       "destaque": false,
       "exemplo": true,
@@ -255,7 +260,8 @@
         }
       ],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-07",
@@ -263,7 +269,7 @@
       "nome": "Macaxeira frita",
       "descricao": "Mandioca crocante para compartilhar.",
       "preco": 23.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": true,
       "exemplo": true,
@@ -280,7 +286,8 @@
         }
       ],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-08",
@@ -288,7 +295,7 @@
       "nome": "Queijo coalho na chapa",
       "descricao": "Queijo grelhado e douradinho.",
       "preco": 24.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
@@ -305,7 +312,8 @@
         }
       ],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-09",
@@ -313,13 +321,14 @@
       "nome": "Baião de dois",
       "descricao": "Arroz, feijão e queijo coalho.",
       "preco": 18.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": true,
       "exemplo": true,
       "variacoes": [],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-10",
@@ -327,13 +336,14 @@
       "nome": "Farofa da casa",
       "descricao": "Farofa crocante temperada.",
       "preco": 8.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1604908176997-4314d8f33bc2?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
       "variacoes": [],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-11",
@@ -341,7 +351,7 @@
       "nome": "Tapioca de queijo coalho",
       "descricao": "Massa leve recheada com queijo.",
       "preco": 21.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
@@ -363,7 +373,8 @@
           "preco": 0
         }
       ],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-12",
@@ -371,7 +382,7 @@
       "nome": "Cuscuz com manteiga",
       "descricao": "Cuscuz de milho no vapor com manteiga.",
       "preco": 17.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": true,
       "exemplo": true,
@@ -393,7 +404,8 @@
           "preco": 0
         }
       ],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-13",
@@ -401,13 +413,14 @@
       "nome": "Pudim caseiro",
       "descricao": "Pudim cremoso com calda de caramelo.",
       "preco": 14.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
       "variacoes": [],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-14",
@@ -415,13 +428,14 @@
       "nome": "Cocada cremosa",
       "descricao": "Doce de coco servido em porção individual.",
       "preco": 11.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": false,
       "destaque": false,
       "exemplo": true,
       "variacoes": [],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-15",
@@ -429,13 +443,14 @@
       "nome": "Suco natural (copo)",
       "descricao": "Suco de fruta a consultar no atendimento.",
       "preco": 12.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
       "variacoes": [],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     },
     {
       "id": "ex-16",
@@ -443,13 +458,14 @@
       "nome": "Refrigerante (lata)",
       "descricao": "Sabor sujeito à disponibilidade.",
       "preco": 7.9,
-      "foto": "",
+      "foto": "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=720&h=540&q=75&fm=webp",
       "disponivel": true,
       "destaque": false,
       "exemplo": true,
       "variacoes": [],
       "opcionais": [],
-      "tags": []
+      "tags": [],
+      "imagemIlustrativa": true
     }
   ]
 }

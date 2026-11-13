@@ -8,6 +8,7 @@ import { ProdutoCard, FotoPrato } from './components/ProdutoCard';
 import { ProdutoModal } from './components/ProdutoModal';
 import { Carrinho } from './components/Carrinho';
 import { Checkout, type Preparado } from './components/Checkout';
+import { InformacoesPedido, SobreCasa, Avaliacoes, Galeria } from './components/InformacoesExtras';
 
 const categorias=cardapio.categorias as Categoria[];
 const produtos=cardapio.itens as Produto[];
@@ -23,7 +24,7 @@ function Header({quantidade,abrir,status}:{quantidade:number;abrir:()=>void;stat
     <span><strong>Delícia do Nordeste</strong><small>Casa do Norte · Santa Cruz</small></span>
    </a>
    <nav className="menu-desktop" aria-label="Navegação principal">
-    <a href="#cardapio">Cardápio</a><a href="#como-funciona">Como pedir</a><a href="#localizacao">Como chegar</a>
+    <a href="#cardapio">Cardápio</a><a href="#como-funciona">Como pedir</a><a href="#avaliacoes">Avaliações</a><a href="#localizacao">Como chegar</a>
    </nav>
    <div className="cabecalho__acoes">
     <span className={`status-loja ${status.aberto?'status-loja--aberto':'status-loja--fechado'}`}><span className="ponto-status"/>{status.aberto?'Aberto agora':'Fechado agora'}</span>
@@ -42,14 +43,15 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
     <div className="hero__acoes"><button className="botao botao--rosa" type="button" onClick={()=>irPara('cardapio')}>Ver cardápio e pedir <ArrowRight size={21}/></button><a className="botao botao--claro" href="#como-funciona">Como funciona</a></div>
     <div className="hero__selos">
      <span><Truck size={16}/> Delivery</span><span><ShoppingBag size={16}/> Retirada</span>
-     <span><Clock3 size={16}/> {loja.tempoMedioMinutos===null?'Tempo médio: PREENCHER':`${loja.tempoMedioMinutos} min`}</span>
+     {loja.tempoMedioMinutos!==null&&<span><Clock3 size={16}/> Previsão: {loja.tempoMedioMinutos} min</span>}
      <span className={status.aberto?'aberto':'fechado'}><span className="ponto-status"/>{status.aberto?'Aberto agora':'Fechado agora'}</span>
     </div>
    </div>
    <div className="hero__visual">
-    {String(loja.heroFoto)?<img className="hero__foto" src={String(loja.heroFoto).startsWith('http')?String(loja.heroFoto):`${import.meta.env.BASE_URL}${String(loja.heroFoto).replace(/^\/+/, '')}`} alt="Foto principal do restaurante" width="720" height="600" fetchPriority="high"/>:
-     <div className="hero__placeholder"><div className="hero__prato"><ChefHat size={76} strokeWidth={1.2}/><span>O sabor tem endereço</span></div><div className="hero__foto-texto"><b>Seu prato favorito mora aqui.</b><span>Foto principal: PREENCHER</span></div></div>}
+    {String(loja.heroFoto)?<img className="hero__foto" src={String(loja.heroFoto).startsWith('http')?String(loja.heroFoto):`${import.meta.env.BASE_URL}${String(loja.heroFoto).replace(/^\/+/, '')}`} alt="Fotografia ilustrativa de comida nordestina, não é foto do restaurante" width="720" height="600" fetchPriority="high"/>:
+     <div className="hero__placeholder"><div className="hero__prato"><ChefHat size={76} strokeWidth={1.2}/><span>O sabor tem endereço</span></div><div className="hero__foto-texto"><b>Seu prato favorito mora aqui.</b><span>Sabores nordestinos</span></div></div>}
     <div className="hero__adesivo"><span>✸</span> Tradição &<br/> sabor de casa</div>
+    {loja.heroFoto&&loja.heroImagemIlustrativa&&<span className="hero__legenda">Imagem ilustrativa</span>}
    </div>
   </div>
  </section>;
@@ -99,7 +101,7 @@ function Rodape(){
   <div className="container-padrao rodape__grade">
    <div className="rodape__marca"><img src={logoUrl} alt="Logo da Casa do Norte Santa Cruz" width="62" height="62"/><div><strong>Delícia do Nordeste</strong><span>Casa do Norte · Santa Cruz</span></div><p>Comida nordestina feita com carinho, pertinho de você.</p></div>
    <div><h3>Encontre a gente</h3><p>{loja.endereco}<br/>CEP {loja.cep}</p><p>Terça a domingo, 8h às 22h<br/>Segunda-feira: fechado</p></div>
-   <div><h3>Atendimento</h3><a href={loja.telefoneLink}>{loja.telefone}</a><a href={ajudaUrl} target="_blank" rel="noopener noreferrer">WhatsApp para dúvidas</a><a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a></div>
+   <div><h3>Atendimento</h3><a href={loja.telefoneLink}>{loja.telefone}</a><a href={ajudaUrl} target="_blank" rel="noopener noreferrer">WhatsApp para dúvidas</a><a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
   </div>
   <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span></div>
  </footer>;
@@ -116,6 +118,7 @@ export default function LojaApp(){
  const [horario,setHorario]=useState(()=>situacaoLoja(loja.horarios));
  useEffect(()=>{setArmazenamentoFalhou(!salvarCarrinho(carrinho));},[carrinho]);
  useEffect(()=>{const timer=window.setInterval(()=>setHorario(situacaoLoja(loja.horarios)),30000);return()=>clearInterval(timer);},[]);
+
  useEffect(()=>{
   const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':'Cardápio e pedidos';
   document.title=`${titulo} | Delícia do Nordeste Santa Cruz – Parque Belém`;
@@ -146,11 +149,12 @@ export default function LojaApp(){
    checkout?<Checkout linhas={carrinho} produtos={produtos} onVoltar={()=>{setCheckout(false);window.scrollTo({top:0});}} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
    <main id="conteudo">
     <Hero status={horario}/>
-    <div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio de demonstração:</b> produtos e valores fictícios. PREENCHER com os dados reais antes de divulgar. <span>✦</span></div></div>
+    {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
+    <InformacoesPedido/>
     {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
     {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
     <section className="destaques container-padrao" aria-labelledby="destaques-titulo">
-     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Os queridinhos</span><h2 id="destaques-titulo">Escolhidos com carinho <span className="cor-rosa">♥</span></h2><p>Algumas sugestões para abrir o apetite.</p></div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
+     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">Mais pedidos <span className="cor-rosa">♥</span></h2><p>Seleção demonstrativa: substitua pelos itens mais pedidos reais.</p></div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
      <div className="grade-produtos">{destaque.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
     </section>
     <section className="catalogo" id="cardapio" aria-labelledby="cardapio-titulo">
@@ -172,7 +176,7 @@ export default function LojaApp(){
       {filtrados.length===0&&<div className="busca-vazia"><Search size={36}/><h3>Nenhum prato encontrado</h3><p>Experimente buscar outro nome ou limpe a pesquisa.</p><button type="button" className="botao botao--rosa" onClick={()=>setBusca('')}>Limpar busca</button></div>}
      </div>
     </section>
-    <Passos/><Localizacao/>
+    <SobreCasa/><Passos/><Avaliacoes/><Galeria/><Localizacao/>
    </main>}
   <Rodape/>
   <a className="whatsapp-suporte" href={ajudaUrl} target="_blank" rel="noopener noreferrer" aria-label="Dúvidas? Fale no WhatsApp" title="WhatsApp para dúvidas"><MessageCircle size={24}/></a>

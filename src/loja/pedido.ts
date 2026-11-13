@@ -4,6 +4,8 @@ type Horario={dia:string;aberto:boolean;abertura:string;fechamento:string};
 type Configuracao={
  whatsapp:string;taxaEntregaFixa:number|null;pedidoMinimoDelivery:number|null;
  pedidosOnlineAtivos:boolean;
+ bairrosAtendidos?:string[];
+ formasPagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};
 };
 const moeda=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 export const reais=(numero:number)=>moeda.format(numero);
@@ -55,8 +57,13 @@ export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configu
  if(p.cliente.nome.trim().length<2)erros.push('Informe seu nome (pelo menos 2 caracteres).');
  const telefone=somenteNumeros(p.cliente.telefone);
  if(!/^\d{10,11}$/.test(telefone))erros.push('Informe um telefone válido com DDD (10 ou 11 números).');
+ if(config.formasPagamento?.[p.pagamento]===false)erros.push('Esta forma de pagamento está indisponível.');
  if(p.tipo==='entrega'){
   const c=p.cliente;
+  if(config.bairrosAtendidos?.length){
+   const normal=(valor:string)=>valor.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+   if(!config.bairrosAtendidos.some(b=>normal(b)===normal(c.bairro)))erros.push('Este bairro não está na área de entrega informada.');
+  }
   if(!/^\d{8}$/.test(somenteNumeros(c.cep)))erros.push('Informe um CEP válido com 8 números.');
   if(!c.rua.trim()||!c.numero.trim()||!c.bairro.trim()||!c.cidade.trim()||!/^\w{2}$/.test(c.uf.trim()))erros.push('Preencha rua, número, bairro, cidade e UF para entrega.');
   if(config.taxaEntregaFixa===null||config.taxaEntregaFixa<0)erros.push('Taxa de entrega não configurada. PREENCHER em src/config/loja.ts.');

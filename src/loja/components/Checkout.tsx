@@ -10,7 +10,8 @@ export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string};
 export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void}){
  const [cliente,setCliente]=useState<Cliente>(clienteVazio);
  const [tipo,setTipo]=useState<TipoPedido>('retirada');
- const [pagamento,setPagamento]=useState<Pagamento>('pix');
+ const primeiraForma:Pagamento=loja.formasPagamento.pix?'pix':loja.formasPagamento.cartao?'cartao':'dinheiro';
+ const [pagamento,setPagamento]=useState<Pagamento>(primeiraForma);
  const [trocoPara,setTrocoPara]=useState('');
  const [observacoesGerais,setObservacoesGerais]=useState('');
  const [buscandoCep,setBuscandoCep]=useState(false);
@@ -79,17 +80,18 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
         <label className="form-campo">UF *<input maxLength={2} value={cliente.uf} onChange={e=>atualizar('uf',e.target.value.toUpperCase())} placeholder="SP" required/></label>
         <label className="form-campo form-campo--largo">Ponto de referência<input value={cliente.referencia} onChange={e=>atualizar('referencia',e.target.value)} placeholder="Se houver"/></label>
        </div>
-       {loja.taxaEntregaFixa===null&&<p className="config-pendente"><MapPin size={17}/> Taxa de entrega: PREENCHER em src/config/loja.ts. Pedidos de delivery só podem ser enviados após configurar.</p>}
-       {loja.pedidoMinimoDelivery===null&&<p className="config-pendente">Pedido mínimo delivery: PREENCHER no arquivo de configuração.</p>}
+       {(loja.taxaEntregaFixa===null||loja.pedidoMinimoDelivery===null)&&<p className="config-pendente"><MapPin size={17}/> O delivery está temporariamente indisponível para pedidos online. A equipe precisa definir a taxa e o mínimo de entrega.</p>}
+       {loja.bairrosAtendidos.length>0&&<p className="cep-status">Bairros atendidos: {loja.bairrosAtendidos.join(', ')}.</p>}
       </div>}
      </section>
      <section className="checkout-bloco" aria-labelledby="etapa-pagamento"><div className="checkout-bloco__titulo"><span className="etapa-numero">03</span><div><h2 id="etapa-pagamento">Como deseja pagar?</h2><p>A forma de pagamento será confirmada com a equipe</p></div></div>
       <div className="pagamentos-grade">
-       {([['pix','Pix',Wallet,'Informações Pix no atendimento'],['cartao','Cartão',CreditCard,'Na entrega, retirada ou local'],['dinheiro','Dinheiro',Banknote,'Informe se precisa de troco']] as const).map(([id,nome,Icon,descricao])=>
+       {([['pix','Pix',Wallet,'A combinar no WhatsApp'],['cartao','Cartão',CreditCard,'Na entrega, retirada ou local'],['dinheiro','Dinheiro',Banknote,'Informe se precisa de troco']] as const)
+       .filter(([id])=>loja.formasPagamento[id]).map(([id,nome,Icon,descricao])=>
        <label key={id} className={`pagamento-opcao ${pagamento===id?'pagamento-opcao--ativa':''}`}><input type="radio" name="pagamento" checked={pagamento===id} onChange={()=>setPagamento(id)}/><Icon size={22}/><span><strong>{nome}</strong><small>{descricao}</small></span></label>)}
       </div>
       {pagamento==='dinheiro'&&<label className="form-campo campo-troco">Troco para quanto? (R$)<input inputMode="decimal" value={trocoPara} onChange={e=>setTrocoPara(e.target.value)} placeholder="Ex.: 100,00 · deixe vazio se não precisar"/></label>}
-      {pagamento==='pix'&&<p className="info-pix"><ShieldCheck size={18}/> Na Fase 1, Pix é combinado diretamente com a equipe. Este site não gera QR Code nem confirma pagamento automaticamente.</p>}
+      {pagamento==='pix'&&loja.formasPagamento.pix&&<p className="info-pix"><ShieldCheck size={18}/> Para pagar com Pix, solicite os dados à equipe pelo WhatsApp depois de enviar o pedido. Não há cobrança automática neste site.</p>}
      </section>
      <section className="checkout-bloco" aria-labelledby="etapa-observacoes"><div className="checkout-bloco__titulo"><span className="etapa-numero">04</span><div><h2 id="etapa-observacoes">Alguma observação?</h2><p>Opcional: informações para o pedido completo</p></div></div>
       <label className="form-campo">Observações gerais<textarea rows={3} maxLength={500} value={observacoesGerais} onChange={e=>setObservacoesGerais(e.target.value)} placeholder="Ex.: retirar às 12h, sem talheres..."/></label>
@@ -108,7 +110,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
       const valor=item.preco+(variante?.acrescimo||0)+extras.reduce((s,x)=>s+x.preco,0);
       return <div className="checkout-resumo__linha" key={l.chave}><div><b>{l.quantidade}× {item.nome}</b>{variante&&<small>{variante.nome}</small>}{extras.length>0&&<small>{extras.map(x=>x.nome).join(', ')}</small>}{l.observacao&&<small>Obs.: {l.observacao}</small>}</div><strong>{reais(valor*l.quantidade)}</strong></div>;
      })}</div>
-     <div className="checkout-valores"><div><span>Subtotal</span><b>{reais(subtotal)}</b></div><div><span>Taxa de entrega</span><b>{tipo!=='entrega'?'Não se aplica':loja.taxaEntregaFixa===null?'PREENCHER':reais(loja.taxaEntregaFixa)}</b></div><div className="checkout-valores__total"><span>Total estimado</span><strong>{tipo==='entrega'&&loja.taxaEntregaFixa===null?'Após configurar':reais(total)}</strong></div></div>
+     <div className="checkout-valores"><div><span>Subtotal</span><b>{reais(subtotal)}</b></div>{(tipo!=='entrega'||loja.taxaEntregaFixa!==null)&&<div><span>Taxa de entrega</span><b>{tipo!=='entrega'?'Não se aplica':reais(loja.taxaEntregaFixa!)}</b></div>}<div className="checkout-valores__total"><span>Total estimado</span><strong>{tipo==='entrega'&&loja.taxaEntregaFixa===null?'Indisponível':reais(total)}</strong></div></div>
      <p className="resumo-aviso">⚠️ Exemplos com valores fictícios. Confira o total final com o restaurante antes de pagar.</p>
     </aside>
    </div>
