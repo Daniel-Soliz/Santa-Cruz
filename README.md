@@ -67,6 +67,12 @@ O carrinho fica salvo no navegador pelo `localStorage`; se bloqueado, o site avi
 
 **Galeria:** “Nosso espaço” fica oculta até você cadastrar fotos reais da fachada ou do salão em `config.json`; não são exibidos espaços com “PREENCHER”.
 
+## Fundo global do site
+
+A textura de **xilogravura nordestina à esquerda e renda renascença à direita** está em `src/assets/moldura-xilogravura-renda.webp`, convertida da arte fornecida para WebP. O CSS em `src/index.css` aplica a mesma imagem ao site inteiro, com fundo fixo, repetição vertical e seções transparentes. O cabeçalho mantém branco translúcido e os cards têm fundo branco para leitura. Em Safari/iPhone, o fundo acompanha a rolagem para evitar travamentos específicos do navegador.
+
+Para mudar a arte futuramente, substitua o arquivo WebP conservando o nome. O Vite atualiza automaticamente o caminho de publicação em `/Santa-Cruz/`.
+
 ## 4. Testar e publicar
 
 Instale Node.js 22 e execute:
