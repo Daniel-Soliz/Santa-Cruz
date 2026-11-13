@@ -64,7 +64,7 @@ test('mensagem de WhatsApp inclui emojis, acentos, subtotais, pagamento e aviso 
  assert.match(text,/🍽️ \*Novo pedido – Delícia do Nordeste\*/);
  assert.match(text,/João da Conceição/);
  assert.match(text,/Sem cebola e com limão 🍋/);
- assert.match(text,/R\$ 73,80/);
+ assert.match(text,/R\$\s+73,80/);
  assert.match(text,/Por favor, caprichar 🙏/);
  assert.match(text,/FICTÍCIOS/);
  assert.equal(decodeURIComponent(link.split('?text=')[1]),text);

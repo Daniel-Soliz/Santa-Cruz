@@ -109,7 +109,9 @@ export function urlWhatsApp(mensagem:string,telefone='5511960149521'){
  return `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
 }
 export function gerarNumeroPedido(data=new Date(),aleatorio=()=>Math.floor(Math.random()*65536)){
- const dia=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(data).replace(/[^\d]/g,'');
+ const partes=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(data);
+ const ler=(tipo:string)=>partes.find(p=>p.type===tipo)?.value||'';
+ const dia=ler('year')+ler('month')+ler('day');
  return `SC-${dia}-${aleatorio().toString(36).toUpperCase().padStart(4,'0')}`;
 }
 const STORAGE_KEY='delicia_nordeste_carrinho_fase1_v1';
