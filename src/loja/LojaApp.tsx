@@ -47,7 +47,7 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
     </div>
    </div>
    <div className="hero__visual">
-    {loja.heroFoto?<img className="hero__foto" src={loja.heroFoto.startsWith('http')?loja.heroFoto:`${import.meta.env.BASE_URL}${loja.heroFoto.replace(/^\/+/, '')}`} alt="Foto ilustrativa do prato em destaque" width="720" height="600" fetchPriority="high"/>:
+    {String(loja.heroFoto)?<img className="hero__foto" src={String(loja.heroFoto).startsWith('http')?String(loja.heroFoto):`${import.meta.env.BASE_URL}${String(loja.heroFoto).replace(/^\/+/, '')}`} alt="Foto principal do restaurante" width="720" height="600" fetchPriority="high"/>:
      <div className="hero__placeholder"><div className="hero__prato"><ChefHat size={76} strokeWidth={1.2}/><span>O sabor tem endereço</span></div><div className="hero__foto-texto"><b>Seu prato favorito mora aqui.</b><span>Foto principal: PREENCHER</span></div></div>}
     <div className="hero__adesivo"><span>✸</span> Tradição &<br/> sabor de casa</div>
    </div>

@@ -28,7 +28,9 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Verificar TypeScript
         run: npm run lint
-      - name: Testar regras e pedido WhatsApp\n        run: npm run test:pedido\n      - name: Compilar para /Santa-Cruz/
+      - name: Testar regras e pedido WhatsApp
+        run: npm run test:pedido
+      - name: Compilar para /Santa-Cruz/
         run: npm run build:pages
       - name: Verificar arquivos da publicação
         run: npm run test:pages
