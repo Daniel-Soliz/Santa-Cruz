@@ -1,4 +1,7 @@
-import { somenteNumeros, reais } from './pedido';
+// Isolado do cálculo do carrinho para ser reutilizado sem dependência circular.
+const somenteNumeros=(valor:string)=>valor.replace(/\\D/g,'');
+const formatarMoeda=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const reais=(valor:number)=>formatarMoeda.format(valor);
 
 export type DadosEntrega={
  pedidosOnlineAtivos:boolean;
