@@ -34,7 +34,7 @@ export function Carrinho({linhas,produtos,fechar,atualizar,remover,editar,finali
    </div>
    <footer className="carrinho-rodape">
     <p><span>Subtotal</span><strong>{reais(totalCarrinho(linhas,produtos))}</strong></p>
-    <small>Taxa de entrega, se aplicável, aparece no checkout. Valores ilustrativos até PREENCHER o cardápio.</small>
+    <small>A taxa de entrega, quando disponível, aparece no checkout. Os valores dos itens demonstrativos são ilustrativos.</small>
     <button disabled={!itens.length} className="botao botao--rosa botao--full" type="button" onClick={finalizar}>Finalizar pedido <ArrowRight size={20}/></button>
    </footer>
   </aside>
