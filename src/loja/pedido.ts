@@ -71,8 +71,8 @@ export function errosCamposPedido(p:PedidoCheckout,config:Configuracao,subtotal:
   if(!/^[A-Za-z]{2}$/.test(c.uf.trim()))erros.uf='Informe a UF com duas letras.';
   const {bairrosAtendidos=[]}=config;
   if(config.cidadeAtendimento&&c.cidade.trim()&&
-    c.cidade.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR')!==
-    config.cidadeAtendimento.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR'))
+    c.cidade.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR')!==
+    config.cidadeAtendimento.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR'))
    erros.cidade='A cidade informada está fora da região configurada para entrega.';
   if(config.ufAtendimento&&c.uf.trim().toUpperCase()!==config.ufAtendimento.toUpperCase())
    erros.uf='A UF informada está fora da região configurada para entrega.';
