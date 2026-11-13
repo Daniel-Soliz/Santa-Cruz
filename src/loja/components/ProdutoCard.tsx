@@ -1,16 +1,18 @@
+import { useState } from 'react';
 import { ChefHat, Plus, Ban, Star } from 'lucide-react';
 import type { Produto } from '../types';
 import { reais } from '../pedido';
 
 export function FotoPrato({foto,nome,destaque=false}:{foto:string;nome:string;destaque?:boolean}){
+ const [falhou,setFalhou]=useState(false);
  const src=foto?(/^(https?:)?\/\//.test(foto)?foto:`${import.meta.env.BASE_URL}${foto.replace(/^\/+/, '')}`):'';
- if(!src){
-  return <div className="food-placeholder" role="img" aria-label={`Imagem de ${nome} não cadastrada; PREENCHER com foto real`}>
+ if(!src||falhou){
+  return <div className="food-placeholder" role="img" aria-label={`Ilustração de ${nome}, sem fotografia disponível`}>
    <div className="food-placeholder__plate"><ChefHat size={destaque?45:34} aria-hidden="true" strokeWidth={1.3}/></div>
-   <span>Foto do prato: PREENCHER</span>
+   <span>Sabores do Nordeste</span>
   </div>;
  }
- return <img src={src} loading={destaque?'eager':'lazy'} decoding="async" width="640" height="480" alt={`Foto de ${nome}`} className="food-photo"/>;
+ return <img src={src} loading={destaque?'eager':'lazy'} decoding="async" onError={()=>setFalhou(true)} width="640" height="480" alt={`Imagem ilustrativa de ${nome}`} className="food-photo"/>;
 }
 export function ProdutoCard({produto,abrir}:{produto:Produto;abrir:(p:Produto)=>void}){
  return <article className="produto-card">
@@ -20,6 +22,7 @@ export function ProdutoCard({produto,abrir}:{produto:Produto;abrir:(p:Produto)=>
     {produto.exemplo&&<span className="tag tag--demo">EXEMPLO</span>}
     {produto.destaque&&<span className="tag tag--yellow"><Star size={12} aria-hidden="true"/> Destaque</span>}
    </div>
+   {produto.exemplo&&produto.foto&&<span className="tag-foto-ilustrativa">Foto ilustrativa</span>}
    {!produto.disponivel&&<div className="produto-card__esgotado"><Ban size={22} aria-hidden="true"/> Indisponível hoje</div>}
   </div>
   <div className="produto-card__corpo">
