@@ -118,31 +118,6 @@ export default function LojaApp(){
  const [horario,setHorario]=useState(()=>situacaoLoja(loja.horarios));
  useEffect(()=>{setArmazenamentoFalhou(!salvarCarrinho(carrinho));},[carrinho]);
  useEffect(()=>{const timer=window.setInterval(()=>setHorario(situacaoLoja(loja.horarios)),30000);return()=>clearInterval(timer);},[]);
- useEffect(()=>{
-  const base=loja.siteUrl;
-  const schema={
-   '@context':'https://schema.org',
-   '@type':'Restaurant',
-   name:loja.nome,
-   telephone:`+55 ${loja.whatsapp}`,
-   servesCuisine:'Nordestina',
-   url:base,
-   image:new URL(logoUrl,window.location.origin).toString(),
-   address:{
-    '@type':'PostalAddress',
-    streetAddress:loja.enderecoNumero?`Rua Santa Cruz da Conceição, ${loja.enderecoNumero}`:'Rua Santa Cruz da Conceição',
-    addressLocality:'São Paulo',addressRegion:'SP',postalCode:loja.cep,addressCountry:'BR'
-   },
-   openingHoursSpecification:loja.horarios.filter(h=>h.aberto).map(h=>({
-    '@type':'OpeningHoursSpecification',dayOfWeek:h.dia,opens:h.abertura,closes:h.fechamento
-   })),
-   hasMenu:{'@type':'Menu',name:'Cardápio Delícia do Nordeste Santa Cruz',url:base+'#cardapio'},
-   ...(loja.faixaPreco?{priceRange:loja.faixaPreco}:{})
-  };
-  let script=document.getElementById('dados-estruturados-restaurante') as HTMLScriptElement|null;
-  if(!script){script=document.createElement('script');script.type='application/ld+json';script.id='dados-estruturados-restaurante';document.head.appendChild(script);}
-  script.textContent=JSON.stringify(schema);
- },[]);
 
  useEffect(()=>{
   const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':'Cardápio e pedidos';
