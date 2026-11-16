@@ -4,6 +4,54 @@ Loja mobile-first com cardápio, sacola e checkout WhatsApp, com estrutura opcio
 
 > **Importante:** os 16 pratos, fotos e preços atuais são EXEMPLOS. O Supabase do restaurante ainda precisa ser criado e conectado para permitir gestão real. Não há pagamento automático por Mercado Pago, e o restaurante continua confirmando os pedidos.
 
+## Criar um novo cardápio pelo ADM (sem editar o código)
+
+O painel fica em [Área da equipe](https://daniel-soliz.github.io/Santa-Cruz/#/admin).
+A loja pública e o painel compartilham **as mesmas categorias, produtos e fotos somente
+quando você ativar o Supabase exclusivo do restaurante**. Enquanto isso, a prévia administrativa
+não salva alterações — não existe senha provisória nem banco local inseguro.
+
+**Preparação do banco:** no Supabase exclusivo Santa Cruz, execute nesta ordem:
+
+1. `supabase/INSTALAR_SANTA_CRUZ.sql` — usuários, pratos, pedidos e configurações.
+2. `supabase/ATUALIZAR_OPERACAO_SANTA_CRUZ.sql` — Storage de fotos, financeiro e pedidos.
+3. `supabase/GERENCIAR_CATEGORIAS_SANTA_CRUZ.sql` — categorias personalizadas, regras RLS,
+   validação de categoria ativa, proteção contra exclusões acidentais.
+
+Se já aplicou os dois primeiros arquivos, execute **somente o terceiro**. O erro de sintaxe
+na última instrução SQL do segundo arquivo foi corrigido no repositório.
+
+**No painel ativo:**
+
+1. Acesse **Cardápio e preços → Categorias do cardápio**. Crie suas próprias categorias,
+   altere os nomes, defina a ordem e marque quais ficam visíveis. Para excluir uma categoria,
+   primeiro remova ou transfira os pratos vinculados a ela.
+2. Clique em **Novo prato**. Cadastre nome, descrição, preço real, categoria, tamanhos,
+   opcionais e a ordem de exibição. Salve como **rascunho** se ainda estiver preparando.
+3. No editor de foto, escolha JPG, PNG ou WebP no celular. Ajuste zoom e posição;
+   o site converte a imagem para **WebP 960×720 (formato 4:3)**. Clique em
+   **Enviar foto otimizada** e então **Salvar rascunho / Salvar e publicar**.
+4. Use os botões ao lado do prato para **editar**, **publicar/despublicar** ou
+   **excluir**. Os botões de exclusão pedem confirmação.
+5. Clique em **Visualizar prévia** para conferir fotos, nomes, categorias e preços.
+   Quando houver pelo menos um prato real publicado em categoria ativa,
+   clique **Publicar meu novo cardápio**. A vitrine substituirá os 16 itens
+   demonstrativos pelas categorias e pratos que você definiu. Não há necessidade
+   de fazer um novo deploy para cada alteração.
+6. Depois de publicado, alterações de nome, preço, foto, disponibilidade e
+   categorias são buscadas novamente na loja automaticamente. A atualização
+   em tempo real depende da configuração Realtime no Supabase e também é
+   consultada novamente quando o cliente recarrega a página.
+
+**Segurança e consistência:** somente um administrador autenticado pode escrever
+na base e enviar fotos. Categorias e pratos ainda em rascunho não entram no
+site público. O servidor do pedido continua recalculando o preço e verificando
+a categoria ativa, sem confiar no total enviado pelo navegador.
+
+**Atenção:** estas alterações de estrutura não criam um banco por conta própria.
+Não utilize o banco de outro projeto nem coloque `service_role`, senhas ou
+Access Tokens no GitHub Pages.
+
 ## Painel administrativo (Área da equipe)
 
 O acesso discreto fica no final do rodapé, em **Área da equipe**. A rota da administração é
