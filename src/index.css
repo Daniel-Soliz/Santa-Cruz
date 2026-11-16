@@ -471,6 +471,9 @@ body{
   background-repeat:repeat-y;
   background-attachment:fixed;
 }
+@media(max-width:900px){
+  body{background-image:url("./assets/moldura-xilogravura-renda-mobile.webp");}
+}
 /* Um único fundo da primeira seção até o rodapé. */
 .hero,
 .catalogo,
@@ -627,3 +630,15 @@ body{
 .produto-card__corpo{display:flex;flex:1;flex-direction:column;min-width:0;}
 .produto-card__inferior{margin-top:auto;padding-top:13px;}
 .produto-card__imagem .food-photo{width:100%;height:100%;object-fit:cover;object-position:center;}
+
+.galeria-prato{position:relative;width:100%;height:100%}
+.galeria-prato__trilho{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;height:100%;border-radius:inherit}
+.galeria-prato__trilho::-webkit-scrollbar{display:none}
+.galeria-prato__trilho>div{flex:0 0 100%;min-width:0;scroll-snap-align:start}
+.galeria-prato__trilho .food-photo{width:100%;height:100%;object-fit:cover}
+.galeria-prato__acoes{position:absolute;right:10px;bottom:10px;z-index:2;display:flex;gap:6px}
+.galeria-prato__acoes button{display:grid;place-items:center;width:38px;height:38px;border:1px solid #fff;border-radius:50%;background:#fff5ea;color:var(--vinho);cursor:pointer}
+.sacola-sugestoes{display:grid;gap:8px;margin-top:16px;padding:13px;border-radius:14px;background:#fff4e7}
+.sacola-sugestoes h3{margin:0;color:var(--vinho);font-size:.96rem}
+.sacola-sugestoes button{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:1px solid var(--borda);border-radius:10px;background:white;padding:8px 12px;color:var(--vinho);cursor:pointer}
+.sacola-sugestoes small{display:block;color:var(--suave);font-size:.76rem}

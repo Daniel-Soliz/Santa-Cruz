@@ -343,3 +343,7 @@
  .adm-modal--produto{padding:16px}
  .adm-editor-rodape>.adm-btn{min-width:0;flex:1;padding:11px}
 }
+
+.adm-galeria-prato{display:grid;gap:12px;margin:0;padding:12px;border:1px solid #4d4045;border-radius:12px;min-width:0}
+.adm-galeria-prato>div{display:grid;gap:8px}
+.adm-galeria-prato legend{padding:0 6px;font-weight:700}

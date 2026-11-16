@@ -13,11 +13,12 @@ import { Checkout, type Preparado } from './components/Checkout';
 import { InformacoesPedido, SobreCasa, Avaliacoes, Galeria } from './components/InformacoesExtras';
 import { ConsultaEntrega } from './components/ConsultaEntrega';
 import { entregaConfigurada } from './entrega';
+import { sugerirBebidas } from './vitrine';
 
 const categoriasLocais=cardapio.categorias as Categoria[];
 const dadosLocais=cardapio.itens as Produto[];
 const ajudaUrl=`https://wa.me/${lojaBase.whatsapp}?text=${encodeURIComponent('Olá! Tenho uma dúvida sobre o cardápio do Delícia do Nordeste Santa Cruz.')}`;
-type Editando={produto:Produto;linha:LinhaCarrinho|null};
+type Editando={produto:Produto;linha:LinhaCarrinho|null;voltarSacola:boolean};
 const totalItens=(carrinho:LinhaCarrinho[])=>carrinho.reduce((s,x)=>s+x.quantidade,0);
 function irPara(id:string){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
 function Header({quantidade,abrir,status}:{quantidade:number;abrir:()=>void;status:{aberto:boolean;mensagem:string}}){
@@ -156,10 +157,10 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
  const mudarQuantidade=useCallback((chave:string,delta:number)=>{
   setCarrinho(atual=>atual.map(l=>l.chave===chave?{...l,quantidade:Math.max(0,Math.min(99,l.quantidade+delta))}:l).filter(l=>l.quantidade>0));
  },[]);
- const abrirModal=useCallback((produto:Produto,linha:LinhaCarrinho|null=null)=>setEditando({produto,linha}),[]);
+ const abrirModal=useCallback((produto:Produto,linha:LinhaCarrinho|null=null,voltarSacola=false)=>setEditando({produto,linha,voltarSacola}),[]);
  const abrirEditor=useCallback((linha:LinhaCarrinho)=>{
   const produto=produtos.find(p=>p.id===linha.produtoId);
-  if(produto){setCarrinhoAberto(false);abrirModal(produto,linha);}
+  if(produto){setCarrinhoAberto(false);abrirModal(produto,linha,true);}
  },[abrirModal]);
  const total=totalCarrinho(carrinho,produtos),quantidade=totalItens(carrinho);
  const filtrados=useMemo(()=>produtos.filter(p=>p.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(busca.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())),[busca,produtos]);
@@ -210,8 +211,10 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
   {!checkout&&!confirmacao&&quantidade>0&&<button className="barra-sacola-mobile" type="button" onClick={()=>setCarrinhoAberto(true)} aria-label={`Abrir sacola com ${quantidade} itens e total ${reais(total)}`}>
    <span className="barra-sacola-mobile__icon"><ShoppingBag size={21}/><b>{quantidade}</b></span><span>Ver pedido</span><strong>{reais(total)}</strong><ArrowRight size={19}/>
   </button>}
-  {carrinhoAberto&&<Carrinho linhas={carrinho} produtos={produtos} fechar={()=>setCarrinhoAberto(false)} atualizar={mudarQuantidade} remover={chave=>setCarrinho(itens=>itens.filter(i=>i.chave!==chave))} limpar={()=>setCarrinho([])} editar={abrirEditor} finalizar={irCheckout}/>}
-  {editando&&<ProdutoModal key={editando.linha?.chave||editando.produto.id} produto={editando.produto} linha={editando.linha} fechar={()=>setEditando(null)} salvar={salvarItem}/>}
+  {carrinhoAberto&&<Carrinho linhas={carrinho} produtos={produtos}
+   sugestoes={sugerirBebidas(carrinho,produtos,categorias)}
+   adicionarSugestao={produto=>{setCarrinhoAberto(false);abrirModal(produto,null,true);}} fechar={()=>setCarrinhoAberto(false)} atualizar={mudarQuantidade} remover={chave=>setCarrinho(itens=>itens.filter(i=>i.chave!==chave))} limpar={()=>setCarrinho([])} editar={abrirEditor} finalizar={irCheckout}/>}
+  {editando&&<ProdutoModal key={editando.linha?.chave||editando.produto.id} produto={editando.produto} linha={editando.linha} fechar={()=>{if(editando.voltarSacola)setCarrinhoAberto(true);setEditando(null);}} salvar={salvarItem}/>}
  </div>;
 }
 

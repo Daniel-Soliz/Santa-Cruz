@@ -4,7 +4,7 @@ import type { LinhaCarrinho, Produto } from '../types';
 import { precoLinha, reais, totalCarrinho } from '../pedido';
 import { FotoPrato } from './ProdutoCard';
 
-export function Carrinho({linhas,produtos,fechar,atualizar,remover,limpar,editar,finalizar}:{linhas:LinhaCarrinho[];produtos:Produto[];fechar:()=>void;atualizar:(chave:string,delta:number)=>void;remover:(chave:string)=>void;limpar:()=>void;editar:(linha:LinhaCarrinho)=>void;finalizar:()=>void}){
+export function Carrinho({linhas,produtos,sugestoes,adicionarSugestao,fechar,atualizar,remover,limpar,editar,finalizar}:{linhas:LinhaCarrinho[];produtos:Produto[];sugestoes:Produto[];adicionarSugestao:(produto:Produto)=>void;fechar:()=>void;atualizar:(chave:string,delta:number)=>void;remover:(chave:string)=>void;limpar:()=>void;editar:(linha:LinhaCarrinho)=>void;finalizar:()=>void}){
  const focus=useRef<HTMLButtonElement>(null);
  useEffect(()=>{const before=document.body.style.overflow;document.body.style.overflow='hidden';focus.current?.focus();const handle=(e:KeyboardEvent)=>{if(e.key==='Escape')fechar();};window.addEventListener('keydown',handle);return()=>{document.body.style.overflow=before;window.removeEventListener('keydown',handle);};},[fechar]);
  const itens=linhas.map(l=>({linha:l,produto:produtos.find(p=>p.id===l.produtoId)})).filter(x=>!!x.produto);
@@ -32,6 +32,13 @@ export function Carrinho({linhas,produtos,fechar,atualizar,remover,limpar,editar
       </div>
      </div>
     </div>):<div className="sacola-vazia"><ShoppingBag size={48} strokeWidth={1.3}/><h3>Sua sacola está vazia</h3><p>Escolha pratos no cardápio para começar.</p><button type="button" className="botao botao--rosa" onClick={fechar}>Ver cardápio</button></div>}
+    {sugestoes.length>0&&<section className="sacola-sugestoes" aria-labelledby="sugestoes-bebidas">
+     <h3 id="sugestoes-bebidas">Uma bebida para acompanhar?</h3>
+     {sugestoes.map(produto=><button type="button" key={produto.id} onClick={()=>adicionarSugestao(produto)}>
+      <span>{produto.nome}<small>{reais(produto.preco)}{produto.exemplo?' · valor ilustrativo':''}</small></span>
+      <Plus size={18} aria-hidden="true"/>
+     </button>)}
+    </section>}
    </div>
    <footer className="carrinho-rodape">
     <p><span>Subtotal</span><strong>{reais(totalCarrinho(linhas,produtos))}</strong></p>

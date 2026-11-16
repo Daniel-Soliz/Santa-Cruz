@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X, Plus, Minus, Check, Info } from 'lucide-react';
 import type { LinhaCarrinho, Produto } from '../types';
 import { dinheiro, reais } from '../pedido';
-import { FotoPrato } from './ProdutoCard';
+import { GaleriaPrato } from './ProdutoCard';
 
 export function ProdutoModal({produto,linha,fechar,salvar}:{produto:Produto;linha?:LinhaCarrinho|null;fechar:()=>void;salvar:(item:LinhaCarrinho,antiga?:string)=>void}){
  const [quantidade,setQuantidade]=useState(linha?.quantidade||1);
@@ -32,7 +32,7 @@ export function ProdutoModal({produto,linha,fechar,salvar}:{produto:Produto;linh
  return <div className="sobreposicao" onMouseDown={e=>{if(e.currentTarget===e.target)fechar();}}>
   <section className="modal-produto" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
    <div className="modal-produto__imagem">
-    <FotoPrato foto={produto.foto} nome={produto.nome} ilustrativa={produto.exemplo||produto.imagemIlustrativa===true}/>
+    <GaleriaPrato produto={produto}/>
     <button ref={inicio} className="fechar-modal" type="button" onClick={fechar} aria-label="Fechar detalhes"><X size={22}/></button>
    </div>
    <div className="modal-produto__conteudo">

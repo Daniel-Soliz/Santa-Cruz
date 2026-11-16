@@ -2,7 +2,7 @@ export type Categoria = {id:string; nome:string; ordem:number};
 export type Variacao = {id:string; nome:string; acrescimo:number};
 export type Opcional = {id:string; nome:string; preco:number};
 export type Produto = {
- id:string;categoriaId:string;nome:string;descricao:string;preco:number;foto:string;
+ id:string;categoriaId:string;nome:string;descricao:string;preco:number;foto:string;fotos?:string[];
  disponivel:boolean;destaque:boolean;exemplo:boolean;imagemIlustrativa?:boolean;variacoes:Variacao[];opcionais:Opcional[];tags:string[];
 };
 export type LinhaCarrinho = {

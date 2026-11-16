@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { ChefHat, Plus, Ban, Star } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChefHat, Plus, Ban, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Produto } from '../types';
 import { reais } from '../pedido';
+import { fotosDoProduto } from '../vitrine';
 
 export function FotoPrato({foto,nome,destaque=false,ilustrativa=true}:{foto:string;nome:string;destaque?:boolean;ilustrativa?:boolean}){
  const [falhou,setFalhou]=useState(false);
@@ -15,10 +16,32 @@ export function FotoPrato({foto,nome,destaque=false,ilustrativa=true}:{foto:stri
  }
  return <img src={src} loading={destaque?'eager':'lazy'} decoding="async" onError={()=>setFalhou(true)} width="640" height="480" alt={ilustrativa?`Imagem ilustrativa de ${nome}`:`Foto do prato ${nome}`} className="food-photo"/>;
 }
+export function GaleriaPrato({produto}:{produto:Produto}){
+ const fotos=fotosDoProduto(produto);
+ const trilho=useRef<HTMLDivElement>(null);
+ const ilustrativa=produto.exemplo||produto.imagemIlustrativa===true;
+ if(fotos.length<2)return <FotoPrato foto={fotos[0]||''} nome={produto.nome} ilustrativa={ilustrativa}/>;
+ const mover=(direcao:number)=>{
+  const el=trilho.current;
+  if(!el)return;
+  const atual=Math.round(el.scrollLeft/el.clientWidth);
+  const indice=(atual+direcao+fotos.length)%fotos.length;
+  el.scrollTo({left:indice*el.clientWidth,behavior:'instant'});
+ };
+ return <div className="galeria-prato" role="group" aria-label={`Fotos de ${produto.nome}`}>
+  <div className="galeria-prato__trilho" ref={trilho} tabIndex={0} aria-label="Deslize para ver as fotos">
+   {fotos.map((foto,i)=><div key={foto}><FotoPrato foto={foto} nome={`${produto.nome}, imagem ${i+1} de ${fotos.length}`} ilustrativa={ilustrativa}/></div>)}
+  </div>
+  <div className="galeria-prato__acoes">
+   <button type="button" aria-label="Foto anterior" onClick={()=>mover(-1)}><ChevronLeft size={18}/></button>
+   <button type="button" aria-label="Próxima foto" onClick={()=>mover(1)}><ChevronRight size={18}/></button>
+  </div>
+ </div>;
+}
 export function ProdutoCard({produto,abrir}:{produto:Produto;abrir:(p:Produto)=>void}){
  return <article className="produto-card">
   <div className="produto-card__imagem">
-   <FotoPrato foto={produto.foto} nome={produto.nome} ilustrativa={produto.exemplo||produto.imagemIlustrativa===true}/>
+   <GaleriaPrato produto={produto}/>
    <div className="produto-card__etiquetas">
     {produto.exemplo&&<span className="tag tag--demo">EXEMPLO</span>}
     {produto.destaque&&<span className="tag tag--yellow"><Star size={12} aria-hidden="true"/> Destaque</span>}

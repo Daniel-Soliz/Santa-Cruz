@@ -33,7 +33,10 @@ const cssName=fs.readdirSync(path.join(dist,'assets')).find(name=>/^index-[\w-]+
 assert.ok(cssName,'CSS compilado não encontrado');
 const cssBuild=fs.readFileSync(path.join(dist,'assets',cssName),'utf8');
 assert.match(cssBuild,/moldura-xilogravura-renda-[\w-]+\.webp/,'Imagem não referenciada no CSS');
-assert.ok(fs.statSync(path.join(dist,'assets',fundo)).size<150000,'Textura não otimizada');
+const fundoMobile=fs.readdirSync(path.join(dist,'assets')).find(name=>/^moldura-xilogravura-renda-mobile-[\w-]+\.webp$/.test(name));
+assert.ok(fundoMobile&&cssBuild.includes(fundoMobile),'Versão leve do fundo não referenciada no CSS');
+assert.ok(fs.statSync(path.join(dist,'assets',fundoMobile)).size<150000,'Textura mobile não otimizada');
+assert.ok(fs.statSync(path.join(dist,'assets',fundo)).size<500000,'Textura 4K não otimizada');
 console.log('Fundo xilogravura/renda incorporado e otimizado no build.');
 
 const arquivosJS=fs.readdirSync(path.join(dist,'assets')).filter(n=>n.endsWith('.js'));

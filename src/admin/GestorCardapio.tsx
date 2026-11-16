@@ -2,6 +2,7 @@ import {useMemo,useState,type FormEvent} from 'react';
 import {UtensilsCrossed,Plus,Search,Pencil,Eye,EyeOff,Trash2,X,Save,ImagePlus,AlertTriangle,CheckCircle2,ArrowUpRight,ChefHat} from 'lucide-react';
 import type {Opcional,Variacao,Produto} from '../loja/types';
 import {valorDigitado} from '../loja/pedido';
+import {fotosDoProduto,LIMITE_FOTOS} from '../loja/vitrine';
 import {EditorFoto} from './EditorFoto';
 import {EditorOpcoes} from './EditorOpcoes';
 import {GestorCategorias} from './GestorCategorias';
@@ -9,14 +10,14 @@ import {removerFotoAntiga} from './fotosStorage';
 import {erroLegivel,reais,supabase,type CategoriaAdmin,type ProdutoAdmin} from './backend';
 
 type Rascunho={
- id:string;nome:string;descricao:string;categoriaId:string;preco:string;foto:string;
+ id:string;nome:string;descricao:string;categoriaId:string;preco:string;fotos:string[];
  exemplo:boolean;imagemIlustrativa:boolean;disponivel:boolean;destaque:boolean;publicado:boolean;
  variacoes:Variacao[];opcionais:Opcional[];ordem:number;
 };
 type Props={
  categorias:CategoriaAdmin[];produtos:ProdutoAdmin[];catalogoPublicado:boolean;atualizar:()=>Promise<void>;
 };
-const produtoImagem=(p:ProdutoAdmin)=>typeof p.dados.foto==='string'?p.dados.foto:'';
+const produtoImagem=(p:ProdutoAdmin)=>fotosDoProduto(p.dados)[0]||'';
 const valorSeguro=(p:ProdutoAdmin)=>Number(p.dados.preco||0);
 const idItem=()=>`prato-${crypto.randomUUID().slice(0,16)}`;
 
@@ -36,7 +37,7 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
    nome:String(dados.nome||''),descricao:String(dados.descricao||''),
    categoriaId:String(dados.categoriaId||ordenadas.find(c=>c.ativa)?.id||ordenadas[0]?.id||''),
    preco:produto?String(dados.preco??''):'',
-   foto:String(dados.foto||''),
+   fotos:fotosDoProduto(dados),
    exemplo:produto?dados.exemplo!==false:false,
    imagemIlustrativa:produto?dados.imagemIlustrativa===true:false,
    disponivel:produto?dados.disponivel!==false:true,
@@ -59,7 +60,7 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
    return 'Preencha o nome e o valor de todos os tamanhos e adicionais.';
   if(d.publicado&&d.exemplo)return 'O prato ainda está marcado como exemplo. Confirme os dados reais antes de publicá-lo.';
   if(d.publicado&&!podePublicar(d.categoriaId))return 'Ative a categoria antes de publicar este prato.';
-  if(d.foto.trim()&&!(d.foto.startsWith('https://')||/^[\w./-]+$/.test(d.foto.trim())))
+  if(d.fotos.some(foto=>foto.trim()&&!(foto.trim().startsWith('https://')||/^[\w./-]+$/.test(foto.trim()))))
    return 'Use uma imagem enviada pelo painel, uma URL HTTPS ou um caminho local válido.';
   return '';
  };
@@ -70,9 +71,10 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
   setSalvando(true);
   try{
    const antigo=produtos.find(p=>p.id===editando.id);
+   const fotos=fotosDoProduto(editando);
    const dados:Produto={id:editando.id,categoriaId:editando.categoriaId,
     nome:editando.nome.trim(),descricao:editando.descricao.trim(),
-    preco:valorDigitado(editando.preco)!,foto:editando.foto.trim(),
+    preco:valorDigitado(editando.preco)!,foto:fotos[0]||'',fotos,
     disponivel:editando.disponivel,destaque:editando.destaque,exemplo:editando.exemplo,
     imagemIlustrativa:editando.imagemIlustrativa,
     variacoes:editando.variacoes,opcionais:editando.opcionais,
@@ -84,11 +86,9 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
    });
    if(error)throw error;
    setEditando(null);setSucesso(`Prato "${dados.nome}" salvo ${editando.publicado?'e publicado':'como rascunho'}.`);
-   const anterior=produtoImagem(antigo||{id:'',dados:{},publicado:false,ordem:0});
-   if(anterior&&anterior!==editando.foto){
-    try{await removerFotoAntiga(anterior,editando.id);}
-    catch{setSucesso('Prato salvo. A imagem antiga permaneceu no armazenamento e pode ser limpa depois.');}
-   }
+   const removidas=fotosDoProduto(antigo?.dados||{}).filter(foto=>!fotos.includes(foto));
+   try{await Promise.all(removidas.map(foto=>removerFotoAntiga(foto,editando.id)));}
+   catch{setSucesso('Prato salvo. Uma imagem antiga permaneceu no armazenamento.');}
    await atualizar();
   }catch(e){setErro(erroLegivel(e));}
   finally{setSalvando(false);}
@@ -114,7 +114,7 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
   setErro('');setSucesso('');setSalvando(true);
   const {error}=await supabase!.from('sc_produtos').delete().eq('id',p.id);
   if(error){setErro(erroLegivel(error));setSalvando(false);return;}
-  try{await removerFotoAntiga(produtoImagem(p),p.id);}
+  try{await Promise.all(fotosDoProduto(p.dados).map(foto=>removerFotoAntiga(foto,p.id)));}
   catch{setSucesso('Prato excluído, mas a foto antiga não pôde ser removida do armazenamento.');}
   setSalvando(false);await atualizar();
   setSucesso(v=>v||'Prato excluído do cardápio.');
@@ -247,9 +247,23 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
        {ordenadas.map(c=><option key={c.id} value={c.id}>{c.nome}{!c.ativa?' (oculta)':''}</option>)}
       </select></label>
      </div>
-     <EditorFoto produtoId={editando.id} foto={editando.foto} nome={editando.nome}
-      onSalvar={url=>setEditando(v=>v?{...v,foto:url,imagemIlustrativa:false}:v)}/>
-     <label>URL externa da foto (opcional)<input value={editando.foto} onChange={e=>setEditando({...editando,foto:e.target.value})} placeholder="https://site.com/imagem.webp"/></label>
+     <fieldset className="adm-galeria-prato">
+      <legend>Galeria do prato</legend>
+      <p className="adm-pequeno">Até {LIMITE_FOTOS} fotos. A primeira será usada como capa na loja.</p>
+      {Array.from({length:LIMITE_FOTOS},(_,i)=>{
+       const atualizarFoto=(url:string)=>setEditando(atual=>{
+        if(!atual)return atual;
+        const fotos=Array.from({length:LIMITE_FOTOS},(_,j)=>j===i?url:atual.fotos[j]||'');
+        return {...atual,fotos};
+       });
+       const titulo=i===0?'Foto de capa':`Foto adicional ${i+1}`;
+       return <div key={i}>
+        <EditorFoto produtoId={editando.id} foto={editando.fotos[i]||''} nome={editando.nome}
+         titulo={titulo} onSalvar={atualizarFoto}/>
+        <label>URL externa · {titulo}<input value={editando.fotos[i]||''} onChange={e=>atualizarFoto(e.target.value)} placeholder="https://site.com/imagem.webp"/></label>
+       </div>;
+      })}
+     </fieldset>
      <label>Ordem de exibição<input type="number" min={0} step={1} value={editando.ordem} onChange={e=>setEditando({...editando,ordem:Number(e.target.value)})}/></label>
      <EditorOpcoes variacoes={editando.variacoes} opcionais={editando.opcionais}
       onVariacoes={v=>setEditando({...editando,variacoes:v})} onOpcionais={v=>setEditando({...editando,opcionais:v})}/>

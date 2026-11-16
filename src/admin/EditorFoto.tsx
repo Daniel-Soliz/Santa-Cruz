@@ -2,8 +2,8 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {ImagePlus,UploadCloud,Trash2,SlidersHorizontal} from 'lucide-react';
 import {supabase,erroLegivel} from './backend';
 import {ALTURA_FOTO,LARGURA_FOTO,pintarImagem,recorteInicial,exportarWebp,validarArquivoImagem,type Recorte} from './imagem';
-type Props={foto:string;nome:string;onSalvar:(url:string)=>void;produtoId:string};
-export function EditorFoto({foto,nome,onSalvar,produtoId}:Props){
+type Props={foto:string;nome:string;onSalvar:(url:string)=>void;produtoId:string;titulo?:string};
+export function EditorFoto({foto,nome,onSalvar,produtoId,titulo="Foto do prato"}:Props){
  const canvas=useRef<HTMLCanvasElement>(null);
  const imagem=useRef<ImageBitmap|null>(null);
  const [file,setFile]=useState<File|null>(null);
@@ -48,7 +48,7 @@ export function EditorFoto({foto,nome,onSalvar,produtoId}:Props){
   finally{setEnviando(false);}
  };
  return <section className="adm-editor-foto">
-  <h4><ImagePlus size={18}/> Foto do prato</h4>
+  <h4><ImagePlus size={18}/> {titulo}</h4>
   <div className="adm-editor-foto__layout">
    <div className="adm-editor-foto__visual">
     {file?<canvas ref={canvas} width={LARGURA_FOTO} height={ALTURA_FOTO} role="img" aria-label="Prévia do enquadramento em formato 4 por 3"/>:
