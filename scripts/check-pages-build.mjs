@@ -35,3 +35,9 @@ const cssBuild=fs.readFileSync(path.join(dist,'assets',cssName),'utf8');
 assert.match(cssBuild,/moldura-xilogravura-renda-[\w-]+\.webp/,'Imagem não referenciada no CSS');
 assert.ok(fs.statSync(path.join(dist,'assets',fundo)).size<150000,'Textura não otimizada');
 console.log('Fundo xilogravura/renda incorporado e otimizado no build.');
+
+const arquivosJS=fs.readdirSync(path.join(dist,'assets')).filter(n=>n.endsWith('.js'));
+assert.ok(arquivosJS.some(n=>/^AdminApp-[\w-]+\.js$/.test(n)), 'Chunk da rota administrativa não gerado');
+const appJS=arquivosJS.map(n=>fs.readFileSync(path.join(dist,'assets',n),'utf8')).join('\n');
+assert.ok(appJS.includes('#/admin'), 'Link de acesso administrativo ausente do build');
+console.log('Painel carregado de forma separada e rota #/admin preservada.');

@@ -151,10 +151,13 @@ Teste no celular: fotos, categorias, adicionar/editar produto, carrinho, CEP, to
 
 O DNS pode demorar até 24 horas para propagar. Consulte a documentação oficial do GitHub: https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site.
 
-## Fase 2 — NÃO implementada
+## Próximos passos técnicos
 
-- Supabase Auth, Postgres e Row Level Security (RLS) para painel, cardápio e pedidos em tempo real.
-- Mercado Pago com Pix QR Code/copia e cola, cartão, webhook validado por função serverless.
-- Aviso de novo pedido por WhatsApp/e-mail e gestão de etapas do pedido.
+- A interface do painel com Supabase Auth, CRUD de pratos, configurações e pedidos manuais **já está implementada**, mas depende de um **projeto Supabase exclusivo da Santa Cruz** e da execução do SQL antes de operar de verdade.
+- Pedidos originados no checkout pelo WhatsApp não são registrados automaticamente, pois a mensagem só é enviada quando o cliente a confirma no aplicativo. Um backend seguro para receber pedidos online, validar totais e gerar status do cliente continua pendente.
+- Mercado Pago com Pix QR Code/copia e cola, cartão e webhook validado por função serverless ainda não está conectado.
+- Notificações automáticas por WhatsApp/e-mail, upload privado de fotos e perfis de funcionários com níveis diferentes de permissão ficam para a próxima etapa.
+
+**Publicação de preços:** no painel, altere dados reais e marque o produto como não demonstrativo antes de publicá-lo. Depois ative o uso do catálogo do painel em Configurações. Sem isso, a vitrine mantém o JSON de demonstração, sem inventar dados.
 
 **Nunca** armazene senha de administrador, Access Token do Mercado Pago, token de WhatsApp ou chave `service_role` do Supabase no frontend ou em arquivos do GitHub Pages. Essas credenciais devem ficar exclusivamente em infraestrutura de servidor com secrets.
