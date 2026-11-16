@@ -604,3 +604,19 @@ body{
     body{background-attachment:scroll;}
   }
 }
+
+/* Melhorias finais de mobile, feedback e fluxo seguro do checkout. */
+.botao-adicionar{min-height:45px;}
+.produto-card__imagem .food-photo{object-position:center center;}
+.checkout-verificacao,.checkout-registro{min-width:0;display:grid;gap:10px;margin-top:12px;
+ border:1px solid #e8d5dc;border-radius:13px;background:#fffdfc;padding:15px}
+.checkout-registro>strong{font-size:.9rem;color:#783048}
+.checkout-registro p{font-size:.76rem;color:#765c64;line-height:1.6;margin:0}
+.checkout-verificacao>p{font-size:.75rem;color:#6a4d5b}
+.checkout-verificacao>div{max-width:100%;overflow:hidden;}
+.confirmacao__integracao{background:#fff0d8;padding:13px 15px;border-radius:12px;color:#77512b;
+ border:1px solid #f0d4aa;font-size:.81rem;line-height:1.6}
+.sacola-feedback{position:fixed;z-index:110;left:50%;bottom:85px;transform:translateX(-50%);
+ width:max-content;max-width:min(90vw,390px);background:#3d2835;color:white;
+ border-radius:999px;padding:12px 19px;box-shadow:0 9px 22px #3b26365c;text-align:center;
+ font-size:.79rem;font-weight:800;pointer-events:none}

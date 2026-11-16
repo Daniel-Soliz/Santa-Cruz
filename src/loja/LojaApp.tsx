@@ -53,7 +53,7 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
     </div>
    </div>
    <div className="hero__visual">
-    {String(loja.heroFoto)?<img className="hero__foto" src={String(loja.heroFoto).startsWith('http')?String(loja.heroFoto):`${import.meta.env.BASE_URL}${String(loja.heroFoto).replace(/^\/+/, '')}`} alt="Fotografia ilustrativa de comida nordestina, não é foto do restaurante" width="720" height="600" fetchPriority="high"/>:
+    {String(loja.heroFoto)?<img className="hero__foto" src={String(loja.heroFoto).startsWith('http')?String(loja.heroFoto):`${import.meta.env.BASE_URL}${String(loja.heroFoto).replace(/^\/+/, '')}`} alt={loja.heroImagemIlustrativa?'Fotografia ilustrativa de comida nordestina':'Foto do restaurante Delícia do Nordeste'} width="720" height="600" fetchPriority="high"/>:
      <div className="hero__placeholder"><div className="hero__prato"><ChefHat size={76} strokeWidth={1.2}/><span>O sabor tem endereço</span></div><div className="hero__foto-texto"><b>Seu prato favorito mora aqui.</b><span>Sabores nordestinos</span></div></div>}
     <div className="hero__adesivo"><span>✸</span> Tradição &<br/> sabor de casa</div>
     {loja.heroFoto&&loja.heroImagemIlustrativa&&<span className="hero__legenda">Imagem ilustrativa</span>}
