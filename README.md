@@ -1,8 +1,8 @@
 # Delícia do Nordeste · Casa do Norte · Santa Cruz
 
-Loja mobile-first com cardápio, fotos **ilustrativas**, sacola e pedido preparado no site para envio ao WhatsApp. Frontend **estático** (React + Vite + Tailwind) publicado em https://daniel-soliz.github.io/Santa-Cruz/.
+Loja mobile-first com cardápio, sacola e checkout WhatsApp, com estrutura opcional para registro seguro dos pedidos no Supabase. Frontend **estático** (React + Vite + Tailwind) publicado em https://daniel-soliz.github.io/Santa-Cruz/.
 
-> **Importante:** os 16 pratos, fotos e preços do catálogo são EXEMPLOS. O restaurante confirma os pedidos por WhatsApp. Não há banco de dados nem cobrança automática nesta fase.
+> **Importante:** os 16 pratos, fotos e preços atuais são EXEMPLOS. O Supabase do restaurante ainda precisa ser criado e conectado para permitir gestão real. Não há pagamento automático por Mercado Pago, e o restaurante continua confirmando os pedidos.
 
 ## Painel administrativo (Área da equipe)
 
@@ -56,6 +56,34 @@ Você pode abrir **Visualizar prévia do painel** mesmo antes de configurar um p
 banco desse site. A estrutura interna da administração original não estava publicamente visível;
 o que foi usado como referência foi a apresentação do login e o estilo visual. O painel
 do restaurante tem estrutura própria para cardápio e pedidos.
+
+## Operação integrada: fotos, pedidos e financeiro
+
+O site pode trabalhar em dois modos, sem misturar informações:
+
+- **Modo demonstrativo (padrão atual):** funciona sem Supabase, com 16 produtos fictícios e pedidos preparados para envio manual por WhatsApp. Nada é salvo como venda no ADM.
+- **Modo conectado:** depois de criar um Supabase exclusivo, o painel salva preços, tamanhos, adicionais, disponibilidade, fotos e configurações. Quando você publicar pelo menos um produto real e ativar o catálogo do painel, a loja passa a exibir somente os produtos publicados. A tela de checkout oferece **registro no painel com confirmação de segurança**. O restaurante ainda precisa confirmar o pedido e o pagamento.
+
+### Como habilitar o editor de fotos e caixa
+
+1. Após executar `supabase/INSTALAR_SANTA_CRUZ.sql`, execute também `supabase/ATUALIZAR_OPERACAO_SANTA_CRUZ.sql` no **mesmo projeto exclusivo do restaurante**. Esse segundo arquivo cria o bucket público de imagens `sc-fotos-cardapio` (escrita apenas por admins), lançamentos de caixa e os campos de pagamento, canal e endereço dos pedidos.
+2. Entre em `#/admin` com a conta autorizada. Em **Cardápio e preços**, clique em Novo produto ou no lápis para editar. Preencha nome, preço e categoria. Escolha uma imagem JPG/PNG/WebP do celular; o painel permite zoom, posição horizontal/vertical e gera um arquivo WebP 960 × 720. Clique em **Enviar foto otimizada** e depois em **Salvar no banco**.
+3. Também é possível incluir ou excluir tamanhos, adicionais, destacar um prato, marcar como esgotado, alterar a ordem e excluir o produto. Itens fictícios devem continuar como rascunhos até terem dados reais confirmados.
+4. Em **Entradas e saídas**, registre despesas e receitas extras sem misturar com os pedidos. Em **Pedidos**, marque manualmente "Recebido (conferido)" apenas depois de verificar que o dinheiro entrou. Valores do painel **não são extrato do banco ou Mercado Pago** e não representam Pix confirmado automaticamente.
+
+### Para receber pedidos do próprio site no ADM
+
+O botão de envio ao painel só funciona quando o banco, o catálogo real e a função de servidor estiverem configurados. A integração foi codificada com recálculo de preços no servidor, proteção Turnstile, limite de tentativas e status inicial `aguardando_confirmacao`.
+
+1. Crie uma conta no **Cloudflare Turnstile**, configure o domínio `daniel-soliz.github.io` (e o domínio próprio se houver) e obtenha **site key** pública e **secret key** privada.
+2. No GitHub, em `Settings → Secrets and variables → Actions → Variables`, inclua `VITE_TURNSTILE_SITE_KEY` com a **site key pública**, além das duas variáveis públicas do Supabase descritas acima. Faça novo deploy para o Pages.
+3. No projeto Supabase da Santa Cruz, configure os **segredos da Edge Function**, fora do código público: `TURNSTILE_SECRET_KEY` (privado), `RATE_LIMIT_SALT` (um valor forte e aleatório, privado), `SITE_ORIGINS=https://daniel-soliz.github.io`. O Supabase fornece `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` em seu ambiente de funções, mas eles **nunca podem estar no navegador**.
+4. Publique `supabase/functions/criar-pedido/index.ts` como função **criar-pedido** do Supabase, com `verify_jwt=false` conforme `supabase/config.toml`. É intencional que a função aceite visitantes anônimos, pois ela verifica CAPTCHA, origem, tentativas e preços no servidor. Se usar o CLI, confira `supabase --help` e as instruções atuais do CLI antes de executar deploy remoto.
+5. Teste primeiro com um produto real confirmado e uma operação de teste; confira na aba Pedidos se o registro aparece como **Aguardando confirmação**. A mensagem do WhatsApp ainda precisa ser enviada pelo cliente, e a equipe decide aceitar ou cancelar. Nunca interprete o registro ou o valor do pedido como pagamento recebido.
+
+Se a função, o CAPTCHA ou a rede falharem, o checkout mostra o erro e oferece continuar no WhatsApp **sem registro automático**. Não é uma confirmação de entrega ou pagamento. Pedidos recebidos fora do site exigem registro manual no ADM.
+
+**Mercado Pago:** Pix com QR Code, cartão online e webhook de pagamento seguem **inativos**. Não cole Access Token no front-end. Para ativar, será necessária uma integração serverless separada com token privado e webhook validado.
 
 ## 1. Edite os dados sem programar
 
