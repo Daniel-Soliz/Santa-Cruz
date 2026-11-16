@@ -33,9 +33,7 @@ const cssName=fs.readdirSync(path.join(dist,'assets')).find(name=>/^index-[\w-]+
 assert.ok(cssName,'CSS compilado não encontrado');
 const cssBuild=fs.readFileSync(path.join(dist,'assets',cssName),'utf8');
 assert.match(cssBuild,/moldura-xilogravura-renda-[\w-]+\.webp/,'Imagem não referenciada no CSS');
-const fundoMobile=fs.readdirSync(path.join(dist,'assets')).find(name=>/^moldura-xilogravura-renda-mobile-[\w-]+\.webp$/.test(name));
-assert.ok(fundoMobile&&cssBuild.includes(fundoMobile),'Versão leve do fundo não referenciada no CSS');
-assert.ok(fs.statSync(path.join(dist,'assets',fundoMobile)).size<150000,'Textura mobile não otimizada');
+assert.match(cssBuild, /@media\s*\((?:max-width:\s*900px|width\s*<=\s*900px)\)\s*\{\s*body\s*\{[^}]*background-image:\s*none/, 'O fundo decorado precisa ficar desativado no celular');
 assert.ok(fs.statSync(path.join(dist,'assets',fundo)).size<500000,'Textura 4K não otimizada');
 console.log('Fundo xilogravura/renda incorporado e otimizado no build.');
 

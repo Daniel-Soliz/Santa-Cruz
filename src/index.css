@@ -471,9 +471,6 @@ body{
   background-repeat:repeat-y;
   background-attachment:fixed;
 }
-@media(max-width:900px){
-  body{background-image:url("./assets/moldura-xilogravura-renda-mobile.webp");}
-}
 /* Um único fundo da primeira seção até o rodapé. */
 .hero,
 .catalogo,
@@ -529,9 +526,6 @@ body{
 .rodape__base{
   color:#74545B;
   border-top-color:rgba(114,34,56,.16);
-}
-@media(max-width:600px){
-  body{background-size:calc(100% + 8px) auto;}
 }
 /* Correção mobile — busca de CEP:
    Itens flex/grid precisam poder encolher para que o texto e o botão
@@ -600,14 +594,6 @@ body{
   }
 }
 
-/* Safari/iOS: evita saltos ao rolar quando o motor ignora fundo fixed.
-   Outros navegadores preservam o fundo fixo solicitado. */
-@supports(-webkit-touch-callout:none){
-  @media(max-width:767px){
-    body{background-attachment:scroll;}
-  }
-}
-
 /* Melhorias finais de mobile, feedback e fluxo seguro do checkout. */
 .botao-adicionar{min-height:45px;}
 .produto-card__imagem .food-photo{object-position:center center;}
@@ -642,3 +628,33 @@ body{
 .sacola-sugestoes h3{margin:0;color:var(--vinho);font-size:.96rem}
 .sacola-sugestoes button{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:1px solid var(--borda);border-radius:10px;background:white;padding:8px 12px;color:var(--vinho);cursor:pointer}
 .sacola-sugestoes small{display:block;color:var(--suave);font-size:.76rem}
+
+/* A vitrine compacta prioriza a navegação e o cardápio em telas pequenas. */
+@media(max-width:900px){
+ body{background-image:none;background-color:#fbf7f1}
+}
+@media(max-width:779px){
+ html{scroll-padding-top:120px}
+ .cabecalho__conteudo{min-height:64px}
+ .cabecalho .marca img{width:40px;height:40px;flex-basis:40px}
+ .cabecalho .marca strong{font-size:1.05rem}
+ .cabecalho .status-loja,.cabecalho__sacola>span{display:none}
+ .cabecalho__sacola{border-radius:12px;min-height:44px;min-width:44px}
+ .hero__grade{gap:19px;padding-block:28px 21px}
+ .hero h1{margin:0 0 9px;font-size:clamp(2.05rem,8vw,3.1rem);line-height:1.02}
+ .hero__texto>p{font-size:.86rem;line-height:1.55;margin:0}
+ .hero__acoes{margin-top:15px}
+ .hero__acoes .botao{box-shadow:none}
+ .hero__visual{min-height:0;aspect-ratio:16/8;border-radius:16px;box-shadow:none;overflow:hidden}
+ .hero__foto{min-height:0;height:100%;aspect-ratio:auto;border-radius:0}
+ .hero__legenda{bottom:7px;left:7px;font-size:.62rem}
+ .hero__eyebrow,.hero__adesivo,.hero__selos,.hero__acoes>a,
+ .destaques,.catalogo__inicio>.micro-label,.catalogo__inicio>p,
+ .categoria-secao__topo .micro-label,.whatsapp-suporte,.barra-aviso span{display:none}
+ .barra-aviso{background:#fffdf8;padding-block:7px;line-height:1.35}
+ main>.aviso-atendimento{min-height:0;padding:9px 12px;font-size:.72rem;margin-block:9px}
+ .catalogo{padding-top:24px}
+ .catalogo__inicio h2{margin-top:0}
+ .barra-categorias{background:#fbf7f1}
+ .produto-card{box-shadow:none;border-radius:14px}
+}

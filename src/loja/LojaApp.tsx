@@ -45,7 +45,7 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
    <div className="hero__texto">
     <div className="hero__eyebrow"><span>✺</span> Bem-vindo ao sabor do Nordeste <span>✺</span></div>
     <h1>Da nossa cozinha<br/>para a <em>sua mesa.</em></h1>
-    <p>Comida nordestina, feita com carinho. Escolha seus pratos, personalize do seu jeito e monte o pedido em poucos toques.</p>
+    <p>Comida nordestina feita com carinho, na unidade Santa Cruz.</p>
     <div className="hero__acoes"><button className="botao botao--rosa" type="button" onClick={()=>irPara('cardapio')}>Ver cardápio e pedir <ArrowRight size={21}/></button><a className="botao botao--claro" href="#como-funciona">Como funciona</a></div>
     <div className="hero__selos">
      {entregaConfigurada(loja)&&<span><Truck size={16}/> Delivery</span>}<span><ShoppingBag size={16}/> Retirada</span>
@@ -176,8 +176,6 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
    <main id="conteudo">
     <Hero status={horario}/>
     {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
-    <ConsultaEntrega/>
-    <InformacoesPedido/>
     {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
     {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
     <section className="destaques container-padrao" aria-labelledby="destaques-titulo">
@@ -203,6 +201,8 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
       {filtrados.length===0&&<div className="busca-vazia"><Search size={36}/><h3>Nenhum prato encontrado</h3><p>Experimente buscar outro nome ou limpe a pesquisa.</p><button type="button" className="botao botao--rosa" onClick={()=>setBusca('')}>Limpar busca</button></div>}
      </div>
     </section>
+    <ConsultaEntrega/>
+    <InformacoesPedido/>
     <SobreCasa/><Passos/><Avaliacoes/><Galeria/><Localizacao/>
    </main>}
   <Rodape/>
