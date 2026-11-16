@@ -120,6 +120,7 @@ function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean
  const loja=useLoja();
  const [carrinho,setCarrinho]=useState<LinhaCarrinho[]>(carregarCarrinho);
  const [carrinhoAberto,setCarrinhoAberto]=useState(false);
+ const [avisoSacola,setAvisoSacola]=useState('');
  const [editando,setEditando]=useState<Editando|null>(null);
  const [busca,setBusca]=useState('');
  const [catAtiva,setCatAtiva]=useState('todas');
@@ -128,6 +129,18 @@ function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean
  const [armazenamentoFalhou,setArmazenamentoFalhou]=useState(false);
  const [horario,setHorario]=useState(()=>situacaoLoja(loja.horarios));
  useEffect(()=>{setArmazenamentoFalhou(!salvarCarrinho(carrinho));},[carrinho]);
+ useEffect(()=>{
+  // Ao trocar o catálogo demonstrativo pelo real, remove linhas vencidas ou esgotadas.
+  setCarrinho(atual=>{
+   const mantidos=atual.filter(l=>produtos.some(p=>p.id===l.produtoId&&p.disponivel));
+   return mantidos.length===atual.length?atual:mantidos;
+  });
+ },[produtos]);
+ useEffect(()=>{
+  if(!avisoSacola)return;
+  const timer=window.setTimeout(()=>setAvisoSacola(''),2800);
+  return()=>window.clearTimeout(timer);
+ },[avisoSacola]);
  useEffect(()=>{const timer=window.setInterval(()=>setHorario(situacaoLoja(loja.horarios)),30000);return()=>clearInterval(timer);},[]);
 
  useEffect(()=>{
@@ -138,6 +151,7 @@ function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean
  },[checkout,confirmacao]);
  const salvarItem=useCallback((item:LinhaCarrinho,antiga?:string)=>{
   setCarrinho(atual=>antiga?atual.map(l=>l.chave===antiga?item:l):[...atual,item]);
+  setAvisoSacola(antiga?'Item atualizado na sacola.':'Prato adicionado à sacola.');
  },[]);
  const mudarQuantidade=useCallback((chave:string,delta:number)=>{
   setCarrinho(atual=>atual.map(l=>l.chave===chave?{...l,quantidade:Math.max(0,Math.min(99,l.quantidade+delta))}:l).filter(l=>l.quantidade>0));
@@ -191,6 +205,7 @@ function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean
     <SobreCasa/><Passos/><Avaliacoes/><Galeria/><Localizacao/>
    </main>}
   <Rodape/>
+  {avisoSacola&&<div className="sacola-feedback" role="status" aria-live="polite">{avisoSacola}</div>}
   <a className="whatsapp-suporte" href={ajudaUrl} target="_blank" rel="noopener noreferrer" aria-label="Dúvidas? Fale no WhatsApp" title="WhatsApp para dúvidas"><MessageCircle size={24}/></a>
   {!checkout&&!confirmacao&&quantidade>0&&<button className="barra-sacola-mobile" type="button" onClick={()=>setCarrinhoAberto(true)} aria-label={`Abrir sacola com ${quantidade} itens e total ${reais(total)}`}>
    <span className="barra-sacola-mobile__icon"><ShoppingBag size={21}/><b>{quantidade}</b></span><span>Ver pedido</span><strong>{reais(total)}</strong><ArrowRight size={19}/>

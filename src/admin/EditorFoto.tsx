@@ -10,7 +10,6 @@ export function EditorFoto({foto,nome,onSalvar,produtoId}:Props){
  const [recorte,setRecorte]=useState<Recorte>(recorteInicial);
  const [enviando,setEnviando]=useState(false);
  const [erro,setErro]=useState(''),[informacao,setInformacao]=useState('');
- const [preview,setPreview]=useState('');
  const redraw=useCallback(()=>{
   const el=canvas.current, img=imagem.current;
   if(!el||!img)return;
@@ -19,11 +18,6 @@ export function EditorFoto({foto,nome,onSalvar,produtoId}:Props){
  },[recorte]);
  useEffect(()=>{redraw();},[redraw,file]);
  useEffect(()=>()=>{imagem.current?.close();},[]);
- useEffect(()=>{
-  if(!file){setPreview('');return;}
-  const url=URL.createObjectURL(file);setPreview(url);
-  return()=>URL.revokeObjectURL(url);
- },[file]);
  const escolher=async(f:File|undefined)=>{
   if(!f)return;setErro('');setInformacao('');
   const erroArquivo=validarArquivoImagem(f);
