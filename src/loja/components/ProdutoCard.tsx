@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChefHat, Plus, Ban, Star } from 'lucide-react';
 import type { Produto } from '../types';
 import { reais } from '../pedido';
@@ -6,6 +6,7 @@ import { reais } from '../pedido';
 export function FotoPrato({foto,nome,destaque=false,ilustrativa=true}:{foto:string;nome:string;destaque?:boolean;ilustrativa?:boolean}){
  const [falhou,setFalhou]=useState(false);
  const src=foto?(/^(https?:)?\/\//.test(foto)?foto:`${import.meta.env.BASE_URL}${foto.replace(/^\/+/, '')}`):'';
+ useEffect(()=>{setFalhou(false);},[src]);
  if(!src||falhou){
   return <div className="food-placeholder" role="img" aria-label={`Ilustração de ${nome}, sem fotografia disponível`}>
    <div className="food-placeholder__plate"><ChefHat size={destaque?45:34} aria-hidden="true" strokeWidth={1.3}/></div>

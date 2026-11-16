@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,LogOut,Menu,X,RefreshCw,Plus,Search,Check,Trash2,Pencil,Eye,EyeOff,AlertTriangle,Clock3,Bell,ArrowUpRight,ShoppingBag,Truck,ShieldCheck,FileText,Save} from 'lucide-react';
 import {logoUrl} from '../config/loja';
+import {GestorCardapio} from './GestorCardapio';
 import {EditorFoto} from './EditorFoto';
 import {EditorOpcoes} from './EditorOpcoes';
 import {removerFotoAntiga} from './fotosStorage';
@@ -8,7 +9,7 @@ import {Financeiro,type MovimentoCaixa} from './Financeiro';
 import {valorDigitado} from '../loja/pedido';
 import type {Variacao,Opcional} from '../loja/types';
 import catalogo from '../data/cardapio.json';
-import {supabase,erroLegivel,reais,type ConfiguracaoAdmin,type PedidoAdmin,type PedidoStatus,type ProdutoAdmin} from './backend';
+import {supabase,erroLegivel,reais,type ConfiguracaoAdmin,type PedidoAdmin,type PedidoStatus,type ProdutoAdmin,type CategoriaAdmin} from './backend';
 
 type Aba='inicio'|'pedidos'|'cardapio'|'financeiro'|'configuracoes';
 const labels:Record<PedidoStatus,string>={
@@ -93,118 +94,7 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
  </section>;
 }
 
-type Rascunho={id:string;nome:string;descricao:string;categoriaId:string;preco:string;foto:string;exemplo:boolean;disponivel:boolean;destaque:boolean;publicado:boolean;variacoes:Variacao[];opcionais:Opcional[];ordem:number};
-const categorias= catalogo.categorias;
-function Cardapio({produtos,atualizar}:{produtos:ProdutoAdmin[];atualizar:()=>Promise<void>}){
- const [editar,setEditar]=useState<Rascunho|null>(null),[salvando,setSalvando]=useState(false),[erro,setErro]=useState(''),[filtro,setFiltro]=useState('');
- const iniciar=(registro?:ProdutoAdmin)=>{
-  const d=registro?.dados||{};
-  setEditar({
-   id:registro?.id||`item-${crypto.randomUUID().slice(0,10)}`,
-   nome:String(d.nome||''),descricao:String(d.descricao||''),
-   categoriaId:String(d.categoriaId||categorias[0].id),
-   preco:registro?String(d.preco??''):'',
-   foto:String(d.foto||''),exemplo:registro?d.exemplo!==false:true,
-   disponivel:registro?d.disponivel!==false:true,destaque:!!d.destaque,
-   publicado:registro?.publicado||false,
-   variacoes:Array.isArray(d.variacoes)?d.variacoes as Variacao[]:[],
-   opcionais:Array.isArray(d.opcionais)?d.opcionais as Opcional[]:[],
-   ordem:registro?.ordem??produtos.length
-  });setErro('');
- };
- const salvar=async(e:FormEvent)=>{
-  e.preventDefault();if(!editar)return;
-  const preco=valorDigitado(editar.preco);
-  if(preco===null){setErro('Digite um preço válido em reais.');return;}
-  if([...editar.variacoes.map(v=>({nome:v.nome,valor:v.acrescimo})),...editar.opcionais.map(o=>({nome:o.nome,valor:o.preco}))].some(x=>!x.nome.trim()||!Number.isFinite(x.valor)||x.valor<0)){
-   setErro('Informe nome e preço válido em todos os tamanhos e opcionais.');return;
-  }
-  if(editar.publicado&&editar.exemplo){setErro('Antes de publicar, confira fotos e preços reais e desmarque "Produto de exemplo".');return;}
-  setSalvando(true);setErro('');
-  try{
-   const antigo=produtos.find(p=>p.id===editar.id);
-   const dados={...antigo?.dados,id:editar.id,nome:editar.nome.trim(),descricao:editar.descricao.trim(),
-    preco,categoriaId:editar.categoriaId,foto:editar.foto.trim(),
-    disponivel:editar.disponivel,destaque:editar.destaque,exemplo:editar.exemplo,
-    imagemIlustrativa:editar.exemplo,
-    variacoes:editar.variacoes,opcionais:editar.opcionais,tags:antigo?.dados.tags||[]};
-   const {error}=await supabase!.from('sc_produtos').upsert({id:editar.id,dados,publicado:editar.publicado,ordem:editar.ordem,atualizado_em:new Date().toISOString()});
-   if(error)throw error;
-   const fotoAntiga=String(antigo?.dados.foto||'');
-   if(fotoAntiga&&fotoAntiga!==editar.foto){
-    try{await removerFotoAntiga(fotoAntiga,editar.id);}
-    catch{setErro('Produto salvo, mas não foi possível excluir a foto antiga do armazenamento.');}
-   }
-   setEditar(null);await atualizar();
-  }catch(e){setErro(erroLegivel(e));}
-  finally{setSalvando(false);}
- };
- const alternar=async(item:ProdutoAdmin)=>{
-  if(!item.publicado&&item.dados.exemplo!==false){setErro('Este produto ainda está marcado como exemplo. Edite seus dados reais antes de publicar.');return;}
-  const {error}=await supabase!.from('sc_produtos').update({publicado:!item.publicado,atualizado_em:new Date().toISOString()}).eq('id',item.id);
-  if(error){setErro(erroLegivel(error));return;}await atualizar();
- };
- const remover=async(item:ProdutoAdmin)=>{
-  if(!window.confirm(`Excluir "${String(item.dados.nome)}" definitivamente?`))return;
-  const {error}=await supabase!.from('sc_produtos').delete().eq('id',item.id);
-  if(error){setErro(erroLegivel(error));return;}
-  try{await removerFotoAntiga(String(item.dados.foto||''),item.id);}
-  catch{setErro('Produto excluído, mas sua foto não pôde ser removida do armazenamento.');}
-  await atualizar();
- };
- const importar=async()=>{
-  if(produtos.length){setErro('Importação permitida apenas com o banco vazio, para não sobrescrever itens.');return;}
-  if(!window.confirm('Importar os 16 produtos fictícios apenas como rascunhos? Eles NÃO ficarão visíveis aos clientes.'))return;
-  setSalvando(true);setErro('');
-  try{
-   const rows=catalogo.itens.map((item,i)=>({id:item.id,dados:item,publicado:false,ordem:i}));
-   const {error}=await supabase!.from('sc_produtos').insert(rows);
-   if(error)throw error;await atualizar();
-  }catch(e){setErro(erroLegivel(e));}
-  finally{setSalvando(false);}
- };
- const lista=produtos.filter(p=>String(p.dados.nome||'').toLocaleLowerCase('pt-BR').includes(filtro.toLocaleLowerCase('pt-BR')));
- return <section className="adm-conteudo">
-  <div className="adm-secao-topo"><div><span className="adm-kicker">GERENCIAR PRODUTOS</span><h2>Cardápio e preços</h2><p>Cadastre e publique pratos reais. Produtos demonstrativos ficam como rascunhos.</p></div>
-   <button className="adm-btn" onClick={()=>iniciar()}><Plus size={18}/> Novo produto</button></div>
-  <div className="adm-aviso"><AlertTriangle size={19}/> Itens cadastrados só entram na vitrine quando forem publicados individualmente e a opção “Usar cardápio do painel” estiver ativa em Configurações.</div>
-  {erro&&!editar&&<p className="adm-erro" role="alert">{erro}</p>}
-  <label className="adm-busca"><Search size={18}/><input placeholder="Buscar produto..." value={filtro} onChange={e=>setFiltro(e.target.value)}/></label>
-  {lista.length?<div className="adm-tabela-wrap"><table className="adm-tabela"><thead><tr><th>Prato</th><th>Preço</th><th>Disponibilidade</th><th>Vitrine</th><th>Ações</th></tr></thead><tbody>
-   {lista.map(p=><tr key={p.id}><td><div className="adm-tabela__produto"><img src={String(p.dados.foto||'')||undefined} alt="" loading="lazy" onError={e=>{e.currentTarget.style.visibility='hidden';}}/><span><b>{String(p.dados.nome||'Sem nome')}</b><small>{categorias.find(c=>c.id===p.dados.categoriaId)?.nome||'Categoria não informada'}{p.dados.exemplo!==false?' · Exemplo':''}</small></span></div></td><td><b>{reais(Number(p.dados.preco||0))}</b></td><td>{p.dados.disponivel===false?'Esgotado':'Disponível'}</td><td><span className={p.publicado?'adm-chip adm-chip--ok':'adm-chip'}>{p.publicado?'Publicado':'Rascunho'}</span></td><td><div className="adm-tabela__acoes">
-    <button type="button" onClick={()=>iniciar(p)} aria-label={`Editar ${String(p.dados.nome)}`} title="Editar"><Pencil size={17}/></button>
-    <button type="button" onClick={()=>void alternar(p)} aria-label={p.publicado?'Despublicar':'Publicar'} title={p.publicado?'Despublicar':'Publicar'}>{p.publicado?<EyeOff size={17}/>:<Eye size={17}/>}</button>
-    <button type="button" onClick={()=>void remover(p)} aria-label="Excluir" title="Excluir"><Trash2 size={17}/></button>
-   </div></td></tr>)}</tbody></table></div>:<div className="adm-vazio"><UtensilsCrossed size={38}/><h3>Cardápio administrativo vazio</h3><p>Crie produtos reais ou importe os exemplos como rascunhos, sem publicá-los.</p>
-    {!produtos.length&&<button disabled={salvando} onClick={()=>void importar()} className="adm-btn adm-btn--secundario"><FileText size={17}/> Importar exemplos como rascunhos</button>}</div>}
-  {editar&&<div className="adm-sobreposicao" onClick={e=>{if(e.target===e.currentTarget)setEditar(null);}}>
-   <div className="adm-modal" role="dialog" aria-modal="true" aria-labelledby="editor-produto-titulo">
-    <div className="adm-modal__topo"><h3 id="editor-produto-titulo">Editar produto</h3><button type="button" onClick={()=>setEditar(null)} aria-label="Fechar"><X size={20}/></button></div>
-    <form className="adm-form" onSubmit={e=>void salvar(e)}>
-     <label>Nome *<input required value={editar.nome} onChange={e=>setEditar({...editar,nome:e.target.value})}/></label>
-     <label>Descrição<textarea value={editar.descricao} onChange={e=>setEditar({...editar,descricao:e.target.value})} rows={2}/></label>
-     <div className="adm-duas-colunas">
-      <label>Preço (R$) *<input required inputMode="decimal" value={editar.preco} onChange={e=>setEditar({...editar,preco:e.target.value})}/></label>
-      <label>Categoria<select value={editar.categoriaId} onChange={e=>setEditar({...editar,categoriaId:e.target.value})}>{categorias.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></label>
-     </div>
-     <EditorFoto produtoId={editar.id} foto={editar.foto} nome={editar.nome} onSalvar={url=>setEditar(e=>e?{...e,foto:url}:e)}/>
-     <label>URL da foto (opcional, para imagens já hospedadas)<input value={editar.foto} onChange={e=>setEditar({...editar,foto:e.target.value})} placeholder="https://..."/></label>
-     <label>Ordem de exibição<input type="number" min="0" step="1" value={editar.ordem} onChange={e=>setEditar({...editar,ordem:Number(e.target.value)})}/></label>
-     <EditorOpcoes variacoes={editar.variacoes} opcionais={editar.opcionais}
-      onVariacoes={v=>setEditar({...editar,variacoes:v})} onOpcionais={v=>setEditar({...editar,opcionais:v})}/>
-     <div className="adm-checkboxes">
-      {([{campo:'disponivel',texto:'Disponível hoje'},{campo:'destaque',texto:'Em destaque'},{campo:'exemplo',texto:'Produto de exemplo'},{campo:'publicado',texto:'Publicado na vitrine'}] as const).map(c=>
-       <label key={c.campo}><input type="checkbox" checked={editar[c.campo]} onChange={e=>setEditar({...editar,[c.campo]:e.target.checked})}/>{c.texto}</label>)}
-     </div>
-     {editar.exemplo&&<p className="adm-aviso">Antes de publicar, atualize nome, preço, opcionais e imagem com os valores oficiais e desmarque “Produto de exemplo”.</p>}
-     {erro&&<p className="adm-erro" role="alert">{erro}</p>}
-     <button className="adm-btn adm-btn--full" disabled={salvando}><Save size={17}/>{salvando?'Salvando...':'Salvar no banco'}</button>
-    </form>
-   </div></div>}
- </section>;
-}
-
-function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;produtos:ProdutoAdmin[];atualizar:()=>Promise<void>}){
+function Configuracoes({config,produtos,categorias,atualizar}:{config:ConfiguracaoAdmin;produtos:ProdutoAdmin[];categorias:CategoriaAdmin[];atualizar:()=>Promise<void>}){
  const [taxa,setTaxa]=useState(config.taxa_entrega===null?'':String(config.taxa_entrega));
  const [minimo,setMinimo]=useState(config.pedido_minimo===null?'':String(config.pedido_minimo));
  const [bairros,setBairros]=useState(config.bairros_atendidos.join(', '));
@@ -219,7 +109,7 @@ function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;pro
   const a=numero(taxa),b=numero(minimo),list=bairros.split(',').map(x=>x.trim()).filter(Boolean);
   if((a!==null&&(!Number.isFinite(a)||a<0))||(b!==null&&(!Number.isFinite(b)||b<0))){setErro('Confira os valores de taxa e mínimo, que não podem ser negativos.');return;}
   if(!Object.values(formas).some(Boolean)){setErro('Ative pelo menos uma forma de pagamento.');return;}
-  if(catalogoPublicado&&!produtos.some(p=>p.publicado&&p.dados.exemplo===false)){setErro('É necessário ter ao menos um prato real publicado para ativar o cardápio do painel.');return;}
+  if(catalogoPublicado&&!produtos.some(p=>p.publicado&&p.dados.exemplo===false&&p.dados.disponivel!==false&&Number(p.dados.preco)>0&&categorias.some(c=>c.id===p.dados.categoriaId&&c.ativa))){setErro('É necessário ter ao menos um prato real publicado para ativar o cardápio do painel.');return;}
   setSalvando(true);
   const {error}=await supabase!.from('sc_configuracao').update({taxa_entrega:a,pedido_minimo:b,bairros_atendidos:list,pedidos_ativos:ativos,catalogo_publicado:catalogoPublicado,formas_pagamento:formas,atualizado_em:new Date().toISOString()}).eq('id','principal');
   setSalvando(false);
@@ -249,24 +139,26 @@ function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;pro
 export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<void>}){
  const [aba,setAba]=useState<Aba>('inicio'),[menuAberto,setMenuAberto]=useState(false);
  const [pedidos,setPedidos]=useState<PedidoAdmin[]>([]),[produtos,setProdutos]=useState<ProdutoAdmin[]>([]),[movimentos,setMovimentos]=useState<MovimentoCaixa[]>([]);
+ const [categorias,setCategorias]=useState<CategoriaAdmin[]>([]);
  const [config,setConfig]=useState<ConfiguracaoAdmin|null>(null);
  const [carregando,setCarregando]=useState(true),[erro,setErro]=useState(''),[alerta,setAlerta]=useState('');
  const vistos=useRef<string[]>([]);
  const atualizar=useCallback(async()=>{
-  const [a,b,c,d]=await Promise.all([
+  const [a,b,c,d,e]=await Promise.all([
    supabase!.from('sc_configuracao').select('*').eq('id','principal').single(),
    supabase!.from('sc_produtos').select('*').order('ordem',{ascending:true}),
    supabase!.from('sc_pedidos').select('*').order('criado_em',{ascending:false}).limit(250),
-   supabase!.from('sc_movimentos_caixa').select('*').order('criado_em',{ascending:false}).limit(250)
+   supabase!.from('sc_movimentos_caixa').select('*').order('criado_em',{ascending:false}).limit(250),
+   supabase!.from('sc_categorias').select('*').order('ordem',{ascending:true})
   ]);
-  const err=a.error||b.error||c.error||d.error;
+  const err=a.error||b.error||c.error||d.error||e.error;
   if(err){setErro(erroLegivel(err));setCarregando(false);return;}
   const novos=(c.data||[]) as PedidoAdmin[];
   if(vistos.current.length&&novos.some(p=>!vistos.current.includes(p.id))){
    setAlerta('Novo pedido cadastrado no banco.');window.setTimeout(()=>setAlerta(''),6000);
   }
   vistos.current=novos.map(p=>p.id);
-  setConfig(a.data as ConfiguracaoAdmin);setProdutos((b.data||[]) as ProdutoAdmin[]);setPedidos(novos);setMovimentos((d.data||[]) as MovimentoCaixa[]);
+  setConfig(a.data as ConfiguracaoAdmin);setProdutos((b.data||[]) as ProdutoAdmin[]);setPedidos(novos);setMovimentos((d.data||[]) as MovimentoCaixa[]);setCategorias((e.data||[]) as CategoriaAdmin[]);
   setErro('');setCarregando(false);
  },[]);
  useEffect(()=>{
@@ -274,6 +166,7 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
   const channel=supabase!.channel('santa-cruz-adm')
    .on('postgres_changes',{event:'*',schema:'public',table:'sc_pedidos'},()=>{void atualizar();})
    .on('postgres_changes',{event:'*',schema:'public',table:'sc_produtos'},()=>{void atualizar();})
+   .on('postgres_changes',{event:'*',schema:'public',table:'sc_categorias'},()=>{void atualizar();})
    .on('postgres_changes',{event:'*',schema:'public',table:'sc_movimentos_caixa'},()=>{void atualizar();})
    .subscribe();
   return()=>{void supabase!.removeChannel(channel);};
@@ -315,6 +208,7 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
         <p className="adm-sem-dados">Nenhum pedido registrado ainda.</p>}
         <button type="button" onClick={()=>navegar('pedidos')} className="adm-link">Abrir pedidos <ArrowUpRight size={16}/></button></div>
        <div className="adm-card"><h2><UtensilsCrossed size={21}/> Situação do cardápio</h2>
+        <div className="adm-resumo-linha"><span>Categorias criadas</span><b>{categorias.length}</b></div>
         <div className="adm-resumo-linha"><span>Itens cadastrados no banco</span><b>{produtos.length}</b></div>
         <div className="adm-resumo-linha"><span>Itens publicados</span><b>{produtos.filter(p=>p.publicado).length}</b></div>
         <div className="adm-resumo-linha"><span>Cardápio online</span><span className={config?.catalogo_publicado?'adm-chip adm-chip--ok':'adm-chip'}>{config?.catalogo_publicado?'Ativo':'Demonstração'}</span></div>
@@ -324,9 +218,9 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
       <div className="adm-aviso"><ShieldCheck size={19}/> Este painel usa dados do Supabase. Pedidos de site só chegam automaticamente após ativar a função segura de checkout e o catálogo real; conversas avulsas no WhatsApp ainda exigem registro manual.</div>
      </section>}
      {aba==='pedidos'&&<Pedidos pedidos={pedidos} atualizar={atualizar}/>}
-     {aba==='cardapio'&&<Cardapio produtos={produtos} atualizar={atualizar}/>}
+     {aba==='cardapio'&&<GestorCardapio categorias={categorias} produtos={produtos} catalogoPublicado={!!config?.catalogo_publicado} atualizar={atualizar}/>}
      {aba==='financeiro'&&<Financeiro pedidos={pedidos} movimentos={movimentos} atualizar={atualizar}/>}
-     {aba==='configuracoes'&&config&&<Configuracoes config={config} produtos={produtos} atualizar={atualizar}/>}
+     {aba==='configuracoes'&&config&&<Configuracoes config={config} produtos={produtos} categorias={categorias} atualizar={atualizar}/>}
     </>}
    </main>
    <footer className="adm-rodape">Delícia do Nordeste · Santa Cruz · Gestão administrativa com autenticação e RLS</footer>

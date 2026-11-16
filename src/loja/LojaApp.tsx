@@ -14,7 +14,7 @@ import { InformacoesPedido, SobreCasa, Avaliacoes, Galeria } from './components/
 import { ConsultaEntrega } from './components/ConsultaEntrega';
 import { entregaConfigurada } from './entrega';
 
-const categorias=cardapio.categorias as Categoria[];
+const categoriasLocais=cardapio.categorias as Categoria[];
 const dadosLocais=cardapio.itens as Produto[];
 const ajudaUrl=`https://wa.me/${lojaBase.whatsapp}?text=${encodeURIComponent('Olá! Tenho uma dúvida sobre o cardápio do Delícia do Nordeste Santa Cruz.')}`;
 type Editando={produto:Produto;linha:LinhaCarrinho|null};
@@ -116,7 +116,7 @@ function Rodape(){
   <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
 }
-function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean}){
+function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];categorias:Categoria[];modoBanco:boolean}){
  const loja=useLoja();
  const [carrinho,setCarrinho]=useState<LinhaCarrinho[]>(carregarCarrinho);
  const [carrinhoAberto,setCarrinhoAberto]=useState(false);
@@ -180,7 +180,7 @@ function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean
     {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
     {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
     <section className="destaques container-padrao" aria-labelledby="destaques-titulo">
-     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">Mais pedidos <span className="cor-rosa">♥</span></h2><p>Seleção demonstrativa: substitua pelos itens mais pedidos reais.</p></div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
+     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">Destaques da casa <span className="cor-rosa">♥</span></h2><p>{produtos.some(p=>p.exemplo)?'Pratos ilustrativos para conhecer o formato do cardápio.':'Pratos escolhidos para destacar no cardápio.'}</p></div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
      <div className="grade-produtos">{destaque.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
     </section>
     <section className="catalogo" id="cardapio" aria-labelledby="cardapio-titulo">
@@ -189,7 +189,7 @@ function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean
      </div>
      <nav className="barra-categorias" aria-label="Categorias do cardápio"><div className="container-padrao barra-categorias__lista">
       <button type="button" aria-current={catAtiva==='todas'?'true':undefined} className={catAtiva==='todas'?'ativo':''} onClick={()=>{setCatAtiva('todas');irPara('cardapio');}}>Todos</button>
-      {categorias.map(c=><button key={c.id} type="button" aria-current={catAtiva===c.id?'true':undefined} className={catAtiva===c.id?'ativo':''} onClick={()=>{setCatAtiva(c.id);irPara('categoria-'+c.id);}}>{c.nome}</button>)}
+      {categorias.filter(c=>produtos.some(p=>p.categoriaId===c.id)).map(c=><button key={c.id} type="button" aria-current={catAtiva===c.id?'true':undefined} className={catAtiva===c.id?'ativo':''} onClick={()=>{setCatAtiva(c.id);irPara('categoria-'+c.id);}}>{c.nome}</button>)}
      </div></nav>
      <div className="container-padrao catalogo__secoes">
       {categorias.map(c=>{
@@ -223,6 +223,8 @@ function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean
 export default function LojaApp(){
  const [configRemota,setConfigRemota]=useState<ConfiguracaoAdmin|null>(null);
  const [produtosRemotos,setProdutosRemotos]=useState<Produto[]>([]);
+ const [categoriasRemotas,setCategoriasRemotas]=useState<Categoria[]>([]);
+ const [erroRemoto,setErroRemoto]=useState('');
  useEffect(()=>{
   if(!supabase)return;
   let ativo=true;
@@ -230,12 +232,24 @@ export default function LojaApp(){
    const {data:config,error:configErro}=await supabase!.from('sc_configuracao').select('*').eq('id','principal').maybeSingle();
    if(configErro||!config||!ativo)return;
    let itens:Produto[]=[];
+   let categoriasCarregadas:Categoria[]=[];
    if(config.catalogo_publicado){
-    const {data,error}=await supabase!.from('sc_produtos').select('dados').eq('publicado',true).order('ordem',{ascending:true});
-    if(error)return;
-    itens=(data||[]).map((p:{dados:Produto})=>p.dados).filter((p:Produto)=>!!p&&typeof p.id==='string'&&typeof p.nome==='string');
+    const [resProdutos,resCategorias]=await Promise.all([
+     supabase!.from('sc_produtos').select('dados').eq('publicado',true).order('ordem',{ascending:true}),
+     supabase!.from('sc_categorias').select('id,nome,ordem,ativa').eq('ativa',true).order('ordem',{ascending:true})
+    ]);
+    if(resProdutos.error||resCategorias.error){
+     if(ativo)setErroRemoto('O cardápio atualizado está temporariamente indisponível. Tente recarregar a página.');
+     return;
+    }
+    categoriasCarregadas=(resCategorias.data||[]).map(c=>({id:String(c.id),nome:String(c.nome),ordem:Number(c.ordem)}));
+    const idsAtivos=new Set(categoriasCarregadas.map(c=>c.id));
+    itens=(resProdutos.data||[]).map((p:{dados:Produto})=>p.dados)
+     .filter((p:Produto)=>!!p&&typeof p.id==='string'&&typeof p.nome==='string'&&idsAtivos.has(p.categoriaId));
    }
    if(!ativo)return;
+   setErroRemoto('');
+   setCategoriasRemotas(categoriasCarregadas);
    setProdutosRemotos(itens);
    setConfigRemota(config as ConfiguracaoAdmin);
   };
@@ -243,6 +257,7 @@ export default function LojaApp(){
   const canal=supabase.channel('sc-vitrine')
    .on('postgres_changes',{event:'*',schema:'public',table:'sc_produtos'},()=>{void carregar();})
    .on('postgres_changes',{event:'*',schema:'public',table:'sc_configuracao'},()=>{void carregar();})
+   .on('postgres_changes',{event:'*',schema:'public',table:'sc_categorias'},()=>{void carregar();})
    .subscribe();
   return()=>{ativo=false;void supabase!.removeChannel(canal);};
  },[]);
@@ -256,6 +271,11 @@ export default function LojaApp(){
    formasPagamento:configRemota.formas_pagamento||lojaBase.formasPagamento
   };
  },[configRemota]);
- const produtos=useMemo(()=>configRemota?.catalogo_publicado?produtosRemotos:dadosLocais,[configRemota,produtosRemotos]);
- return <LojaProvider valor={loja}><LojaConteudo produtos={produtos} modoBanco={!!configRemota?.catalogo_publicado&&produtosRemotos.length>0}/></LojaProvider>;
+ const publicados=!!configRemota?.catalogo_publicado;
+ const produtos=useMemo(()=>publicados?produtosRemotos:dadosLocais,[publicados,produtosRemotos]);
+ const categorias=useMemo(()=>publicados?categoriasRemotas:categoriasLocais,[publicados,categoriasRemotas]);
+ return <LojaProvider valor={loja}>
+  {erroRemoto&&<div className="aviso-atendimento container-padrao" role="alert">{erroRemoto}</div>}
+  <LojaConteudo produtos={produtos} categorias={categorias} modoBanco={publicados&&produtosRemotos.length>0}/>
+ </LojaProvider>;
 }

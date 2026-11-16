@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,ArrowLeft,LockKeyhole,Eye,Database,ShieldCheck,AlertTriangle,Camera,Wallet,ImagePlus} from 'lucide-react';
+import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,ArrowLeft,LockKeyhole,Eye,Database,ShieldCheck,AlertTriangle,Camera,Wallet,ImagePlus,Plus} from 'lucide-react';
 import {logoUrl} from '../config/loja';
 import catalogo from '../data/cardapio.json';
 type Aba='visao'|'pedidos'|'cardapio'|'financeiro'|'config';
@@ -11,6 +11,25 @@ export function AdminPreview({fechar}:{fechar:()=>void}){
   if(aba==='pedidos')return <div className="adm-vazio"><ClipboardList size={42}/><h2>Gestão de pedidos</h2><p>Os pedidos confirmados aparecerão aqui quando um banco próprio estiver conectado. A lista não foi simulada.</p></div>;
   if(aba==='financeiro')return <><div className="adm-metricas">{['Recebimentos conferidos','Outras entradas','Saídas','Saldo registrado'].map(x=><article key={x}><span><Wallet size={20}/></span><p>{x}</p><strong>—</strong><small>Sem banco conectado</small></article>)}</div><div className="adm-vazio"><Wallet size={42}/><h2>Controle financeiro</h2><p>Entradas, saídas e pagamentos conferidos ficam disponíveis quando o Supabase da Santa Cruz estiver ativado. Nenhuma venda foi inventada.</p></div></>;
   if(aba==='cardapio')return <>
+   <div className="adm-etapas">
+    <span><b>1</b> Criar categorias</span>
+    <span><b>2</b> Cadastrar pratos</span>
+    <span><b>3</b> Ajustar imagens</span>
+    <span><b>4</b> Publicar na loja</span>
+   </div>
+   <div className="adm-card adm-categorias">
+    <div className="adm-categorias__topo"><div><span className="adm-kicker">PASSO 1 · ORGANIZAR</span>
+     <h3>Categorias do novo cardápio</h3>
+     <p className="adm-pequeno">No painel conectado você criará, renomeará, ordenará ou ocultará categorias. Aqui os controles são apenas ilustrativos.</p>
+    </div><span className="adm-chip">Prévia</span></div>
+    <div className="adm-categorias__nova"><label>Nome da nova categoria<input disabled placeholder="Ex.: Pratos da casa"/></label>
+     <button className="adm-btn" type="button" disabled><Plus size={17}/> Criar categoria</button></div>
+   </div>
+   <div className="adm-card adm-produtos-painel">
+    <div className="adm-categorias__topo"><div><span className="adm-kicker">PASSO 2 · CADASTRAR</span>
+     <h3>Pratos, preços e adicionais</h3><p className="adm-pequeno">O botão de novo prato, edição, exclusão e fotos ficará ativo após configurar o Supabase.</p>
+    </div><button className="adm-btn" type="button" disabled><Plus size={17}/> Novo prato</button></div>
+   </div>
    <div className="adm-aviso"><AlertTriangle size={18}/> Abaixo está somente uma prévia de pratos fictícios do arquivo local. Não é possível alterar preços nesta demonstração.</div>
    <div className="adm-card adm-preview__fotos"><h3><Camera size={20}/> Editor de fotos</h3>
     <div className="adm-editor-foto__layout"><div className="adm-editor-foto__visual"><div className="adm-editor-foto__vazio"><ImagePlus size={30}/><span>Prévia de enquadramento 4:3</span></div></div>
