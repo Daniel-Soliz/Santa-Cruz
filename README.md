@@ -4,6 +4,59 @@ Loja mobile-first com cardápio, fotos **ilustrativas**, sacola e pedido prepara
 
 > **Importante:** os 16 pratos, fotos e preços do catálogo são EXEMPLOS. O restaurante confirma os pedidos por WhatsApp. Não há banco de dados nem cobrança automática nesta fase.
 
+## Painel administrativo (Área da equipe)
+
+O acesso discreto fica no final do rodapé, em **Área da equipe**. A rota da administração é
+`https://daniel-soliz.github.io/Santa-Cruz/#/admin`. O login usa o visual escuro como referência do
+StudioBlack7, mas mantém o nome e o logo do restaurante. **Saber a URL não dá permissão:
+o banco exige autenticação e RLS.**
+
+Você pode abrir **Visualizar prévia do painel** mesmo antes de configurar um projeto. A prévia tem navegação, layout e indicadores vazios, sem acesso a dados pessoais e sem permitir alterações.
+
+### Como colocar o painel para funcionar
+
+1. Crie um **novo projeto Supabase somente para o restaurante Santa Cruz**. Não reutilize
+   o projeto chamado StudioBlack7, que pertence a outra aplicação.
+2. No painel Supabase desse projeto, abra **SQL Editor** e execute o arquivo
+   `supabase/INSTALAR_SANTA_CRUZ.sql`. Esse SQL cria tabelas de administradores, pratos,
+   pedidos manuais e configurações, todas com regras de acesso (RLS).
+3. Em **Authentication → Users**, crie manualmente o usuário administrador com e-mail e
+   senha forte. Não inclua a senha no repositório. Copie o UUID do usuário.
+4. No SQL Editor do **projeto Santa Cruz**, execute (substituindo pelo UUID correto):
+   ```sql
+   insert into public.sc_admins(user_id) values ('COLE-O-UUID-DO-USUARIO-AQUI')
+   on conflict (user_id) do nothing;
+   ```
+   Não ative o cadastro público de administradores.
+5. No repositório GitHub acesse **Settings → Secrets and variables → Actions → Variables**.
+   Adicione `VITE_SUPABASE_URL` (URL do projeto) e `VITE_SUPABASE_PUBLISHABLE_KEY`
+   (chave pública `sb_publishable_...`). Essas duas informações não são senhas, mas
+   exigem as regras RLS configuradas no passo 2. **Nunca use service_role, secret key,
+   Access Token do Mercado Pago ou a senha do administrador nesse local.**
+6. Em **Authentication → URL Configuration**, cadastre a URL da loja
+   `https://daniel-soliz.github.io/Santa-Cruz/` como URL de redirecionamento autorizada.
+   O link **Esqueceu sua senha?** usa esse retorno com marcador `recuperar_admin` para alterar a senha dentro da área protegida.
+7. Execute novamente o workflow **Publicar catálogo e pedidos no GitHub Pages**
+   ou faça um commit na `main`. Depois visite `#/admin` e entre com suas credenciais.
+
+### Como usar
+
+- **Visão geral:** contadores reais dos pedidos registrados, em andamento e entregues. O valor
+  total é apenas soma de pedidos registrados manualmente e marcados entregues, não um extrato bancário.
+- **Pedidos:** lista protegida, cadastro manual de pedido com valor confirmado pela equipe
+  e controle de status. Os pedidos enviados pelo **WhatsApp não aparecem automaticamente**.
+- **Cardápio e preços:** cadastrar, editar e excluir, marcar disponibilidade e destaque. Pode importar
+  os 16 itens demonstrativos **como rascunhos**, sem publicá-los. Confira preços/fotos reais e
+  desmarque "Produto de exemplo" antes de publicar.
+- **Entrega e ajustes:** definir taxa, pedido mínimo, bairros, disponibilidade de pedidos e
+  ativar o cardápio do painel. Só ative a vitrine do painel quando houver ao menos um prato real
+  publicado. Campos em branco continuam sem valores inventados.
+
+**Importante:** o painel não possui acesso aos dados privados do StudioBlack7 e não copia o
+banco desse site. A estrutura interna da administração original não estava publicamente visível;
+o que foi usado como referência foi a apresentação do login e o estilo visual. O painel
+do restaurante tem estrutura própria para cardápio e pedidos.
+
 ## 1. Edite os dados sem programar
 
 Abra o arquivo desejado no GitHub e clique no ícone de lápis, edite e salve (**Commit changes**).
@@ -103,10 +156,13 @@ Teste no celular: fotos, categorias, adicionar/editar produto, carrinho, CEP, to
 
 O DNS pode demorar até 24 horas para propagar. Consulte a documentação oficial do GitHub: https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site.
 
-## Fase 2 — NÃO implementada
+## Próximos passos técnicos
 
-- Supabase Auth, Postgres e Row Level Security (RLS) para painel, cardápio e pedidos em tempo real.
-- Mercado Pago com Pix QR Code/copia e cola, cartão, webhook validado por função serverless.
-- Aviso de novo pedido por WhatsApp/e-mail e gestão de etapas do pedido.
+- A interface do painel com Supabase Auth, CRUD de pratos, configurações e pedidos manuais **já está implementada**, mas depende de um **projeto Supabase exclusivo da Santa Cruz** e da execução do SQL antes de operar de verdade.
+- Pedidos originados no checkout pelo WhatsApp não são registrados automaticamente, pois a mensagem só é enviada quando o cliente a confirma no aplicativo. Um backend seguro para receber pedidos online, validar totais e gerar status do cliente continua pendente.
+- Mercado Pago com Pix QR Code/copia e cola, cartão e webhook validado por função serverless ainda não está conectado.
+- Notificações automáticas por WhatsApp/e-mail, upload privado de fotos e perfis de funcionários com níveis diferentes de permissão ficam para a próxima etapa.
+
+**Publicação de preços:** no painel, altere dados reais e marque o produto como não demonstrativo antes de publicá-lo. Depois ative o uso do catálogo do painel em Configurações. Sem isso, a vitrine mantém o JSON de demonstração, sem inventar dados.
 
 **Nunca** armazene senha de administrador, Access Token do Mercado Pago, token de WhatsApp ou chave `service_role` do Supabase no frontend ou em arquivos do GitHub Pages. Essas credenciais devem ficar exclusivamente em infraestrutura de servidor com secrets.

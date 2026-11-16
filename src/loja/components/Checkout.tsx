@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Banknote, CheckCircle2, Clock3, CreditCard, MapPin, Search, ShieldCheck, ShoppingBag, Store, Truck, UtensilsCrossed, Wallet } from 'lucide-react';
-import { loja } from '../../config/loja';
+import {useLoja} from '../../config/LojaContext';
 import type { Cliente, LinhaCarrinho, Pagamento, PedidoCheckout, Produto, TipoPedido } from '../types';
 import { gerarNumeroPedido, montarMensagem, reais, situacaoLoja, totalCarrinho, totalComEntrega, urlWhatsApp, validarPedido, errosCamposPedido, valorDigitado, type ErrosCampos } from '../pedido';
 import { consultarCep, avaliarCobertura, entregaConfigurada } from '../entrega';
@@ -9,6 +9,7 @@ const clienteVazio:Cliente={nome:'',telefone:'',cep:'',rua:'',numero:'',compleme
 export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string};
 
 export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void}){
+ const loja=useLoja();
  const [cliente,setCliente]=useState<Cliente>(clienteVazio);
  const [tipo,setTipo]=useState<TipoPedido>('retirada');
  const primeiraForma:Pagamento=loja.formasPagamento.pix?'pix':loja.formasPagamento.cartao?'cartao':'dinheiro';

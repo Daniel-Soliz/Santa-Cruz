@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, ChefHat, Clock3, Copy, Heart, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, Star, Store, Truck, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChefHat, Clock3, Copy, Heart, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, Star, LockKeyhole, Store, Truck, UtensilsCrossed, X } from 'lucide-react';
 import cardapio from '../data/cardapio.json';
-import { loja, logoUrl } from '../config/loja';
+import { loja as lojaBase, logoUrl } from '../config/loja';
+import {LojaProvider,useLoja,type ConfigLoja} from '../config/LojaContext';
+import {supabase,type ConfiguracaoAdmin} from '../admin/backend';
 import type { Categoria, LinhaCarrinho, Produto } from './types';
 import { carregarCarrinho, reais, salvarCarrinho, situacaoLoja, totalCarrinho } from './pedido';
 import { ProdutoCard, FotoPrato } from './components/ProdutoCard';
@@ -13,8 +15,8 @@ import { ConsultaEntrega } from './components/ConsultaEntrega';
 import { entregaConfigurada } from './entrega';
 
 const categorias=cardapio.categorias as Categoria[];
-const produtos=cardapio.itens as Produto[];
-const ajudaUrl=`https://wa.me/${loja.whatsapp}?text=${encodeURIComponent('Olá! Tenho uma dúvida sobre o cardápio do Delícia do Nordeste Santa Cruz.')}`;
+const dadosLocais=cardapio.itens as Produto[];
+const ajudaUrl=`https://wa.me/${lojaBase.whatsapp}?text=${encodeURIComponent('Olá! Tenho uma dúvida sobre o cardápio do Delícia do Nordeste Santa Cruz.')}`;
 type Editando={produto:Produto;linha:LinhaCarrinho|null};
 const totalItens=(carrinho:LinhaCarrinho[])=>carrinho.reduce((s,x)=>s+x.quantidade,0);
 function irPara(id:string){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
@@ -36,6 +38,7 @@ function Header({quantidade,abrir,status}:{quantidade:number;abrir:()=>void;stat
  </header>;
 }
 function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
+ const loja=useLoja();
  return <section className="hero">
   <div className="container-padrao hero__grade">
    <div className="hero__texto">
@@ -69,6 +72,7 @@ function Passos(){
  </section>;
 }
 function Localizacao(){
+ const loja=useLoja();
  return <section id="localizacao" className="localizacao">
   <div className="container-padrao localizacao__grade">
    <div className="localizacao__texto"><span className="micro-label">Nossa casa</span><h2>Um pedacinho do Nordeste em São Paulo.</h2>
@@ -99,16 +103,18 @@ function Confirmacao({preparado,novo}:{preparado:Preparado;novo:()=>void}){
  </div></main>;
 }
 function Rodape(){
+ const loja=useLoja();
  return <footer className="rodape">
   <div className="container-padrao rodape__grade">
    <div className="rodape__marca"><img src={logoUrl} alt="Logo da Casa do Norte Santa Cruz" width="62" height="62"/><div><strong>Delícia do Nordeste</strong><span>Casa do Norte · Santa Cruz</span></div><p>Comida nordestina feita com carinho, pertinho de você.</p></div>
    <div><h3>Encontre a gente</h3><p>{loja.endereco}<br/>CEP {loja.cep}</p><p>Terça a domingo, 8h às 22h<br/>Segunda-feira: fechado</p></div>
    <div><h3>Atendimento</h3><a href={loja.telefoneLink}>{loja.telefone}</a><a href={ajudaUrl} target="_blank" rel="noopener noreferrer">WhatsApp para dúvidas</a><a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
   </div>
-  <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span></div>
+  <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
 }
-export default function LojaApp(){
+function LojaConteudo({produtos}:{produtos:Produto[]}){
+ const loja=useLoja();
  const [carrinho,setCarrinho]=useState<LinhaCarrinho[]>(carregarCarrinho);
  const [carrinhoAberto,setCarrinhoAberto]=useState(false);
  const [editando,setEditando]=useState<Editando|null>(null);
@@ -139,7 +145,7 @@ export default function LojaApp(){
   if(produto){setCarrinhoAberto(false);abrirModal(produto,linha);}
  },[abrirModal]);
  const total=totalCarrinho(carrinho,produtos),quantidade=totalItens(carrinho);
- const filtrados=useMemo(()=>produtos.filter(p=>p.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(busca.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())),[busca]);
+ const filtrados=useMemo(()=>produtos.filter(p=>p.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(busca.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())),[busca,produtos]);
  const destaque=produtos.filter(p=>p.destaque&&p.disponivel).slice(0,4);
  function novaCompra(){setConfirmacao(null);setCheckout(false);setCarrinho([]);window.scrollTo({top:0,behavior:'smooth'});}
  function irCheckout(){setCarrinhoAberto(false);setCheckout(true);setConfirmacao(null);window.scrollTo({top:0,behavior:'smooth'});}
@@ -189,4 +195,48 @@ export default function LojaApp(){
   {carrinhoAberto&&<Carrinho linhas={carrinho} produtos={produtos} fechar={()=>setCarrinhoAberto(false)} atualizar={mudarQuantidade} remover={chave=>setCarrinho(itens=>itens.filter(i=>i.chave!==chave))} limpar={()=>setCarrinho([])} editar={abrirEditor} finalizar={irCheckout}/>}
   {editando&&<ProdutoModal key={editando.linha?.chave||editando.produto.id} produto={editando.produto} linha={editando.linha} fechar={()=>setEditando(null)} salvar={salvarItem}/>}
  </div>;
+}
+
+/**
+ * O catálogo estático permanece como fallback enquanto o Supabase não
+ * estiver conectado. Produtos reais só aparecem após publicação no ADM.
+ * Nenhuma informação pessoal do cliente é enviada a esse banco pela loja.
+ */
+export default function LojaApp(){
+ const [configRemota,setConfigRemota]=useState<ConfiguracaoAdmin|null>(null);
+ const [produtosRemotos,setProdutosRemotos]=useState<Produto[]>([]);
+ useEffect(()=>{
+  if(!supabase)return;
+  let ativo=true;
+  const carregar=async()=>{
+   const {data:config,error:configErro}=await supabase!.from('sc_configuracao').select('*').eq('id','principal').maybeSingle();
+   if(configErro||!config||!ativo)return;
+   let itens:Produto[]=[];
+   if(config.catalogo_publicado){
+    const {data,error}=await supabase!.from('sc_produtos').select('dados').eq('publicado',true).order('ordem',{ascending:true});
+    if(error)return;
+    itens=(data||[]).map((p:{dados:Produto})=>p.dados).filter((p:Produto)=>!!p&&typeof p.id==='string'&&typeof p.nome==='string');
+   }
+   if(!ativo)return;
+   setProdutosRemotos(itens);
+   setConfigRemota(config as ConfiguracaoAdmin);
+  };
+  void carregar();
+  const canal=supabase.channel('sc-vitrine')
+   .on('postgres_changes',{event:'*',schema:'public',table:'sc_produtos'},()=>{void carregar();})
+   .on('postgres_changes',{event:'*',schema:'public',table:'sc_configuracao'},()=>{void carregar();})
+   .subscribe();
+  return()=>{ativo=false;void supabase!.removeChannel(canal);};
+ },[]);
+ const loja=useMemo<ConfigLoja>(()=>{
+  if(!configRemota)return lojaBase;
+  return {...lojaBase,
+   pedidosOnlineAtivos:configRemota.pedidos_ativos,
+   taxaEntregaFixa:configRemota.taxa_entrega===null?null:Number(configRemota.taxa_entrega),
+   pedidoMinimoDelivery:configRemota.pedido_minimo===null?null:Number(configRemota.pedido_minimo),
+   bairrosAtendidos:configRemota.bairros_atendidos||[]
+  };
+ },[configRemota]);
+ const produtos=useMemo(()=>configRemota?.catalogo_publicado?produtosRemotos:dadosLocais,[configRemota,produtosRemotos]);
+ return <LojaProvider valor={loja}><LojaConteudo produtos={produtos}/></LojaProvider>;
 }
