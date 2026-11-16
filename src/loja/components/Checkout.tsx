@@ -48,7 +48,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
   try{
    const dados=await consultarCep(cliente.cep);
    setCliente(c=>({...c,cep:dados.cep,rua:dados.rua||c.rua,bairro:dados.bairro||c.bairro,cidade:dados.cidade||c.cidade,uf:dados.uf||c.uf}));
-   const cobertura=avaliarCobertura(dados.bairro,loja);
+   const cobertura=avaliarCobertura(dados.bairro,loja,{cidade:dados.cidade,uf:dados.uf});
    setCepStatus(cobertura.estado==='disponivel'? 'CEP encontrado. '+cobertura.mensagem : cobertura.mensagem);
   }catch(e){setCepStatus((e as Error).message||'Não foi possível consultar o CEP. Preencha o endereço manualmente.');}
   finally{setBuscandoCep(false);}
