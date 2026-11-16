@@ -1,33 +1,40 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,LogOut,Menu,X,RefreshCw,Plus,Search,Check,Trash2,Pencil,Eye,EyeOff,AlertTriangle,Clock3,Bell,ArrowUpRight,ShoppingBag,Truck,ShieldCheck,FileText,Save} from 'lucide-react';
 import {logoUrl} from '../config/loja';
+import {EditorFoto} from './EditorFoto';
+import {EditorOpcoes} from './EditorOpcoes';
+import {Financeiro,type MovimentoCaixa} from './Financeiro';
+import {valorDigitado} from '../loja/pedido';
+import type {Variacao,Opcional} from '../loja/types';
 import catalogo from '../data/cardapio.json';
 import {supabase,erroLegivel,reais,type ConfiguracaoAdmin,type PedidoAdmin,type PedidoStatus,type ProdutoAdmin} from './backend';
 
-type Aba='inicio'|'pedidos'|'cardapio'|'configuracoes';
+type Aba='inicio'|'pedidos'|'cardapio'|'financeiro'|'configuracoes';
 const labels:Record<PedidoStatus,string>={
- recebido:'Recebido',em_preparo:'Em preparo',pronto:'Pronto para retirada',
+ aguardando_confirmacao:'Aguardando confirmação',recebido:'Recebido',em_preparo:'Em preparo',pronto:'Pronto para retirada',
  saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'
 };
-const abas=[{id:'inicio',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'configuracoes',nome:'Entregas e ajustes',Icon:Settings}] as const;
+const abas=[{id:'inicio',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'financeiro',nome:'Entradas e saídas',Icon:ShoppingBag},{id:'configuracoes',nome:'Entregas e ajustes',Icon:Settings}] as const;
 const dataHora=(s:string)=>new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'});
 
 function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promise<void>}){
  const [aberto,setAberto]=useState(false),[busca,setBusca]=useState('');
  const [salvando,setSalvando]=useState(false),[erro,setErro]=useState('');
  const [nome,setNome]=useState(''),[telefone,setTelefone]=useState(''),[total,setTotal]=useState(''),[tipo,setTipo]=useState<'retirada'|'entrega'|'local'>('retirada'),[observacao,setObservacao]=useState('');
+ const [formaPagamento,setFormaPagamento]=useState('outro');
  const filtrar=pedidos.filter(p=>[p.codigo,p.cliente_nome,p.telefone||''].join(' ').toLowerCase().includes(busca.toLowerCase()));
  const registrar=async(e:FormEvent)=>{
   e.preventDefault();setErro('');
-  const numero=Number(total.replace(',','.'));
-  if(!Number.isFinite(numero)||numero<0){setErro('Informe um valor válido para o pedido.');return;}
+  const numero=valorDigitado(total);
+  if(numero===null){setErro('Informe um valor válido para o pedido.');return;}
   setSalvando(true);
   try{
    const codigo=`M-${new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/[^0-9]/g,'')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
    const {error}=await supabase!.from('sc_pedidos').insert({
     codigo,cliente_nome:nome.trim(),telefone:telefone.trim()||null,
     modalidade:tipo,total_centavos:Math.round(numero*100),
-    observacoes:observacao.trim()||null, status:'recebido',itens:[]
+    observacoes:observacao.trim()||null, status:'recebido',itens:[],
+    origem:'manual',forma_pagamento:formaPagamento,pagamento_status:'pendente'
    });
    if(error)throw error;
    setAberto(false);setNome('');setTotal('');setTelefone('');setObservacao('');await atualizar();
@@ -43,17 +50,25 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
  return <section className="adm-conteudo" aria-labelledby="adm-pedidos-titulo">
   <div className="adm-secao-topo"><div><span className="adm-kicker">CENTRAL OPERACIONAL</span><h2 id="adm-pedidos-titulo">Gestão de pedidos</h2><p>Pedidos cadastrados no banco do restaurante, sem valores demonstrativos.</p></div>
    <button className="adm-btn" onClick={()=>setAberto(true)}><Plus size={18}/> Registrar pedido</button></div>
-  <div className="adm-aviso"><AlertTriangle size={19}/><span>Pedidos enviados diretamente pelo WhatsApp <strong>não entram automaticamente</strong> nesta lista. Registre-os manualmente até ativar um checkout com backend seguro.</span></div>
+  <div className="adm-aviso"><AlertTriangle size={19}/><span>Pedidos criados no site aparecem automaticamente <strong>apenas quando o checkout seguro do Supabase estiver ativado</strong>. Pedidos enviados fora do site pelo WhatsApp devem ser registrados manualmente.</span></div>
   <label className="adm-busca"><Search size={18}/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar por nome, número ou telefone" aria-label="Buscar pedidos"/></label>
   {erro&&<p className="adm-erro" role="alert">{erro}</p>}
   {filtrar.length?<div className="adm-lista-pedidos">{filtrar.map(p=><article className="adm-pedido" key={p.id}>
    <div className="adm-pedido__cabecalho"><div><span className="adm-kicker">{p.codigo}</span><h3>{p.cliente_nome}</h3><p>{dataHora(p.criado_em)} · {p.modalidade==='entrega'?'Delivery':p.modalidade==='local'?'No local':'Retirada'} {p.telefone?'· '+p.telefone:''}</p></div>
     <b>{reais(p.total_centavos/100)}</b></div>
+   <p className="adm-pedido__nota">Origem: {p.origem==='site'?'Site':p.origem==='whatsapp'?'WhatsApp':'Registro manual'} · Pagamento: {p.forma_pagamento||'A confirmar'} · {p.pagamento_status==='pago'?'Marcado como recebido':p.pagamento_status==='estornado'?'Estornado':'Pendente'}</p>
+   {p.itens?.length>0&&<ul className="adm-pedido__itens">{p.itens.map((i,index)=><li key={index}>{typeof i==='object'&&i!==null?
+     `${Number((i as {quantidade?:number}).quantidade||0)}x ${String((i as {nome?:string}).nome||'Prato')}`:String(i)}</li>)}</ul>}
    {p.observacoes&&<p className="adm-pedido__nota">{p.observacoes}</p>}
    <div className="adm-pedido__baixo"><span className={`adm-status-tag adm-status-tag--${p.status}`}>{labels[p.status]}</span>
     <label>Atualizar status<select aria-label={`Status do pedido ${p.codigo}`} value={p.status} onChange={e=>void status(p,e.target.value as PedidoStatus)}>
      {Object.entries(labels).map(([key,label])=><option key={key} value={key}>{label}</option>)}
-    </select></label></div>
+    </select></label>
+    <label>Pagamento<select aria-label={`Recebimento do pedido ${p.codigo}`} value={p.pagamento_status||'pendente'} onChange={async e=>{
+     const novo=e.target.value;if(novo==='pago'&&!window.confirm('Você conferiu o recebimento deste pagamento fora do site?'))return;
+     const {error}=await supabase!.from('sc_pedidos').update({pagamento_status:novo,atualizado_em:new Date().toISOString()}).eq('id',p.id);
+     if(error)setErro(erroLegivel(error));else await atualizar();
+    }}><option value="pendente">Pendente</option><option value="pago">Recebido (conferido)</option><option value="estornado">Estornado</option></select></label></div>
    </article>)}</div>:<div className="adm-vazio"><ClipboardList size={38}/><h3>Nenhum pedido registrado</h3><p>Os pedidos aparecerão aqui quando forem cadastrados pela equipe ou por uma futura integração segura.</p></div>}
   {aberto&&<div className="adm-sobreposicao" onClick={e=>{if(e.target===e.currentTarget)setAberto(false);}}>
    <div className="adm-modal" role="dialog" aria-modal="true" aria-labelledby="novo-pedido-titulo">
@@ -66,6 +81,9 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
       <label>Valor confirmado (R$) *<input required inputMode="decimal" value={total} onChange={e=>setTotal(e.target.value)} placeholder="0,00"/></label>
       <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as typeof tipo)}><option value="retirada">Retirada</option><option value="entrega">Entrega</option><option value="local">No local</option></select></label>
      </div>
+     <label>Forma de pagamento<select value={formaPagamento} onChange={e=>setFormaPagamento(e.target.value)}>
+      <option value="outro">A combinar</option><option value="pix">Pix</option><option value="cartao">Cartão</option><option value="dinheiro">Dinheiro</option>
+     </select></label>
      <label>Observações<textarea value={observacao} onChange={e=>setObservacao(e.target.value)} rows={3} placeholder="Detalhes confirmados com a equipe"/></label>
      {erro&&<p className="adm-erro" role="alert">{erro}</p>}
      <button className="adm-btn adm-btn--full" disabled={salvando}>{salvando?'Salvando...':'Registrar pedido'}</button>
@@ -74,7 +92,7 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
  </section>;
 }
 
-type Rascunho={id:string;nome:string;descricao:string;categoriaId:string;preco:string;foto:string;exemplo:boolean;disponivel:boolean;destaque:boolean;publicado:boolean};
+type Rascunho={id:string;nome:string;descricao:string;categoriaId:string;preco:string;foto:string;exemplo:boolean;disponivel:boolean;destaque:boolean;publicado:boolean;variacoes:Variacao[];opcionais:Opcional[];ordem:number};
 const categorias= catalogo.categorias;
 function Cardapio({produtos,atualizar}:{produtos:ProdutoAdmin[];atualizar:()=>Promise<void>}){
  const [editar,setEditar]=useState<Rascunho|null>(null),[salvando,setSalvando]=useState(false),[erro,setErro]=useState(''),[filtro,setFiltro]=useState('');
@@ -87,13 +105,19 @@ function Cardapio({produtos,atualizar}:{produtos:ProdutoAdmin[];atualizar:()=>Pr
    preco:registro?String(d.preco??''):'',
    foto:String(d.foto||''),exemplo:registro?d.exemplo!==false:true,
    disponivel:registro?d.disponivel!==false:true,destaque:!!d.destaque,
-   publicado:registro?.publicado||false
+   publicado:registro?.publicado||false,
+   variacoes:Array.isArray(d.variacoes)?d.variacoes as Variacao[]:[],
+   opcionais:Array.isArray(d.opcionais)?d.opcionais as Opcional[]:[],
+   ordem:registro?.ordem??produtos.length
   });setErro('');
  };
  const salvar=async(e:FormEvent)=>{
   e.preventDefault();if(!editar)return;
-  const preco=Number(editar.preco.replace(',','.'));
-  if(!Number.isFinite(preco)||preco<0){setErro('Digite um preço válido em reais.');return;}
+  const preco=valorDigitado(editar.preco);
+  if(preco===null){setErro('Digite um preço válido em reais.');return;}
+  if([...editar.variacoes.map(v=>({nome:v.nome,valor:v.acrescimo})),...editar.opcionais.map(o=>({nome:o.nome,valor:o.preco}))].some(x=>!x.nome.trim()||!Number.isFinite(x.valor)||x.valor<0)){
+   setErro('Informe nome e preço válido em todos os tamanhos e opcionais.');return;
+  }
   if(editar.publicado&&editar.exemplo){setErro('Antes de publicar, confira fotos e preços reais e desmarque "Produto de exemplo".');return;}
   setSalvando(true);setErro('');
   try{
@@ -102,8 +126,8 @@ function Cardapio({produtos,atualizar}:{produtos:ProdutoAdmin[];atualizar:()=>Pr
     preco,categoriaId:editar.categoriaId,foto:editar.foto.trim(),
     disponivel:editar.disponivel,destaque:editar.destaque,exemplo:editar.exemplo,
     imagemIlustrativa:editar.exemplo,
-    variacoes:antigo?.dados.variacoes||[],opcionais:antigo?.dados.opcionais||[],tags:antigo?.dados.tags||[]};
-   const {error}=await supabase!.from('sc_produtos').upsert({id:editar.id,dados,publicado:editar.publicado,ordem:antigo?.ordem||produtos.length,atualizado_em:new Date().toISOString()});
+    variacoes:editar.variacoes,opcionais:editar.opcionais,tags:antigo?.dados.tags||[]};
+   const {error}=await supabase!.from('sc_produtos').upsert({id:editar.id,dados,publicado:editar.publicado,ordem:editar.ordem,atualizado_em:new Date().toISOString()});
    if(error)throw error;
    setEditar(null);await atualizar();
   }catch(e){setErro(erroLegivel(e));}
@@ -154,7 +178,11 @@ function Cardapio({produtos,atualizar}:{produtos:ProdutoAdmin[];atualizar:()=>Pr
       <label>Preço (R$) *<input required inputMode="decimal" value={editar.preco} onChange={e=>setEditar({...editar,preco:e.target.value})}/></label>
       <label>Categoria<select value={editar.categoriaId} onChange={e=>setEditar({...editar,categoriaId:e.target.value})}>{categorias.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></label>
      </div>
-     <label>URL da foto ou caminho relativo<input value={editar.foto} onChange={e=>setEditar({...editar,foto:e.target.value})} placeholder="imagens/prato.webp"/></label>
+     <EditorFoto produtoId={editar.id} foto={editar.foto} nome={editar.nome} onSalvar={url=>setEditar(e=>e?{...e,foto:url}:e)}/>
+     <label>URL da foto (opcional, para imagens já hospedadas)<input value={editar.foto} onChange={e=>setEditar({...editar,foto:e.target.value})} placeholder="https://..."/></label>
+     <label>Ordem de exibição<input type="number" min="0" step="1" value={editar.ordem} onChange={e=>setEditar({...editar,ordem:Number(e.target.value)})}/></label>
+     <EditorOpcoes variacoes={editar.variacoes} opcionais={editar.opcionais}
+      onVariacoes={v=>setEditar({...editar,variacoes:v})} onOpcionais={v=>setEditar({...editar,opcionais:v})}/>
      <div className="adm-checkboxes">
       {([{campo:'disponivel',texto:'Disponível hoje'},{campo:'destaque',texto:'Em destaque'},{campo:'exemplo',texto:'Produto de exemplo'},{campo:'publicado',texto:'Publicado na vitrine'}] as const).map(c=>
        <label key={c.campo}><input type="checkbox" checked={editar[c.campo]} onChange={e=>setEditar({...editar,[c.campo]:e.target.checked})}/>{c.texto}</label>)}
@@ -205,24 +233,25 @@ function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;pro
 
 export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<void>}){
  const [aba,setAba]=useState<Aba>('inicio'),[menuAberto,setMenuAberto]=useState(false);
- const [pedidos,setPedidos]=useState<PedidoAdmin[]>([]),[produtos,setProdutos]=useState<ProdutoAdmin[]>([]);
+ const [pedidos,setPedidos]=useState<PedidoAdmin[]>([]),[produtos,setProdutos]=useState<ProdutoAdmin[]>([]),[movimentos,setMovimentos]=useState<MovimentoCaixa[]>([]);
  const [config,setConfig]=useState<ConfiguracaoAdmin|null>(null);
  const [carregando,setCarregando]=useState(true),[erro,setErro]=useState(''),[alerta,setAlerta]=useState('');
  const vistos=useRef<string[]>([]);
  const atualizar=useCallback(async()=>{
-  const [a,b,c]=await Promise.all([
+  const [a,b,c,d]=await Promise.all([
    supabase!.from('sc_configuracao').select('*').eq('id','principal').single(),
    supabase!.from('sc_produtos').select('*').order('ordem',{ascending:true}),
-   supabase!.from('sc_pedidos').select('*').order('criado_em',{ascending:false}).limit(250)
+   supabase!.from('sc_pedidos').select('*').order('criado_em',{ascending:false}).limit(250),
+   supabase!.from('sc_movimentos_caixa').select('*').order('criado_em',{ascending:false}).limit(250)
   ]);
-  const err=a.error||b.error||c.error;
+  const err=a.error||b.error||c.error||d.error;
   if(err){setErro(erroLegivel(err));setCarregando(false);return;}
   const novos=(c.data||[]) as PedidoAdmin[];
   if(vistos.current.length&&novos.some(p=>!vistos.current.includes(p.id))){
    setAlerta('Novo pedido cadastrado no banco.');window.setTimeout(()=>setAlerta(''),6000);
   }
   vistos.current=novos.map(p=>p.id);
-  setConfig(a.data as ConfiguracaoAdmin);setProdutos((b.data||[]) as ProdutoAdmin[]);setPedidos(novos);
+  setConfig(a.data as ConfiguracaoAdmin);setProdutos((b.data||[]) as ProdutoAdmin[]);setPedidos(novos);setMovimentos((d.data||[]) as MovimentoCaixa[]);
   setErro('');setCarregando(false);
  },[]);
  useEffect(()=>{
@@ -230,12 +259,13 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
   const channel=supabase!.channel('santa-cruz-adm')
    .on('postgres_changes',{event:'*',schema:'public',table:'sc_pedidos'},()=>{void atualizar();})
    .on('postgres_changes',{event:'*',schema:'public',table:'sc_produtos'},()=>{void atualizar();})
+   .on('postgres_changes',{event:'*',schema:'public',table:'sc_movimentos_caixa'},()=>{void atualizar();})
    .subscribe();
   return()=>{void supabase!.removeChannel(channel);};
  },[atualizar]);
  const andamento=pedidos.filter(p=>!['entregue','cancelado'].includes(p.status));
  const concluidos=pedidos.filter(p=>p.status==='entregue');
- const registrado=concluidos.reduce((s,p)=>s+p.total_centavos,0)/100;
+ const recebido=pedidos.filter(p=>p.pagamento_status==='pago').reduce((s,p)=>s+p.total_centavos,0)/100;
  const navegar=(id:Aba)=>{setAba(id);setMenuAberto(false);window.scrollTo({top:0,behavior:'smooth'});};
  return <div className="adm-shell">
   {menuAberto&&<button className="adm-backdrop" onClick={()=>setMenuAberto(false)} aria-label="Fechar menu"/>}
@@ -262,7 +292,7 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
        <article><span><ClipboardList size={22}/></span><p>Pedidos registrados</p><strong>{pedidos.length}</strong><small>Somente registros do banco</small></article>
        <article><span><Bell size={22}/></span><p>Em andamento</p><strong>{andamento.length}</strong><small>Aguardando conclusão</small></article>
        <article><span><Check size={22}/></span><p>Pedidos entregues</p><strong>{concluidos.length}</strong><small>Marcados pela equipe</small></article>
-       <article><span><ShoppingBag size={22}/></span><p>Total registrado</p><strong className="adm-metricas__dinheiro">{reais(registrado)}</strong><small>Valores manuais, não pagamento confirmado</small></article>
+       <article><span><ShoppingBag size={22}/></span><p>Pagamentos conferidos</p><strong className="adm-metricas__dinheiro">{reais(recebido)}</strong><small>Equipe marcou como recebido · últimos 250</small></article>
       </div>
       <div className="adm-grade-paineis">
        <div className="adm-card"><h2><ClipboardList size={21}/> Últimos pedidos</h2>
@@ -276,10 +306,11 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
         <div className="adm-resumo-linha"><span>Entrega configurada</span><span className={config?.taxa_entrega!==null&&config?.pedido_minimo!==null&&!!config?.bairros_atendidos.length?'adm-chip adm-chip--ok':'adm-chip'}>{config?.taxa_entrega!==null&&config?.pedido_minimo!==null&&!!config?.bairros_atendidos.length?'Sim':'Pendente'}</span></div>
         <button type="button" onClick={()=>navegar('cardapio')} className="adm-link">Gerenciar cardápio <ArrowUpRight size={16}/></button></div>
       </div>
-      <div className="adm-aviso"><ShieldCheck size={19}/> Este painel usa dados persistidos no Supabase. O checkout atual envia mensagens ao WhatsApp; os pedidos de lá só aparecem aqui se forem registrados pela equipe.</div>
+      <div className="adm-aviso"><ShieldCheck size={19}/> Este painel usa dados do Supabase. Pedidos de site só chegam automaticamente após ativar a função segura de checkout e o catálogo real; conversas avulsas no WhatsApp ainda exigem registro manual.</div>
      </section>}
      {aba==='pedidos'&&<Pedidos pedidos={pedidos} atualizar={atualizar}/>}
      {aba==='cardapio'&&<Cardapio produtos={produtos} atualizar={atualizar}/>}
+     {aba==='financeiro'&&<Financeiro pedidos={pedidos} movimentos={movimentos} atualizar={atualizar}/>}
      {aba==='configuracoes'&&config&&<Configuracoes config={config} produtos={produtos} atualizar={atualizar}/>}
     </>}
    </main>
