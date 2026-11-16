@@ -43,8 +43,8 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
  return <section className="hero">
   <div className="container-padrao hero__grade">
    <div className="hero__texto">
-    <div className="hero__eyebrow"><span>✺</span> Bem-vindo ao sabor do Nordeste <span>✺</span></div>
-    <h1>Da nossa cozinha<br/>para a <em>sua mesa.</em></h1>
+    <div className="hero__eyebrow">Casa do Norte · Santa Cruz</div>
+    <h1>Da nossa cozinha para a <em>sua mesa.</em></h1>
     <p>Comida nordestina feita com carinho, na unidade Santa Cruz.</p>
     <div className="hero__acoes"><button className="botao botao--rosa" type="button" onClick={()=>irPara('cardapio')}>Ver cardápio e pedir <ArrowRight size={21}/></button><a className="botao botao--claro" href="#como-funciona">Como funciona</a></div>
     <div className="hero__selos">
@@ -56,7 +56,6 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
    <div className="hero__visual">
     {String(loja.heroFoto)?<img className="hero__foto" src={String(loja.heroFoto).startsWith('http')?String(loja.heroFoto):`${import.meta.env.BASE_URL}${String(loja.heroFoto).replace(/^\/+/, '')}`} alt={loja.heroImagemIlustrativa?'Fotografia ilustrativa de comida nordestina':'Foto do restaurante Delícia do Nordeste'} width="720" height="600" fetchPriority="high"/>:
      <div className="hero__placeholder"><div className="hero__prato"><ChefHat size={76} strokeWidth={1.2}/><span>O sabor tem endereço</span></div><div className="hero__foto-texto"><b>Seu prato favorito mora aqui.</b><span>Sabores nordestinos</span></div></div>}
-    <div className="hero__adesivo"><span>✸</span> Tradição &<br/> sabor de casa</div>
     {loja.heroFoto&&loja.heroImagemIlustrativa&&<span className="hero__legenda">Imagem ilustrativa</span>}
    </div>
   </div>

@@ -57,12 +57,17 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
 .cabecalho__sacola{display:flex;align-items:center;justify-content:center;gap:8px;min-width:47px;min-height:47px;padding:0 12px;border:0;border-radius:14px;background:var(--vinho);color:white;font-weight:800;font-size:.83rem}
 .cabecalho__sacola span{display:none}
 .cabecalho__sacola b{display:grid;place-items:center;min-width:20px;height:20px;background:var(--amarelo);color:var(--vinho);border-radius:50px;padding:0 4px;font-size:.67rem}
-.hero{background:radial-gradient(circle at 0% 90%,#FFE9BD 0,transparent 32%),linear-gradient(110deg,#FFF9ED 0%,#FFF0DC 66%,#FFE2D3 100%);overflow:hidden}
+.hero{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(115deg,#fbf7f1,#f5e9dd)}
+.hero::before{
+ content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:url("./assets/xilogravura-sertao.webp") no-repeat 46% 52% / clamp(240px,31vw,450px) auto;
+ filter:grayscale(92%) sepia(18%);opacity:.17;mix-blend-mode:multiply;
+ mask-image:radial-gradient(ellipse 34% 84% at 46% 52%,#000 20%,transparent 90%);
+}
 .hero__grade{display:grid;gap:28px;padding-block:45px 44px}
-.hero__eyebrow{display:inline-flex;align-items:center;gap:9px;padding:8px 13px;border-radius:30px;background:#fffdf8;color:var(--rosa-escuro);font-size:.71rem;font-weight:800;letter-spacing:.02em}
-.hero__eyebrow span{font-size:1.1rem;color:var(--laranja)}
-.hero h1{margin:19px 0 13px;color:var(--vinho);font-size:clamp(2.6rem,8vw,5.6rem);font-weight:800;line-height:1.01;letter-spacing:-.04em}
-.hero h1 em{font-style:normal;color:var(--rosa)}
+.hero__eyebrow{display:inline-flex;align-items:center;gap:9px;padding:0;color:#765c52;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.hero h1{margin:19px 0 13px;color:var(--vinho);font-size:clamp(2.6rem,4.6vw,4.45rem);font-weight:800;line-height:1.04;letter-spacing:-.035em;text-wrap:balance}
+.hero h1 em{font-style:normal;color:#983f51}
 .hero__texto>p{max-width:530px;color:#695258;font-size:.94rem;line-height:1.75}
 .hero__acoes{display:flex;flex-wrap:wrap;gap:11px;margin-top:24px}
 .hero__selos{display:flex;flex-wrap:wrap;gap:9px;margin-top:27px}
@@ -78,8 +83,6 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
 .hero__foto-texto{position:relative;margin-top:17px;color:#fff;display:flex;flex-direction:column;align-items:center;text-shadow:0 2px 5px rgb(75 22 22 / .3)}
 .hero__foto-texto b{font-family:"Baloo 2";font-size:1.35rem}
 .hero__foto-texto span{font-size:.69rem;letter-spacing:.06em;font-weight:800}
-.hero__adesivo{position:absolute;right:-4px;top:17px;transform:rotate(9deg);border-radius:16px;background:var(--amarelo);padding:12px 16px;color:var(--vinho);font-family:"Baloo 2";font-size:.96rem;line-height:1.04;font-weight:800;box-shadow:0 8px 14px rgb(69 20 30 / .15);text-align:center}
-.hero__adesivo span{display:block;font-size:1.4rem}
 .barra-aviso{background:var(--vinho);color:#fff7f0;font-size:.73rem;line-height:1.65;text-align:center;padding:10px 0}
 .barra-aviso span{color:var(--amarelo);padding:0 5px}
 .aviso-atendimento{display:flex;align-items:center;gap:10px;min-height:48px;margin-top:15px;margin-bottom:10px;padding:13px 17px;border:1px solid #E8C9AB;border-radius:14px;font-size:.78rem;font-weight:700}
@@ -453,26 +456,9 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
  .consulta-entrega{grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:32px;padding:26px 32px}
 }
 
-/* ==============================================================
-   FUNDO GLOBAL — XILOGRAVURA DO SERTÃO + RENDA RENASCENÇA
-   A imagem é um recurso local compilado pelo Vite; mantém
-   /Santa-Cruz/ no GitHub Pages e também funciona em domínio próprio.
-   ============================================================== */
-:root,html,#root,.site-loja{
-  background-color:transparent;
-}
-html{min-height:100%;background-color:#FDF6EC;}
-body{
-  min-height:100vh;
-  background-color:#FDF6EC;
-  background-image:url("./assets/moldura-xilogravura-renda.webp");
-  background-position:center top;
-  background-size:calc(100% + 12px) auto;
-  background-repeat:repeat-y;
-  background-attachment:fixed;
-}
-/* Um único fundo da primeira seção até o rodapé. */
-.hero,
+/* A xilogravura pertence à abertura. As demais seções usam papel creme. */
+html,body{min-height:100%;background:#fbf7f1}
+:root,#root,.site-loja{background-color:transparent}
 .catalogo,
 .localizacao,
 .avaliacoes,
@@ -515,7 +501,7 @@ body{
 .confirmacao__caixa{
   background:rgba(255,255,255,.93);
 }
-/* O rodapé deixa a xilogravura e a renda aparecerem até o fim. */
+/* Rodapé com a mesma base clara do restante da loja. */
 .rodape{
   color:var(--vinho);
   border-top:1px solid rgba(114,34,56,.16);
@@ -630,9 +616,6 @@ body{
 .sacola-sugestoes small{display:block;color:var(--suave);font-size:.76rem}
 
 /* A vitrine compacta prioriza a navegação e o cardápio em telas pequenas. */
-@media(max-width:900px){
- body{background-image:none;background-color:#fbf7f1}
-}
 @media(max-width:779px){
  html{scroll-padding-top:120px}
  .cabecalho__conteudo{min-height:64px}
@@ -640,6 +623,7 @@ body{
  .cabecalho .marca strong{font-size:1.05rem}
  .cabecalho .status-loja,.cabecalho__sacola>span{display:none}
  .cabecalho__sacola{border-radius:12px;min-height:44px;min-width:44px}
+ .hero::before{background-position:73% 28%;background-size:200px auto;opacity:.12;mask-image:radial-gradient(ellipse 52% 59% at 73% 30%,#000 12%,transparent 91%)}
  .hero__grade{gap:19px;padding-block:28px 21px}
  .hero h1{margin:0 0 9px;font-size:clamp(2.05rem,8vw,3.1rem);line-height:1.02}
  .hero__texto>p{font-size:.86rem;line-height:1.55;margin:0}
@@ -648,7 +632,7 @@ body{
  .hero__visual{min-height:0;aspect-ratio:16/8;border-radius:16px;box-shadow:none;overflow:hidden}
  .hero__foto{min-height:0;height:100%;aspect-ratio:auto;border-radius:0}
  .hero__legenda{bottom:7px;left:7px;font-size:.62rem}
- .hero__eyebrow,.hero__adesivo,.hero__selos,.hero__acoes>a,
+ .hero__eyebrow,.hero__selos,.hero__acoes>a,
  .destaques,.catalogo__inicio>.micro-label,.catalogo__inicio>p,
  .categoria-secao__topo .micro-label,.whatsapp-suporte,.barra-aviso span{display:none}
  .barra-aviso{background:#fffdf8;padding-block:7px;line-height:1.35}

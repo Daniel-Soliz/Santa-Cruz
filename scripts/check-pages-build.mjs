@@ -27,15 +27,16 @@ assert.match(fs.readFileSync(path.join(dist,'sitemap.xml'),'utf8'),/daniel-soliz
 assert.match(fs.readFileSync(path.join(dist,'robots.txt'),'utf8'),/sitemap\.xml/);
 console.log('SEO vindo do config.json: Restaurant, menu, sitemap e robots sem dados fictícios.');
 
-const fundo=fs.readdirSync(path.join(dist,'assets')).find(name=>/^moldura-xilogravura-renda-[\w-]+\.webp$/.test(name));
-assert.ok(fundo,'Textura da xilogravura e renda não emitida pelo Vite');
-const cssName=fs.readdirSync(path.join(dist,'assets')).find(name=>/^index-[\w-]+\.css$/.test(name));
-assert.ok(cssName,'CSS compilado não encontrado');
+const arquivosAssets=fs.readdirSync(path.join(dist,'assets'));
+const xilogravura=arquivosAssets.find(name=>/^xilogravura-sertao-[\w-]+\.webp$/.test(name));
+const cssName=arquivosAssets.find(name=>/^index-[\w-]+\.css$/.test(name));
+assert.ok(xilogravura&&cssName,'Ilustração ou CSS da abertura não emitidos pelo Vite');
 const cssBuild=fs.readFileSync(path.join(dist,'assets',cssName),'utf8');
-assert.match(cssBuild,/moldura-xilogravura-renda-[\w-]+\.webp/,'Imagem não referenciada no CSS');
-assert.match(cssBuild, /@media\s*\((?:max-width:\s*900px|width\s*<=\s*900px)\)\s*\{\s*body\s*\{[^}]*background-image:\s*none/, 'O fundo decorado precisa ficar desativado no celular');
-assert.ok(fs.statSync(path.join(dist,'assets',fundo)).size<500000,'Textura 4K não otimizada');
-console.log('Fundo xilogravura/renda incorporado e otimizado no build.');
+assert.ok(cssBuild.includes(xilogravura),'Ilustração sem referência no CSS');
+assert.match(cssBuild,/\.hero:?:before\s*\{[^}]*xilogravura-sertao-/,'Ilustração fora da abertura');
+assert.doesNotMatch(cssBuild,/moldura-xilogravura-renda-/,'Fundo lateral antigo ainda referenciado');
+assert.ok(fs.statSync(path.join(dist,'assets',xilogravura)).size<150000,'Ilustração não otimizada');
+console.log('Xilogravura otimizada e restrita à abertura.');
 
 const arquivosJS=fs.readdirSync(path.join(dist,'assets')).filter(n=>n.endsWith('.js'));
 assert.ok(arquivosJS.some(n=>/^AdminApp-[\w-]+\.js$/.test(n)), 'Chunk da rota administrativa não gerado');
