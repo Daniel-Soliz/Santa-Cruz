@@ -68,7 +68,7 @@ O site pode trabalhar em dois modos, sem misturar informações:
 
 1. Após executar `supabase/INSTALAR_SANTA_CRUZ.sql`, execute também `supabase/ATUALIZAR_OPERACAO_SANTA_CRUZ.sql` no **mesmo projeto exclusivo do restaurante**. Esse segundo arquivo cria o bucket público de imagens `sc-fotos-cardapio` (escrita apenas por admins), lançamentos de caixa e os campos de pagamento, canal e endereço dos pedidos.
 2. Entre em `#/admin` com a conta autorizada. Em **Cardápio e preços**, clique em Novo produto ou no lápis para editar. Preencha nome, preço e categoria. Escolha uma imagem JPG/PNG/WebP do celular; o painel permite zoom, posição horizontal/vertical e gera um arquivo WebP 960 × 720. Clique em **Enviar foto otimizada** e depois em **Salvar no banco**.
-3. Também é possível incluir ou excluir tamanhos, adicionais, destacar um prato, marcar como esgotado, alterar a ordem e excluir o produto. Itens fictícios devem continuar como rascunhos até terem dados reais confirmados.
+3. Também é possível incluir ou excluir tamanhos, adicionais, destacar um prato, marcar como esgotado, alterar a ordem e excluir o produto. Em Configurações, você também escolhe quais formas de pagamento aparecem no checkout (Pix combinado com a equipe, cartão ou dinheiro). Itens fictícios devem continuar como rascunhos até terem dados reais confirmados.
 4. Em **Entradas e saídas**, registre despesas e receitas extras sem misturar com os pedidos. Em **Pedidos**, marque manualmente "Recebido (conferido)" apenas depois de verificar que o dinheiro entrou. Valores do painel **não são extrato do banco ou Mercado Pago** e não representam Pix confirmado automaticamente.
 
 ### Para receber pedidos do próprio site no ADM

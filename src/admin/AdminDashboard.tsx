@@ -218,6 +218,7 @@ function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;pro
   const numero=(v:string)=>v.trim()?Number(v.replace(',','.')):null;
   const a=numero(taxa),b=numero(minimo),list=bairros.split(',').map(x=>x.trim()).filter(Boolean);
   if((a!==null&&(!Number.isFinite(a)||a<0))||(b!==null&&(!Number.isFinite(b)||b<0))){setErro('Confira os valores de taxa e mínimo, que não podem ser negativos.');return;}
+  if(!Object.values(formas).some(Boolean)){setErro('Ative pelo menos uma forma de pagamento.');return;}
   if(catalogoPublicado&&!produtos.some(p=>p.publicado&&p.dados.exemplo===false)){setErro('É necessário ter ao menos um prato real publicado para ativar o cardápio do painel.');return;}
   setSalvando(true);
   const {error}=await supabase!.from('sc_configuracao').update({taxa_entrega:a,pedido_minimo:b,bairros_atendidos:list,pedidos_ativos:ativos,catalogo_publicado:catalogoPublicado,formas_pagamento:formas,atualizado_em:new Date().toISOString()}).eq('id','principal');

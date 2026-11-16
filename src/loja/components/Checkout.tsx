@@ -22,6 +22,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
  const [cepStatus,setCepStatus]=useState('');
  const [erros,setErros]=useState<string[]>([]);
  const [captcha,setCaptcha]=useState('');
+ const [recriarCaptcha,setRecriarCaptcha]=useState(0);
  const [registrando,setRegistrando]=useState(false);
  const [falhaRegistro,setFalhaRegistro]=useState('');
  const sincronizar=modoBanco&&backendConfigurado&&verificacaoConfigurada;
@@ -88,6 +89,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
     pedido={...rascunho,numero:data.codigo};
     registradoNoPainel=true;
    }catch(e){
+    setCaptcha('');setRecriarCaptcha(x=>x+1);
     setFalhaRegistro(
      'Este pedido não foi confirmado no painel. Verifique os dados ou use o envio por WhatsApp sem registro automático. '+
      (e instanceof Error?e.message:'Falha no serviço de pedidos.')
@@ -154,7 +156,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
      {modoBanco&&<div className="checkout-registro">
       <strong>Recebimento na cozinha</strong>
       {sincronizar?<><p>O pedido será registrado no painel e ficará aguardando a confirmação da equipe. O pagamento continua a combinar com o restaurante.</p>
-       <VerificacaoPedido token={captcha} onToken={setCaptcha}/></>:
+       <VerificacaoPedido key={recriarCaptcha} token={captcha} onToken={setCaptcha}/></>:
        <p>O envio automático ao painel não está ativado. Você pode preparar a mensagem para confirmar pelo WhatsApp.</p>}
      </div>}
      {falhaRegistro&&<div className="form-erros" role="alert">{falhaRegistro}</div>}
