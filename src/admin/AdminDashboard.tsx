@@ -3,6 +3,7 @@ import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,LogOut,Menu,X,Ref
 import {logoUrl} from '../config/loja';
 import {EditorFoto} from './EditorFoto';
 import {EditorOpcoes} from './EditorOpcoes';
+import {removerFotoAntiga} from './fotosStorage';
 import {Financeiro,type MovimentoCaixa} from './Financeiro';
 import {valorDigitado} from '../loja/pedido';
 import type {Variacao,Opcional} from '../loja/types';
@@ -129,6 +130,11 @@ function Cardapio({produtos,atualizar}:{produtos:ProdutoAdmin[];atualizar:()=>Pr
     variacoes:editar.variacoes,opcionais:editar.opcionais,tags:antigo?.dados.tags||[]};
    const {error}=await supabase!.from('sc_produtos').upsert({id:editar.id,dados,publicado:editar.publicado,ordem:editar.ordem,atualizado_em:new Date().toISOString()});
    if(error)throw error;
+   const fotoAntiga=String(antigo?.dados.foto||'');
+   if(fotoAntiga&&fotoAntiga!==editar.foto){
+    try{await removerFotoAntiga(fotoAntiga,editar.id);}
+    catch{setErro('Produto salvo, mas não foi possível excluir a foto antiga do armazenamento.');}
+   }
    setEditar(null);await atualizar();
   }catch(e){setErro(erroLegivel(e));}
   finally{setSalvando(false);}
@@ -141,7 +147,10 @@ function Cardapio({produtos,atualizar}:{produtos:ProdutoAdmin[];atualizar:()=>Pr
  const remover=async(item:ProdutoAdmin)=>{
   if(!window.confirm(`Excluir "${String(item.dados.nome)}" definitivamente?`))return;
   const {error}=await supabase!.from('sc_produtos').delete().eq('id',item.id);
-  if(error){setErro(erroLegivel(error));return;}await atualizar();
+  if(error){setErro(erroLegivel(error));return;}
+  try{await removerFotoAntiga(String(item.dados.foto||''),item.id);}
+  catch{setErro('Produto excluído, mas sua foto não pôde ser removida do armazenamento.');}
+  await atualizar();
  };
  const importar=async()=>{
   if(produtos.length){setErro('Importação permitida apenas com o banco vazio, para não sobrescrever itens.');return;}
