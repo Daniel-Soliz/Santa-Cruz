@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, ChefHat, Clock3, Copy, Heart, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, Star, Store, Truck, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChefHat, Clock3, Copy, Heart, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, Star, LockKeyhole, Store, Truck, UtensilsCrossed, X } from 'lucide-react';
 import cardapio from '../data/cardapio.json';
 import { loja, logoUrl } from '../config/loja';
 import type { Categoria, LinhaCarrinho, Produto } from './types';
@@ -105,7 +105,7 @@ function Rodape(){
    <div><h3>Encontre a gente</h3><p>{loja.endereco}<br/>CEP {loja.cep}</p><p>Terça a domingo, 8h às 22h<br/>Segunda-feira: fechado</p></div>
    <div><h3>Atendimento</h3><a href={loja.telefoneLink}>{loja.telefone}</a><a href={ajudaUrl} target="_blank" rel="noopener noreferrer">WhatsApp para dúvidas</a><a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
   </div>
-  <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span></div>
+  <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
 }
 export default function LojaApp(){
