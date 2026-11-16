@@ -82,6 +82,15 @@ Deno.serve(async request=>{
   if(prodErr||!itens||itens.length!==new Set(ids).size)
    return recusado('Um ou mais pratos não estão disponíveis.',409,origin);
   const produtos=new Map(itens.map(item=>[item.id,item]));
+  // A loja só mostra pratos em categorias ativas. O servidor aplica
+  // a mesma regra, mesmo que alguém tente montar uma requisição manual.
+  const categoriasProdutos=[...new Set(itens.map(p=>String(p.dados?.categoriaId||'')))];
+  if(categoriasProdutos.some(id=>!id))return recusado('Um dos pratos está sem categoria.',409,origin);
+  const {data:categoriasValidas,error:categoriaErro}=await admin.from('sc_categorias')
+   .select('id').eq('ativa',true).in('id',categoriasProdutos);
+  if(categoriaErro)return recusado('Não foi possível validar as categorias do cardápio.',503,origin);
+  if((categoriasValidas||[]).length!==categoriasProdutos.length)
+   return recusado('Uma das categorias não está disponível no momento.',409,origin);
   let subtotal=0;
   const linhasLimpa=[];
   for(const l of pedido.linhas){

@@ -32,7 +32,8 @@ test('painel diferencia pedidos cadastrados manualmente dos pedidos por WhatsApp
  assert.match(painel,/Pedidos criados no site aparecem automaticamente/);
  assert.match(painel,/conversas avulsas no WhatsApp ainda exigem registro manual/);
  assert.match(painel,/Somente registros do banco/);
- assert.match(painel,/Produto de exemplo/);
+ const editor=read('src/admin/GestorCardapio.tsx');
+ assert.match(editor,/Produto demonstrativo/);
 });
 
 test('o login oferece recuperação real sem incluir senha no repositório',()=>{
@@ -40,4 +41,22 @@ test('o login oferece recuperação real sem incluir senha no repositório',()=>
  assert.match(auth,/detectSessionInUrl:true/);
  assert.match(login,/resetPasswordForEmail/);
  assert.match(app,/auth\.updateUser\(\{password:senha\}\)/);
+});
+
+test('novo cardápio permite criar e reorganizar categorias próprias sem publicar exemplos',()=>{
+ const gestor=read('src/admin/GestorCategorias.tsx');
+ const produtos=read('src/admin/GestorCardapio.tsx');
+ const loja=read('src/loja/LojaApp.tsx');
+ const sql=read('supabase/GERENCIAR_CATEGORIAS_SANTA_CRUZ.sql');
+ assert.match(gestor,/\.from\('sc_categorias'\)\.insert/);
+ assert.match(gestor,/\.from\('sc_categorias'\)\.update/);
+ assert.match(gestor,/\.from\('sc_categorias'\)\.delete/);
+ assert.match(produtos,/Publicar meu novo cardápio/);
+ assert.match(produtos,/EditorFoto/);
+ assert.match(produtos,/EditorOpcoes/);
+ assert.match(loja,/\.from\('sc_categorias'\)/);
+ assert.match(loja,/idsAtivos\.has\(p\.categoriaId\)/);
+ assert.match(sql,/alter table public\.sc_categorias enable row level security/);
+ assert.match(sql,/sc_proteger_categoria_delete/);
+ assert.match(sql,/sc_validar_categoria_produto_save/);
 });
