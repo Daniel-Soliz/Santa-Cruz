@@ -4,7 +4,7 @@ import './admin/admin.css';
 
 // Carrega o ADM somente quando necessário, sem aumentar o JS inicial da loja.
 const AdminApp=lazy(()=>import('./admin/AdminApp'));
-const isAdmin=()=>window.location.hash.startsWith('#/admin');
+const isAdmin=()=>window.location.hash.startsWith('#/admin')||new URLSearchParams(window.location.search).has('recuperar_admin');
 export default function App(){
  const [admin,setAdmin]=useState(isAdmin);
  useEffect(()=>{

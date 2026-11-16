@@ -1,12 +1,12 @@
-import {useCallback,useEffect,useState} from 'react';
-import {ArrowLeft,AlertTriangle,Loader2,Database,ShieldCheck,LogOut} from 'lucide-react';
+import {useCallback,useEffect,useState,type FormEvent} from 'react';
+import {ArrowLeft,AlertTriangle,Loader2,Database,ShieldCheck,LogOut,LockKeyhole} from 'lucide-react';
 import type {User} from '@supabase/supabase-js';
 import {supabase,backendConfigurado,erroLegivel} from './backend';
 import {AdminLogin} from './AdminLogin';
 import {AdminDashboard} from './AdminDashboard';
 import {AdminPreview} from './AdminPreview';
 
-type Etapa='verificando'|'configurar'|'login'|'negado'|'pronto'|'erro';
+type Etapa='verificando'|'configurar'|'login'|'recuperar'|'negado'|'pronto'|'erro';
 export default function AdminApp(){
  const [etapa,setEtapa]=useState<Etapa>(backendConfigurado?'verificando':'configurar');
  const [usuario,setUsuario]=useState<User|null>(null);
@@ -21,7 +21,8 @@ export default function AdminApp(){
     .select('user_id').eq('user_id',data.user.id).maybeSingle();
    if(erroBanco)throw erroBanco;
    if(!admin){setUsuario(data.user);setEtapa('negado');return;}
-   setUsuario(data.user);setEtapa('pronto');
+   setUsuario(data.user);
+   setEtapa(new URLSearchParams(window.location.search).has('recuperar_admin')?'recuperar':'pronto');
   }catch(e){setErro(erroLegivel(e));setEtapa('erro');}
  },[]);
  useEffect(()=>{
@@ -29,6 +30,7 @@ export default function AdminApp(){
   if(!supabase)return;
   const {data}=supabase.auth.onAuthStateChange((evento)=>{
    if(evento==='SIGNED_OUT'){setUsuario(null);setEtapa('login');}
+   if(evento==='PASSWORD_RECOVERY')setEtapa('recuperar');
   });
   return()=>data.subscription.unsubscribe();
  },[verificar]);
@@ -52,6 +54,7 @@ export default function AdminApp(){
   </div>
  </main>;
  if(etapa==='login')return <AdminLogin entrar={verificar}/>;
+ if(etapa==='recuperar')return <RedefinirSenha confirmar={async()=>{await supabase!.auth.signOut();window.history.replaceState({},'',`${import.meta.env.BASE_URL}#/admin`);setEtapa('login');}}/>;
  if(etapa==='negado'||etapa==='erro')return <main className="adm-status"><div className="adm-status__box">
   <AlertTriangle size={38}/>
   <h1>{etapa==='negado'?'Acesso não autorizado':'Não foi possível carregar o painel'}</h1>
@@ -61,4 +64,27 @@ export default function AdminApp(){
   <a className="adm-voltar" href="#inicio"><ArrowLeft size={17}/> Voltar à loja</a>
  </div></main>;
  return <AdminDashboard usuario={usuario?.email||'Administrador'} sair={sair}/>;
+}
+
+function RedefinirSenha({confirmar}:{confirmar:()=>Promise<void>}){
+ const [senha,setSenha]=useState(''),[confirmacao,setConfirmacao]=useState(''),[erro,setErro]=useState(''),[salvando,setSalvando]=useState(false);
+ const salvar=async(e:FormEvent)=>{
+  e.preventDefault();setErro('');
+  if(senha.length<12){setErro('Use uma senha nova com pelo menos 12 caracteres.');return;}
+  if(senha!==confirmacao){setErro('As senhas não coincidem.');return;}
+  setSalvando(true);
+  const {error}=await supabase!.auth.updateUser({password:senha});
+  if(error){setErro(erroLegivel(error));setSalvando(false);return;}
+  await confirmar();
+ };
+ return <main className="adm-status"><section className="adm-status__box">
+  <LockKeyhole size={38}/><span className="adm-sobretitulo">PROTEÇÃO DE ACESSO</span><h1>Definir nova senha</h1>
+  <p>Você acessou a recuperação de uma conta administrativa autorizada.</p>
+  <form className="adm-form" onSubmit={e=>void salvar(e)}>
+   <label>Nova senha (mínimo 12 caracteres)<input type="password" autoComplete="new-password" minLength={12} required value={senha} onChange={e=>setSenha(e.target.value)}/></label>
+   <label>Confirmar nova senha<input type="password" autoComplete="new-password" minLength={12} required value={confirmacao} onChange={e=>setConfirmacao(e.target.value)}/></label>
+   {erro&&<p className="adm-erro" role="alert">{erro}</p>}
+   <button className="adm-btn adm-btn--full" disabled={salvando}>{salvando?'Salvando...':'Alterar senha e voltar ao login'}</button>
+  </form>
+ </section></main>;
 }

@@ -25,7 +25,7 @@ export function AdminLogin({entrar}:{entrar:()=>Promise<void>}){
   setErro('');setInfo('');
   try{
    const {error}=await supabase!.auth.resetPasswordForEmail(email.trim(),{
-    redirectTo:`${window.location.origin}${import.meta.env.BASE_URL}#/admin`
+    redirectTo:`${window.location.origin}${import.meta.env.BASE_URL}?recuperar_admin=1`
    });
    if(error)throw error;
    setInfo('Se o e-mail estiver cadastrado, você receberá instruções de recuperação.');

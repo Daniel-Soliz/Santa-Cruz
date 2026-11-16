@@ -11,7 +11,7 @@ export const backendConfigurado=Boolean(
  (key.startsWith('sb_publishable_')||key.startsWith('eyJ'))
 );
 export const supabase=backendConfigurado?
- createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}):null;
+ createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 
 export type PedidoStatus='recebido'|'em_preparo'|'pronto'|'saiu_entrega'|'entregue'|'cancelado';
 export interface PedidoAdmin{
