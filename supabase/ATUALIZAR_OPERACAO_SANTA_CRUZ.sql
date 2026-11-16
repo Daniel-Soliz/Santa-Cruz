@@ -101,13 +101,13 @@ for select to authenticated using (
 -- O bucket público fornece GET apenas para imagens conhecidas, sem exposição
 -- de dados pessoais. Não armazene documentos ou fotos de clientes neste bucket.
 
-do $
+do $$
 begin
  if not exists(select 1 from pg_publication_tables
  where pubname='supabase_realtime' and schemaname='public' and tablename='sc_movimentos_caixa') then
   alter publication supabase_realtime add table public.sc_movimentos_caixa;
  end if;
-end $;
+end $$;
 
 -- Os pedidos externos entram apenas pela Edge Function criar-pedido.
 -- NUNCA habilite insert de pedidos para a role anon.
