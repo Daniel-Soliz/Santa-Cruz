@@ -119,6 +119,24 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
   setSalvando(false);await atualizar();
   setSucesso(v=>v||'Prato excluído do cardápio.');
  };
+ const alterarPublicacao=async(ativar:boolean)=>{
+  setErro('');setSucesso('');
+  if(ativar&&!produtos.some(p=>p.publicado&&p.dados.exemplo===false&&p.dados.disponivel!==false&&p.dados.preco!==undefined
+    &&Number(p.dados.preco)>0&&podePublicar(String(p.dados.categoriaId||'')))){
+   setErro('Cadastre e publique pelo menos um prato real em uma categoria ativa antes de trocar o cardápio da loja.');return;
+  }
+  if(!window.confirm(ativar?
+   'Publicar agora o novo cardápio e substituir o catálogo demonstrativo na loja dos clientes?':
+   'Desativar seu cardápio e voltar a exibir o catálogo demonstrativo?'))return;
+  setSalvando(true);
+  const {error}=await supabase!.from('sc_configuracao').update({
+   catalogo_publicado:ativar,atualizado_em:new Date().toISOString()
+  }).eq('id','principal');
+  setSalvando(false);
+  if(error){setErro(erroLegivel(error));return;}
+  await atualizar();
+  setSucesso(ativar?'Novo cardápio publicado! Confira a loja pública.':'Cardápio do painel desativado.');
+ };
  const filtrados=produtos.filter(p=>
   (categoriaFiltro==='todas'||p.dados.categoriaId===categoriaFiltro) &&
   String(p.dados.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR')
@@ -201,6 +219,19 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
      <div><strong>{String(p.dados.nome)}</strong><small>{categoriaPorId.get(String(p.dados.categoriaId))?.nome||'Sem categoria'}</small><b>{reais(valorSeguro(p))}</b></div>
     </article>)}
    </div>:<div className="adm-categorias__vazio">Nenhum prato real foi publicado em uma categoria ativa.</div>)}
+  </section>
+  <section className="adm-card adm-publicacao">
+   <div><span className="adm-kicker">PASSO 4 · PUBLICAR</span>
+    <h3><CheckCircle2 size={21}/> {catalogoPublicado?'Cardápio publicado':'Pronto para abrir seu novo cardápio?'}</h3>
+    <p className="adm-pequeno">{catalogoPublicado?
+     'As alterações salvas nos pratos publicados ficam disponíveis para os clientes. Você pode voltar ao catálogo demonstrativo quando precisar.':
+     'Ao publicar, o catálogo de exemplos será substituído pelos pratos reais que você marcou como publicados em categorias ativas.'}</p>
+   </div>
+   <button type="button" className="adm-btn" disabled={salvando}
+    onClick={()=>void alterarPublicacao(!catalogoPublicado)}>
+    {catalogoPublicado?<EyeOff size={18}/>:<Eye size={18}/>}
+    {catalogoPublicado?'Desativar cardápio do painel':'Publicar meu novo cardápio'}
+   </button>
   </section>
   {editando&&<div className="adm-sobreposicao" onClick={e=>{if(e.target===e.currentTarget&&!salvando)setEditando(null);}}>
    <section className="adm-modal adm-modal--produto" role="dialog" aria-modal="true" aria-labelledby="adm-editor-prato-titulo">
