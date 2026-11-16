@@ -27,6 +27,9 @@ export interface ConfiguracaoAdmin{
  taxa_entrega:number|null;pedido_minimo:number|null;
  bairros_atendidos:string[];formas_pagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};atualizado_em?:string;
 }
+export interface CategoriaAdmin{
+ id:string;nome:string;ordem:number;ativa:boolean;atualizado_em?:string;
+}
 export interface ProdutoAdmin{ id:string;dados:Record<string,unknown>;publicado:boolean;ordem:number;atualizado_em?:string }
 export const reais=(v:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 export function erroLegivel(error:unknown){
