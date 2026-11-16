@@ -9,7 +9,7 @@ type Pedido={
  bairro?:string;cidade?:string;uf?:string;referencia?:string};
  tipo:'entrega'|'retirada'|'local';
  pagamento:'pix'|'cartao'|'dinheiro';trocoPara?:string;observacoesGerais?:string;
- linhas:Linha[];captcha:string;
+ linhas:Linha[];captcha:string;total_cliente_centavos:number;
 };
 const url=Deno.env.get('SUPABASE_URL')||'';
 const segredo=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
@@ -131,6 +131,8 @@ Deno.serve(async request=>{
     complemento:texto(c.complemento,120),referencia:texto(c.referencia,120)};
   }
   const total=subtotal+taxa;
+  if(!Number.isSafeInteger(pedido.total_cliente_centavos)||pedido.total_cliente_centavos!==total)
+   return recusado('O preço dos pratos mudou. Atualize o cardápio e revise a sacola.',409,origin);
   if(pagamento==='dinheiro'&&texto(pedido.trocoPara,40)){
    const raw=texto(pedido.trocoPara,40).replace(/^R\$\s*/,'').replace(/\s/g,'');
    const parsed=raw.includes(',')?raw.replace(/\./g,'').replace(',','.'):raw;
