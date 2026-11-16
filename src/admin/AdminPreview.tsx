@@ -1,16 +1,21 @@
 import {useState} from 'react';
-import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,ArrowLeft,LockKeyhole,Eye,Database,ShieldCheck,AlertTriangle} from 'lucide-react';
+import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,ArrowLeft,LockKeyhole,Eye,Database,ShieldCheck,AlertTriangle,Camera,Wallet,ImagePlus} from 'lucide-react';
 import {logoUrl} from '../config/loja';
 import catalogo from '../data/cardapio.json';
-type Aba='visao'|'pedidos'|'cardapio'|'config';
-const abas=[{id:'visao',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'config',nome:'Entrega e ajustes',Icon:Settings}] as const;
+type Aba='visao'|'pedidos'|'cardapio'|'financeiro'|'config';
+const abas=[{id:'visao',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'financeiro',nome:'Entradas e saídas',Icon:Wallet},{id:'config',nome:'Entrega e ajustes',Icon:Settings}] as const;
 /** Prévia visual sem login, banco ou dados reais. Nunca disponibiliza operações. */
 export function AdminPreview({fechar}:{fechar:()=>void}){
  const [aba,setAba]=useState<Aba>('visao');
  const conteudo=()=>{
   if(aba==='pedidos')return <div className="adm-vazio"><ClipboardList size={42}/><h2>Gestão de pedidos</h2><p>Os pedidos confirmados aparecerão aqui quando um banco próprio estiver conectado. A lista não foi simulada.</p></div>;
+  if(aba==='financeiro')return <><div className="adm-metricas">{['Recebimentos conferidos','Outras entradas','Saídas','Saldo registrado'].map(x=><article key={x}><span><Wallet size={20}/></span><p>{x}</p><strong>—</strong><small>Sem banco conectado</small></article>)}</div><div className="adm-vazio"><Wallet size={42}/><h2>Controle financeiro</h2><p>Entradas, saídas e pagamentos conferidos ficam disponíveis quando o Supabase da Santa Cruz estiver ativado. Nenhuma venda foi inventada.</p></div></>;
   if(aba==='cardapio')return <>
    <div className="adm-aviso"><AlertTriangle size={18}/> Abaixo está somente uma prévia de pratos fictícios do arquivo local. Não é possível alterar preços nesta demonstração.</div>
+   <div className="adm-card adm-preview__fotos"><h3><Camera size={20}/> Editor de fotos</h3>
+    <div className="adm-editor-foto__layout"><div className="adm-editor-foto__visual"><div className="adm-editor-foto__vazio"><ImagePlus size={30}/><span>Prévia de enquadramento 4:3</span></div></div>
+     <p className="adm-pequeno">No painel ativo será possível selecionar a foto do aparelho, ampliar, ajustar posição e enviar em WebP. Aqui é apenas apresentação, sem envio.</p></div>
+   </div>
    <div className="adm-tabela-wrap"><table className="adm-tabela"><thead><tr><th>Nome</th><th>Preço ilustrativo</th><th>Status</th></tr></thead><tbody>
     {catalogo.itens.slice(0,6).map(p=><tr key={p.id}><td>{p.nome}</td><td>Exemplo, não oficial</td><td><span className="adm-chip">Rascunho</span></td></tr>)}
    </tbody></table></div></>;

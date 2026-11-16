@@ -4,11 +4,13 @@ import {useLoja} from '../../config/LojaContext';
 import type { Cliente, LinhaCarrinho, Pagamento, PedidoCheckout, Produto, TipoPedido } from '../types';
 import { gerarNumeroPedido, montarMensagem, reais, situacaoLoja, totalCarrinho, totalComEntrega, urlWhatsApp, validarPedido, errosCamposPedido, valorDigitado, type ErrosCampos } from '../pedido';
 import { consultarCep, avaliarCobertura, entregaConfigurada } from '../entrega';
+import {backendConfigurado,supabase} from '../../admin/backend';
+import {VerificacaoPedido,verificacaoConfigurada} from './VerificacaoPedido';
 
 const clienteVazio:Cliente={nome:'',telefone:'',cep:'',rua:'',numero:'',complemento:'',bairro:'',cidade:'',uf:'',referencia:''};
-export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string};
+export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string; registradoNoPainel:boolean};
 
-export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void}){
+export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void;modoBanco?:boolean}){
  const loja=useLoja();
  const [cliente,setCliente]=useState<Cliente>(clienteVazio);
  const [tipo,setTipo]=useState<TipoPedido>('retirada');
@@ -19,6 +21,11 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
  const [buscandoCep,setBuscandoCep]=useState(false);
  const [cepStatus,setCepStatus]=useState('');
  const [erros,setErros]=useState<string[]>([]);
+ const [captcha,setCaptcha]=useState('');
+ const [recriarCaptcha,setRecriarCaptcha]=useState(0);
+ const [registrando,setRegistrando]=useState(false);
+ const [falhaRegistro,setFalhaRegistro]=useState('');
+ const sincronizar=modoBanco&&backendConfigurado&&verificacaoConfigurada;
  const [camposInvalidos,setCamposInvalidos]=useState<ErrosCampos>({});
  const entregaAtiva=entregaConfigurada(loja);
  const subtotal=totalCarrinho(linhas,produtos);
@@ -42,17 +49,18 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
   try{
    const dados=await consultarCep(cliente.cep);
    setCliente(c=>({...c,cep:dados.cep,rua:dados.rua||c.rua,bairro:dados.bairro||c.bairro,cidade:dados.cidade||c.cidade,uf:dados.uf||c.uf}));
-   const cobertura=avaliarCobertura(dados.bairro,loja);
+   const cobertura=avaliarCobertura(dados.bairro,loja,{cidade:dados.cidade,uf:dados.uf});
    setCepStatus(cobertura.estado==='disponivel'? 'CEP encontrado. '+cobertura.mensagem : cobertura.mensagem);
   }catch(e){setCepStatus((e as Error).message||'Não foi possível consultar o CEP. Preencha o endereço manualmente.');}
   finally{setBuscandoCep(false);}
  }
- function confirmar(e:React.FormEvent<HTMLFormElement>){
-  e.preventDefault();
-  const pedido:PedidoCheckout={numero:gerarNumeroPedido(),cliente,tipo,pagamento,trocoPara,observacoesGerais,linhas,foraHorario:!status.aberto};
-  const falhas=validarPedido(pedido,produtos,loja);
+ async function confirmar(semRegistro=false){
+  setFalhaRegistro('');
+  const rascunho:PedidoCheckout={numero:gerarNumeroPedido(),cliente,tipo,pagamento,
+   trocoPara,observacoesGerais,linhas,foraHorario:!status.aberto};
+  const falhas=validarPedido(rascunho,produtos,loja);
   if(falhas.length){
-   const campos=errosCamposPedido(pedido,loja,subtotal);
+   const campos=errosCamposPedido(rascunho,loja,subtotal);
    setCamposInvalidos(campos);setErros(falhas);
    window.requestAnimationFrame(()=>{
     const invalido=document.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -62,11 +70,38 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
    return;
   }
   setCamposInvalidos({});setErros([]);
+  let pedido=rascunho,registradoNoPainel=false;
+  if(sincronizar&&!semRegistro){
+   if(!captcha){setFalhaRegistro('Conclua a verificação de segurança para registrar o pedido no painel.');return;}
+   setRegistrando(true);
+   try{
+    const {data,error}=await supabase!.functions.invoke('criar-pedido',{
+     body:{
+      cliente,tipo,pagamento,trocoPara,observacoesGerais,
+      linhas:linhas.map(l=>({produtoId:l.produtoId,quantidade:l.quantidade,
+       variacaoId:l.variacaoId,opcionaisIds:l.opcionaisIds,observacao:l.observacao})),
+      total_cliente_centavos:Math.round(total*100),captcha
+     }
+    });
+    if(error)throw error;
+    if(!data||typeof data.codigo!=='string'||data.total_centavos!==Math.round(total*100))
+     throw new Error('O servidor retornou dados inconsistentes. Confira o pedido no WhatsApp antes de reenviar.');
+    pedido={...rascunho,numero:data.codigo};
+    registradoNoPainel=true;
+   }catch(e){
+    setCaptcha('');setRecriarCaptcha(x=>x+1);
+    setFalhaRegistro(
+     'Este pedido não foi confirmado no painel. Verifique os dados ou use o envio por WhatsApp sem registro automático. '+
+     (e instanceof Error?e.message:'Falha no serviço de pedidos.')
+    );
+    return;
+   }finally{setRegistrando(false);}
+  }
   const mensagem=montarMensagem(pedido,produtos,loja);
   const url=urlWhatsApp(mensagem,loja.whatsapp);
-  // Apenas prepara a mensagem: o usuário precisa tocar em ENVIAR no WhatsApp.
-  window.open(url,'_blank','noopener,noreferrer');
-  onPreparar({pedido,url,mensagem});
+  // Abrir WhatsApp somente mediante clique explícito na tela seguinte:
+  // evita bloqueio de popup após a chamada assíncrona.
+  onPreparar({pedido,url,mensagem,registradoNoPainel});
  }
  const escolhaTipo:[TipoPedido,string,typeof Truck,string][]=[
   ['entrega','Delivery',Truck,'Receber no endereço'],['retirada','Retirada',Store,'Buscar no balcão'],['local','Comer no local',UtensilsCrossed,'Refeição no restaurante']
@@ -76,7 +111,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
    <button className="link-voltar" type="button" onClick={onVoltar}><ArrowLeft size={19}/> Voltar ao cardápio</button>
    <div className="checkout-titulo"><span className="micro-label">Quase lá!</span><h1>Finalizar pedido</h1><p>Revise suas escolhas. Tudo em uma única tela, de forma simples.</p></div>
    <div className="checkout-layout">
-    <form className="checkout-form" onSubmit={confirmar} noValidate>
+    <form className="checkout-form" onSubmit={e=>{e.preventDefault();void confirmar();}} noValidate>
      {!status.aberto&&<div className="aviso-atendimento aviso-atendimento--fechado"><Clock3 size={20}/><span>{status.mensagem}. Você pode montar o pedido; ele será confirmado pelo restaurante quando abrir.</span></div>}
      {!loja.pedidosOnlineAtivos&&<div className="aviso-atendimento aviso-atendimento--fechado"><Clock3 size={20}/> Os pedidos online estão pausados. O cardápio continua disponível para consulta.</div>}
      <section className="checkout-bloco" aria-labelledby="etapa-tipo"><div className="checkout-bloco__titulo"><span className="etapa-numero">01</span><div><h2 id="etapa-tipo">Como deseja receber?</h2><p>Selecione o tipo do pedido</p></div></div>
@@ -118,9 +153,17 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar}:{linhas:LinhaCarr
      <section className="checkout-bloco" aria-labelledby="etapa-observacoes"><div className="checkout-bloco__titulo"><span className="etapa-numero">04</span><div><h2 id="etapa-observacoes">Alguma observação?</h2><p>Opcional: informações para o pedido completo</p></div></div>
       <label className="form-campo">Observações gerais<textarea rows={3} maxLength={500} value={observacoesGerais} onChange={e=>setObservacoesGerais(e.target.value)} placeholder="Ex.: retirar às 12h, sem talheres..."/></label>
      </section>
+     {modoBanco&&<div className="checkout-registro">
+      <strong>Recebimento na cozinha</strong>
+      {sincronizar?<><p>O pedido será registrado no painel e ficará aguardando a confirmação da equipe. O pagamento continua a combinar com o restaurante.</p>
+       <VerificacaoPedido key={recriarCaptcha} token={captcha} onToken={setCaptcha}/></>:
+       <p>O envio automático ao painel não está ativado. Você pode preparar a mensagem para confirmar pelo WhatsApp.</p>}
+     </div>}
+     {falhaRegistro&&<div className="form-erros" role="alert">{falhaRegistro}</div>}
      {erros.length>0&&<div id="checkout-erros" className="form-erros" role="alert" tabIndex={-1}><strong>Confira antes de continuar:</strong><ul>{erros.map(e=><li key={e}>{e}</li>)}</ul></div>}
-     <button type="submit" className="botao botao--rosa botao--full botao-confirmar" disabled={!loja.pedidosOnlineAtivos||linhas.length===0}><CheckCircle2 size={21}/> Preparar pedido no WhatsApp <ArrowRight size={20}/></button>
-     <p className="checkout-legal">Seu pedido será montado aqui e a mensagem aberta no WhatsApp. <strong>É preciso tocar em Enviar no WhatsApp</strong> e aguardar a confirmação da equipe. Não há cobrança automática.</p>
+     <button type="submit" className="botao botao--rosa botao--full botao-confirmar" disabled={!loja.pedidosOnlineAtivos||linhas.length===0||registrando}><CheckCircle2 size={21}/>{registrando?'Registrando pedido...':sincronizar?'Registrar pedido e preparar WhatsApp':'Preparar pedido no WhatsApp'} <ArrowRight size={20}/></button>
+     {falhaRegistro&&<button type="button" className="botao botao--claro botao--full" onClick={()=>void confirmar(true)}>Continuar pelo WhatsApp sem registro no painel</button>}
+     <p className="checkout-legal">Você revisará o pedido antes de abrir o WhatsApp. <strong>É preciso tocar em Enviar no WhatsApp</strong> e aguardar a confirmação da equipe. Mesmo registrado no painel, isso não significa que foi aceito ou pago.</p>
     </form>
     <aside className="checkout-resumo">
      <h2><ShoppingBag size={22}/> Resumo do pedido</h2>

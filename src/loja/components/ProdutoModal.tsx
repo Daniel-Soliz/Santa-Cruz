@@ -32,7 +32,7 @@ export function ProdutoModal({produto,linha,fechar,salvar}:{produto:Produto;linh
  return <div className="sobreposicao" onMouseDown={e=>{if(e.currentTarget===e.target)fechar();}}>
   <section className="modal-produto" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
    <div className="modal-produto__imagem">
-    <FotoPrato foto={produto.foto} nome={produto.nome}/>
+    <FotoPrato foto={produto.foto} nome={produto.nome} ilustrativa={produto.exemplo||produto.imagemIlustrativa===true}/>
     <button ref={inicio} className="fechar-modal" type="button" onClick={fechar} aria-label="Fechar detalhes"><X size={22}/></button>
    </div>
    <div className="modal-produto__conteudo">

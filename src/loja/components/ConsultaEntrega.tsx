@@ -8,21 +8,23 @@ export function ConsultaEntrega(){
  const loja=useLoja();
  const [cep,setCep]=useState('');
  const [bairro,setBairro]=useState('');
+ const [localidade,setLocalidade]=useState<{cidade:string;uf:string}|null>(null);
  const [consultando,setConsultando]=useState(false);
  const [resultado,setResultado]=useState<Cobertura|null>(null);
  const [erro,setErro]=useState('');
  const ativa=entregaConfigurada(loja);
  const status=async(event:React.FormEvent<HTMLFormElement>)=>{
-  event.preventDefault();setConsultando(true);setErro('');setResultado(null);
+  event.preventDefault();setConsultando(true);setErro('');setResultado(null);setLocalidade(null);
   try{
    const endereco=await consultarCep(cep);
    setBairro(endereco.bairro);
+   setLocalidade({cidade:endereco.cidade,uf:endereco.uf});
    setResultado(avaliarCobertura(endereco.bairro,loja,{cidade:endereco.cidade,uf:endereco.uf}));
   }catch(e){setErro((e as Error).message||'Não foi possível consultar o CEP.');}
   finally{setConsultando(false);}
  };
  const conferirBairro=()=>{
-  setResultado(avaliarCobertura(bairro,loja));
+  setResultado(avaliarCobertura(bairro,loja,localidade||undefined));
  };
  return <section className="consulta-entrega container-padrao" id="consultar-entrega" aria-labelledby="consulta-entrega-titulo">
   <div className="consulta-entrega__texto">

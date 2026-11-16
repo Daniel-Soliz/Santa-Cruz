@@ -13,17 +13,19 @@ export const backendConfigurado=Boolean(
 export const supabase=backendConfigurado?
  createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 
-export type PedidoStatus='recebido'|'em_preparo'|'pronto'|'saiu_entrega'|'entregue'|'cancelado';
+export type PedidoStatus='aguardando_confirmacao'|'recebido'|'em_preparo'|'pronto'|'saiu_entrega'|'entregue'|'cancelado';
 export interface PedidoAdmin{
  id:string;codigo:string;cliente_nome:string;telefone:string|null;
  modalidade:'entrega'|'retirada'|'local';total_centavos:number;
+ origem?:'site'|'manual'|'whatsapp';forma_pagamento?:string|null;
+ pagamento_status?:'pendente'|'pago'|'estornado';
  status:PedidoStatus;itens:unknown[];observacoes:string|null;
  criado_em:string;atualizado_em:string;
 }
 export interface ConfiguracaoAdmin{
  id:string;catalogo_publicado:boolean;pedidos_ativos:boolean;
  taxa_entrega:number|null;pedido_minimo:number|null;
- bairros_atendidos:string[];atualizado_em?:string;
+ bairros_atendidos:string[];formas_pagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};atualizado_em?:string;
 }
 export interface ProdutoAdmin{ id:string;dados:Record<string,unknown>;publicado:boolean;ordem:number;atualizado_em?:string }
 export const reais=(v:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);

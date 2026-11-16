@@ -27,6 +27,7 @@ jobs:
     env:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -40,6 +41,8 @@ jobs:
         run: npm run lint
       - name: Testar regras e pedido WhatsApp
         run: npm run test:pedido
+      - name: Validar sintaxe da função de pedidos
+        run: node scripts/check-edge-function.mjs
       - name: Compilar para /Santa-Cruz/
         run: npm run build:pages
         env:

@@ -14,6 +14,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run lint
       - run: npm run test:pedido
+      - run: node scripts/check-edge-function.mjs
       - run: npm run build:pages
       - run: npm run test:pages
       - run: PAGES_CUSTOM_DOMAIN=true npm run build:pages

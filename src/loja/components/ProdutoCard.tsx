@@ -3,7 +3,7 @@ import { ChefHat, Plus, Ban, Star } from 'lucide-react';
 import type { Produto } from '../types';
 import { reais } from '../pedido';
 
-export function FotoPrato({foto,nome,destaque=false}:{foto:string;nome:string;destaque?:boolean}){
+export function FotoPrato({foto,nome,destaque=false,ilustrativa=true}:{foto:string;nome:string;destaque?:boolean;ilustrativa?:boolean}){
  const [falhou,setFalhou]=useState(false);
  const src=foto?(/^(https?:)?\/\//.test(foto)?foto:`${import.meta.env.BASE_URL}${foto.replace(/^\/+/, '')}`):'';
  if(!src||falhou){
@@ -12,17 +12,17 @@ export function FotoPrato({foto,nome,destaque=false}:{foto:string;nome:string;de
    <span>Sabores do Nordeste</span>
   </div>;
  }
- return <img src={src} loading={destaque?'eager':'lazy'} decoding="async" onError={()=>setFalhou(true)} width="640" height="480" alt={`Imagem ilustrativa de ${nome}`} className="food-photo"/>;
+ return <img src={src} loading={destaque?'eager':'lazy'} decoding="async" onError={()=>setFalhou(true)} width="640" height="480" alt={ilustrativa?`Imagem ilustrativa de ${nome}`:`Foto do prato ${nome}`} className="food-photo"/>;
 }
 export function ProdutoCard({produto,abrir}:{produto:Produto;abrir:(p:Produto)=>void}){
  return <article className="produto-card">
   <div className="produto-card__imagem">
-   <FotoPrato foto={produto.foto} nome={produto.nome}/>
+   <FotoPrato foto={produto.foto} nome={produto.nome} ilustrativa={produto.exemplo||produto.imagemIlustrativa===true}/>
    <div className="produto-card__etiquetas">
     {produto.exemplo&&<span className="tag tag--demo">EXEMPLO</span>}
     {produto.destaque&&<span className="tag tag--yellow"><Star size={12} aria-hidden="true"/> Destaque</span>}
    </div>
-   {produto.exemplo&&produto.foto&&<span className="tag-foto-ilustrativa">Foto ilustrativa</span>}
+   {(produto.exemplo||produto.imagemIlustrativa===true)&&produto.foto&&<span className="tag-foto-ilustrativa">Foto ilustrativa</span>}
    {!produto.disponivel&&<div className="produto-card__esgotado"><Ban size={22} aria-hidden="true"/> Indisponível hoje</div>}
   </div>
   <div className="produto-card__corpo">
