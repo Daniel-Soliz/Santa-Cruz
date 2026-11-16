@@ -188,3 +188,18 @@
  .adm-sidebar{transition:none}
  .adm-spin{animation:none}
 }
+
+/* Prévia interativa: somente estrutura visual, sem backend, valores ou dados privados. */
+.adm-preview__botao{display:block;margin:16px auto 12px;min-height:47px;padding:11px 18px;
+ border:0;border-radius:12px;background:#f2b852;color:#352619;font-weight:900;font-size:.83rem}
+.adm-preview__marca{display:inline-flex;gap:7px;align-items:center;font-size:.73rem;font-weight:900;
+ padding:8px 12px;border-radius:50px;background:#fff1d9;color:#8c5a1d}
+.adm-preview__mobile-nav{display:none;gap:8px;flex-wrap:wrap}
+.adm-preview__mobile-nav button{background:white;border:1px solid #dacbd6;color:#604a57;
+ border-radius:11px;min-height:44px;padding:8px 13px;font-size:.73rem;font-weight:700}
+.adm-preview__mobile-nav button.ativo{background:#8d2949;color:white;border-color:#8d2949}
+@media(max-width:780px){
+ .adm-preview .adm-sidebar{display:none}
+ .adm-preview .adm-principal{margin-left:0;width:100%}
+ .adm-preview__mobile-nav{display:flex}
+}

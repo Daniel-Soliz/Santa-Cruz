@@ -11,6 +11,8 @@ O acesso discreto fica no final do rodapé, em **Área da equipe**. A rota da ad
 StudioBlack7, mas mantém o nome e o logo do restaurante. **Saber a URL não dá permissão:
 o banco exige autenticação e RLS.**
 
+Você pode abrir **Visualizar prévia do painel** mesmo antes de configurar um projeto. A prévia tem navegação, layout e indicadores vazios, sem acesso a dados pessoais e sem permitir alterações.
+
 ### Como colocar o painel para funcionar
 
 1. Crie um **novo projeto Supabase somente para o restaurante Santa Cruz**. Não reutilize
