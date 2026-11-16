@@ -74,6 +74,8 @@ Deno.serve(async request=>{
   const {data:config,error:confErr}=await admin.from('sc_configuracao').select('*').eq('id','principal').single();
   if(confErr||!config?.catalogo_publicado||!config?.pedidos_ativos)
    return recusado('Pedidos pelo site ainda não estão habilitados.',503,origin);
+  if(config.formas_pagamento&&config.formas_pagamento[pagamento]!==true)
+   return recusado('Esta forma de pagamento não está disponível.',409,origin);
   const ids=pedido.linhas.map(l=>texto(l?.produtoId,80));
   const {data:itens,error:prodErr}=await admin.from('sc_produtos')
    .select('id,dados,publicado').in('id',[...new Set(ids)]);

@@ -3,6 +3,10 @@
 -- Cria fotos públicas sem autorização de escrita para clientes, financeiro
 -- protegido, estados de pagamento e pedidos originados pelo site.
 
+alter table public.sc_configuracao
+ add column if not exists formas_pagamento jsonb not null
+ default '{"pix":true,"cartao":true,"dinheiro":true}'::jsonb;
+
 alter table public.sc_pedidos
  add column if not exists origem text not null default 'manual';
 alter table public.sc_pedidos

@@ -25,7 +25,7 @@ export interface PedidoAdmin{
 export interface ConfiguracaoAdmin{
  id:string;catalogo_publicado:boolean;pedidos_ativos:boolean;
  taxa_entrega:number|null;pedido_minimo:number|null;
- bairros_atendidos:string[];atualizado_em?:string;
+ bairros_atendidos:string[];formas_pagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};atualizado_em?:string;
 }
 export interface ProdutoAdmin{ id:string;dados:Record<string,unknown>;publicado:boolean;ordem:number;atualizado_em?:string }
 export const reais=(v:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);

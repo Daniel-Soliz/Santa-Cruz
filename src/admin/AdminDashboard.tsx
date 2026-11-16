@@ -210,8 +210,9 @@ function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;pro
  const [bairros,setBairros]=useState(config.bairros_atendidos.join(', '));
  const [ativos,setAtivos]=useState(config.pedidos_ativos);
  const [catalogoPublicado,setCatalogoPublicado]=useState(config.catalogo_publicado);
+ const [formas,setFormas]=useState(config.formas_pagamento||{pix:true,cartao:true,dinheiro:true});
  const [erro,setErro]=useState(''),[salvando,setSalvando]=useState(false),[sucesso,setSucesso]=useState(false);
- useEffect(()=>{setTaxa(config.taxa_entrega===null?'':String(config.taxa_entrega));setMinimo(config.pedido_minimo===null?'':String(config.pedido_minimo));setBairros(config.bairros_atendidos.join(', '));setAtivos(config.pedidos_ativos);setCatalogoPublicado(config.catalogo_publicado);},[config]);
+ useEffect(()=>{setTaxa(config.taxa_entrega===null?'':String(config.taxa_entrega));setMinimo(config.pedido_minimo===null?'':String(config.pedido_minimo));setBairros(config.bairros_atendidos.join(', '));setAtivos(config.pedidos_ativos);setCatalogoPublicado(config.catalogo_publicado);setFormas(config.formas_pagamento||{pix:true,cartao:true,dinheiro:true});},[config]);
  const salvar=async(e:FormEvent)=>{
   e.preventDefault();setErro('');setSucesso(false);
   const numero=(v:string)=>v.trim()?Number(v.replace(',','.')):null;
@@ -219,7 +220,7 @@ function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;pro
   if((a!==null&&(!Number.isFinite(a)||a<0))||(b!==null&&(!Number.isFinite(b)||b<0))){setErro('Confira os valores de taxa e mínimo, que não podem ser negativos.');return;}
   if(catalogoPublicado&&!produtos.some(p=>p.publicado&&p.dados.exemplo===false)){setErro('É necessário ter ao menos um prato real publicado para ativar o cardápio do painel.');return;}
   setSalvando(true);
-  const {error}=await supabase!.from('sc_configuracao').update({taxa_entrega:a,pedido_minimo:b,bairros_atendidos:list,pedidos_ativos:ativos,catalogo_publicado:catalogoPublicado,atualizado_em:new Date().toISOString()}).eq('id','principal');
+  const {error}=await supabase!.from('sc_configuracao').update({taxa_entrega:a,pedido_minimo:b,bairros_atendidos:list,pedidos_ativos:ativos,catalogo_publicado:catalogoPublicado,formas_pagamento:formas,atualizado_em:new Date().toISOString()}).eq('id','principal');
   setSalvando(false);
   if(error){setErro(erroLegivel(error));return;}
   setSucesso(true);await atualizar();
@@ -230,6 +231,10 @@ function Configuracoes({config,produtos,atualizar}:{config:ConfiguracaoAdmin;pro
     <div className="adm-duas-colunas"><label>Taxa fixa de entrega (R$)<input inputMode="decimal" value={taxa} onChange={e=>setTaxa(e.target.value)} placeholder="Ainda não definida"/></label>
     <label>Pedido mínimo (R$)<input inputMode="decimal" value={minimo} onChange={e=>setMinimo(e.target.value)} placeholder="Ainda não definido"/></label></div>
     <label>Bairros atendidos, separados por vírgula<textarea rows={3} value={bairros} onChange={e=>setBairros(e.target.value)} placeholder="Apenas os bairros realmente atendidos"/></label>
+    <h3><Settings size={20}/> Formas de pagamento aceitas</h3>
+    <div className="adm-checkboxes">{([['pix','Pix'],['cartao','Cartão'],['dinheiro','Dinheiro']] as const).map(([tipo,nome])=>
+     <label key={tipo}><input type="checkbox" checked={formas[tipo]} onChange={e=>setFormas({...formas,[tipo]:e.target.checked})}/>{nome}</label>)}</div>
+    <p className="adm-pequeno">Essas opções são para pagamento combinado com a equipe. Não ativam cobrança online.</p>
     <h3><Settings size={20}/> Operação</h3>
     <label className="adm-toggle"><input type="checkbox" checked={ativos} onChange={e=>setAtivos(e.target.checked)}/><span><b>Permitir montagem de pedidos online</b><small>Controla o checkout estático da loja.</small></span></label>
     <label className="adm-toggle"><input type="checkbox" checked={catalogoPublicado} onChange={e=>setCatalogoPublicado(e.target.checked)}/><span><b>Usar cardápio publicado do painel</b><small>Substitui o catálogo demonstrativo pelo conjunto de pratos reais publicados.</small></span></label>

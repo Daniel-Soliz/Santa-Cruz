@@ -252,7 +252,8 @@ export default function LojaApp(){
    pedidosOnlineAtivos:configRemota.pedidos_ativos,
    taxaEntregaFixa:configRemota.taxa_entrega===null?null:Number(configRemota.taxa_entrega),
    pedidoMinimoDelivery:configRemota.pedido_minimo===null?null:Number(configRemota.pedido_minimo),
-   bairrosAtendidos:configRemota.bairros_atendidos||[]
+   bairrosAtendidos:configRemota.bairros_atendidos||[],
+   formasPagamento:configRemota.formas_pagamento||lojaBase.formasPagamento
   };
  },[configRemota]);
  const produtos=useMemo(()=>configRemota?.catalogo_publicado?produtosRemotos:dadosLocais,[configRemota,produtosRemotos]);
