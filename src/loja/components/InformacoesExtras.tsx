@@ -1,11 +1,12 @@
 import { Clock3, CreditCard, MapPin, ShieldCheck, ShoppingBag, Star, Truck, UtensilsCrossed, Heart, Image as ImageIcon } from 'lucide-react';
 import avaliacoes from '../../data/avaliacoes.json';
-import { loja, logoUrl } from '../../config/loja';
+import {useLoja} from '../../config/LojaContext';
 import { reais } from '../pedido';
 import { entregaConfigurada } from '../entrega';
 
 /** Bloco de informações: só aparecem os dados efetivamente configurados. */
 export function InformacoesPedido(){
+ const loja=useLoja();
  const formas=[
   loja.formasPagamento.pix?'Pix':null,
   loja.formasPagamento.cartao?'Cartão na entrega':null,
@@ -25,6 +26,7 @@ export function InformacoesPedido(){
  </section>;
 }
 export function SobreCasa(){
+ const loja=useLoja();
  if(!loja.sobre)return null;
  return <section className="sobre-casa container-padrao" id="sobre"><div className="sobre-casa__arte"><span>✹</span><b>Sabor que aproxima.</b><small>Casa do Norte · Santa Cruz</small></div><div className="sobre-casa__texto">
   <span className="micro-label">Conheça nossa história</span><h2>Sobre a Casa do Norte</h2><p>{loja.sobre}</p>
@@ -32,6 +34,7 @@ export function SobreCasa(){
  </div></section>;
 }
 export function Avaliacoes(){
+ const loja=useLoja();
  if(!avaliacoes.length)return null;
  return <section className="avaliacoes" id="avaliacoes" aria-labelledby="avaliacoes-titulo"><div className="container-padrao">
   <div className="cabecalho-secao"><span className="micro-label">Espaço para suas histórias</span><h2 id="avaliacoes-titulo">Quem prova, conta!</h2><p>Depoimentos de demonstração para você visualizar a futura seção de avaliações. Não são opiniões de clientes reais.</p></div>
@@ -43,6 +46,7 @@ export function Avaliacoes(){
  </div></section>;
 }
 export function Galeria(){
+ const loja=useLoja();
  if(!loja.fotosEspaco.length)return null;
  return <section className="galeria-espaco container-padrao" id="espaco"><div className="cabecalho-secao"><span className="micro-label">Venha nos visitar</span><h2>Nosso espaço</h2></div>
  <div className="galeria-espaco__grade">{loja.fotosEspaco.map(i=><figure key={i.id}><img src={i.foto.startsWith('http')?i.foto:`${import.meta.env.BASE_URL}${i.foto.replace(/^\/+/, '')}`} alt={`Foto do ${i.nome.toLowerCase()} da Casa do Norte Santa Cruz`} loading="lazy" width="640" height="480"/><figcaption>{i.nome}</figcaption></figure>)}</div></section>;

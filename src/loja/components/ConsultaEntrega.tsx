@@ -1,10 +1,11 @@
 import {useState} from 'react';
 import {MapPin, Search, Truck, CheckCircle2, AlertCircle, HelpCircle} from 'lucide-react';
-import {loja} from '../../config/loja';
+import {useLoja} from '../../config/LojaContext';
 import {avaliarCobertura,consultarCep,entregaConfigurada} from '../entrega';
 import type {Cobertura} from '../entrega';
 
 export function ConsultaEntrega(){
+ const loja=useLoja();
  const [cep,setCep]=useState('');
  const [bairro,setBairro]=useState('');
  const [consultando,setConsultando]=useState(false);
