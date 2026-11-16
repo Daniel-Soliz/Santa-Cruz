@@ -12,7 +12,8 @@
     "build:pages": "DEPLOY_TARGET=github-pages vite build",
     "test:pages": "node scripts/check-pages-build.mjs",
     "dev:legacy": "tsx server.ts",
-    "test:pedido": "node --import tsx --test tests/*.test.ts"
+    "test:pedido": "node --import tsx --test tests/*.test.ts",
+    "test:edge": "node scripts/check-edge-function.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
