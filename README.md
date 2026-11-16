@@ -33,7 +33,10 @@ Você pode abrir **Visualizar prévia do painel** mesmo antes de configurar um p
    (chave pública `sb_publishable_...`). Essas duas informações não são senhas, mas
    exigem as regras RLS configuradas no passo 2. **Nunca use service_role, secret key,
    Access Token do Mercado Pago ou a senha do administrador nesse local.**
-6. Execute novamente o workflow **Publicar catálogo e pedidos no GitHub Pages**
+6. Em **Authentication → URL Configuration**, cadastre a URL da loja
+   `https://daniel-soliz.github.io/Santa-Cruz/` como URL de redirecionamento autorizada.
+   O link **Esqueceu sua senha?** usa esse retorno com marcador `recuperar_admin` para alterar a senha dentro da área protegida.
+7. Execute novamente o workflow **Publicar catálogo e pedidos no GitHub Pages**
    ou faça um commit na `main`. Depois visite `#/admin` e entre com suas credenciais.
 
 ### Como usar

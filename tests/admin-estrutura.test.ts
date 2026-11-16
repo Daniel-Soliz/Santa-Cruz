@@ -33,3 +33,10 @@ test('painel diferencia pedidos cadastrados manualmente dos pedidos por WhatsApp
  assert.match(painel,/Somente registros do banco/);
  assert.match(painel,/Produto de exemplo/);
 });
+
+test('o login oferece recuperação real sem incluir senha no repositório',()=>{
+ const auth=read('src/admin/backend.ts'),app=read('src/admin/AdminApp.tsx'),login=read('src/admin/AdminLogin.tsx');
+ assert.match(auth,/detectSessionInUrl:true/);
+ assert.match(login,/resetPasswordForEmail/);
+ assert.match(app,/auth\.updateUser\(\{password:senha\}\)/);
+});
