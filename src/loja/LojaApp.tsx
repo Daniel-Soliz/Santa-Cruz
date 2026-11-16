@@ -93,10 +93,13 @@ function Confirmacao({preparado,novo}:{preparado:Preparado;novo:()=>void}){
  async function copiar(){try{await navigator.clipboard.writeText(preparado.mensagem);setCopiou(true);}catch{setCopiou(false);}}
  return <main className="pagina-confirmacao"><div className="container-padrao confirmacao__caixa">
   <div className="confirmacao__icone"><CheckCircle2 size={51}/></div>
-  <span className="micro-label">Pedido pronto para enviar</span>
-  <h1>Quase lá! Falta enviar no WhatsApp.</h1>
+  <span className="micro-label">{preparado.registradoNoPainel?'Pedido registrado para conferência':'Pedido pronto para enviar'}</span>
+  <h1>{preparado.registradoNoPainel?'Pedido registrado. Falta confirmar no WhatsApp.':'Quase lá! Falta enviar no WhatsApp.'}</h1>
   <p>Montamos o pedido <strong>#{preparado.pedido.numero}</strong>. Abra a conversa, toque em <strong>Enviar</strong> e aguarde a confirmação do restaurante.</p>
   <div className="confirmacao__numero">Número do pedido <b>{preparado.pedido.numero}</b></div>
+  <p className="confirmacao__integracao" role="status">{preparado.registradoNoPainel?
+   'Pedido salvo no painel como aguardando confirmação. A equipe ainda precisa aceitar; não é recibo de pagamento.':
+   'Pedido não registrado automaticamente no painel. O atendimento depende do envio da mensagem no WhatsApp.'}</p>
   <div className="confirmacao__aviso"><ShieldCheck size={20}/><span>O site não confirma recebimento no WhatsApp nem pagamento. A equipe confirmará disponibilidade, preços e prazo. {preparado.pedido.foraHorario?'O restaurante está fechado; a confirmação ocorrerá na próxima abertura.':''}</span></div>
   <div className="confirmacao__acoes"><a href={preparado.url} target="_blank" rel="noopener noreferrer" className="botao botao--rosa"><MessageCircle size={21}/> Abrir WhatsApp e enviar</a><button type="button" className="botao botao--claro" onClick={()=>void copiar()}><Copy size={18}/>{copiou?'Mensagem copiada':'Copiar pedido'}</button></div>
   <button type="button" className="link-voltar" onClick={novo}>Voltar ao cardápio</button>
@@ -113,7 +116,7 @@ function Rodape(){
   <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
 }
-function LojaConteudo({produtos}:{produtos:Produto[]}){
+function LojaConteudo({produtos,modoBanco}:{produtos:Produto[];modoBanco:boolean}){
  const loja=useLoja();
  const [carrinho,setCarrinho]=useState<LinhaCarrinho[]>(carregarCarrinho);
  const [carrinhoAberto,setCarrinhoAberto]=useState(false);
@@ -154,7 +157,7 @@ function LojaConteudo({produtos}:{produtos:Produto[]}){
   <Header quantidade={quantidade} abrir={()=>setCarrinhoAberto(true)} status={horario}/>
   {armazenamentoFalhou&&<div role="status" className="aviso-armazenamento">Seu navegador está bloqueando o armazenamento. A sacola pode não ser recuperada se você fechar a página.</div>}
   {confirmacao?<Confirmacao preparado={confirmacao} novo={novaCompra}/>:
-   checkout?<Checkout linhas={carrinho} produtos={produtos} onVoltar={()=>{setCheckout(false);window.scrollTo({top:0});}} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
+   checkout?<Checkout modoBanco={modoBanco} linhas={carrinho} produtos={produtos} onVoltar={()=>{setCheckout(false);window.scrollTo({top:0});}} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
    <main id="conteudo">
     <Hero status={horario}/>
     {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
@@ -238,5 +241,5 @@ export default function LojaApp(){
   };
  },[configRemota]);
  const produtos=useMemo(()=>configRemota?.catalogo_publicado?produtosRemotos:dadosLocais,[configRemota,produtosRemotos]);
- return <LojaProvider valor={loja}><LojaConteudo produtos={produtos}/></LojaProvider>;
+ return <LojaProvider valor={loja}><LojaConteudo produtos={produtos} modoBanco={!!configRemota?.catalogo_publicado&&produtosRemotos.length>0}/></LojaProvider>;
 }
