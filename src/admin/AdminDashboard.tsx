@@ -1,8 +1,9 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
-import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,LogOut,Menu,X,RefreshCw,Plus,Search,Check,Trash2,Pencil,Eye,EyeOff,AlertTriangle,Clock3,Bell,ArrowUpRight,ShoppingBag,Truck,ShieldCheck,FileText,Save,House,LockKeyhole} from 'lucide-react';
+import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,LogOut,Menu,X,RefreshCw,Plus,Search,Check,Trash2,Pencil,Eye,EyeOff,AlertTriangle,Clock3,Bell,ArrowUpRight,ShoppingBag,Truck,ShieldCheck,FileText,Save,House,LockKeyhole,MessageCircle} from 'lucide-react';
 import {logoUrl} from '../config/loja';
 import {GestorCardapio} from './GestorCardapio';
 import {EditorVitrine} from './EditorVitrine';
+import {CaixaSuporte} from './CaixaSuporte';
 import {SegurancaConta} from './SegurancaConta';
 import {EditorFoto} from './EditorFoto';
 import {EditorOpcoes} from './EditorOpcoes';
@@ -13,12 +14,12 @@ import type {Variacao,Opcional} from '../loja/types';
 import catalogo from '../data/cardapio.json';
 import {supabase,erroLegivel,reais,type ConfiguracaoAdmin,type PedidoAdmin,type PedidoStatus,type ProdutoAdmin,type CategoriaAdmin} from './backend';
 
-type Aba='inicio'|'pedidos'|'cardapio'|'financeiro'|'configuracoes'|'vitrine'|'seguranca';
+type Aba='inicio'|'pedidos'|'cardapio'|'financeiro'|'configuracoes'|'vitrine'|'seguranca'|'suporte';
 const labels:Record<PedidoStatus,string>={
  aguardando_confirmacao:'Aguardando confirmação',recebido:'Recebido',em_preparo:'Em preparo',pronto:'Pronto para retirada',
  saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'
 };
-const abas=[{id:'inicio',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'vitrine',nome:'Página inicial',Icon:House},{id:'financeiro',nome:'Entradas e saídas',Icon:ShoppingBag},{id:'configuracoes',nome:'Entregas e ajustes',Icon:Settings},{id:'seguranca',nome:'Segurança da conta',Icon:LockKeyhole}] as const;
+const abas=[{id:'inicio',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'suporte',nome:'Suporte',Icon:MessageCircle},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'vitrine',nome:'Página inicial',Icon:House},{id:'financeiro',nome:'Entradas e saídas',Icon:ShoppingBag},{id:'configuracoes',nome:'Entregas e ajustes',Icon:Settings},{id:'seguranca',nome:'Segurança da conta',Icon:LockKeyhole}] as const;
 const dataHora=(s:string)=>new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'});
 
 function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promise<void>}){
@@ -220,6 +221,7 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
       <div className="adm-aviso"><ShieldCheck size={19}/> Este painel usa dados do Supabase. Pedidos de site só chegam automaticamente após ativar a função segura de checkout e o catálogo real; conversas avulsas no WhatsApp ainda exigem registro manual.</div>
      </section>}
      {aba==='pedidos'&&<Pedidos pedidos={pedidos} atualizar={atualizar}/>}
+     {aba==='suporte'&&config&&<CaixaSuporte ativo={config.chat_suporte_ativo} aoAlterar={atualizar}/>}
      {aba==='cardapio'&&<GestorCardapio categorias={categorias} produtos={produtos} catalogoPublicado={!!config?.catalogo_publicado} atualizar={atualizar}/>}
      {aba==='vitrine'&&config&&<EditorVitrine config={config} atualizar={atualizar}/>}
      {aba==='seguranca'&&<SegurancaConta/>}

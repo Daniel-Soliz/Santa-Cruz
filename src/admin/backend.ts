@@ -23,7 +23,7 @@ export interface PedidoAdmin{
  criado_em:string;atualizado_em:string;
 }
 export interface ConfiguracaoAdmin{
- id:string;catalogo_publicado:boolean;pedidos_ativos:boolean;
+ id:string;catalogo_publicado:boolean;pedidos_ativos:boolean;chat_suporte_ativo?:boolean;
  taxa_entrega:number|null;pedido_minimo:number|null;
  bairros_atendidos:string[];conteudo?:unknown;formas_pagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};atualizado_em?:string;
 }

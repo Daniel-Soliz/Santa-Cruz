@@ -4,7 +4,8 @@ export const paginasLoja = {
  cardapio: 'Cardápio',
  entrega: 'Entrega e retirada',
  contato: 'Contato e localização',
- sobre: 'Sobre a casa'
+ sobre: 'Sobre a casa',
+ suporte: 'Suporte'
 } as const;
 
 export type PaginaLoja = keyof typeof paginasLoja;

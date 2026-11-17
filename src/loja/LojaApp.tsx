@@ -17,6 +17,7 @@ import { entregaConfigurada } from './entrega';
 import { sugerirBebidas } from './vitrine';
 import { lerNavegacao, paginasLoja, type PaginaLoja } from './navegacao';
 import { NavegacaoLoja } from './components/NavegacaoLoja';
+import { SuporteLoja } from './components/SuporteLoja';
 
 const categoriasLocais=cardapio.categorias as Categoria[];
 const dadosLocais=cardapio.itens as Produto[];
@@ -93,7 +94,7 @@ function Horarios(){
  }
  return <>{grupos.map(({inicio,fim,horario})=><span key={inicio}>{inicio===fim?inicio:`${inicio} a ${fim.toLocaleLowerCase('pt-BR')}`} · {horario}</span>)}</>;
 }
-function Localizacao(){
+function Localizacao({chatAtivo}:{chatAtivo:boolean}){
  const loja=useLoja();
  return <section id="localizacao" className="localizacao">
   <div className="container-padrao localizacao__grade">
@@ -104,6 +105,7 @@ function Localizacao(){
     <div className="localizacao__horarios"><Clock3 size={20}/><div><b>Horário de atendimento</b><Horarios/></div></div>
     <div className="localizacao__links"><a className="botao botao--escuro" href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Como chegar <ArrowRight size={18}/></a>
      {loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer" className="link-instagram"><Instagram size={18}/> Instagram</a>}
+     {chatAtivo&&<a className="link-instagram" href="#suporte"><MessageCircle size={18}/> Falar com o suporte</a>}
      {loja.conteudo.textoSuporte&&<a className="link-instagram" href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer"><MessageCircle size={18}/> {loja.conteudo.textoSuporte}</a>}
     </div>
    </div>
@@ -128,20 +130,21 @@ function Confirmacao({preparado,novo}:{preparado:Preparado;novo:()=>void}){
   <button type="button" className="link-voltar" onClick={novo}>Voltar ao cardápio</button>
  </div></div>;
 }
-function Rodape(){
+function Rodape({chatAtivo}:{chatAtivo:boolean}){
  const loja=useLoja();
  return <footer className="rodape">
   <div className="container-padrao rodape__grade">
    <div className="rodape__marca">{loja.logo&&<img src={loja.logo} alt={`Logo de ${loja.nomeCurto}`} width="62" height="62"/>}<div><strong>{loja.nomeCurto}</strong><span>{loja.unidade}</span></div>{loja.conteudo.textoRodape&&<p>{loja.conteudo.textoRodape}</p>}</div>
    <div className="rodape__atendimento">{loja.conteudo.tituloAtendimento&&<h3>{loja.conteudo.tituloAtendimento}</h3>}
     <a href="#contato">Contato e localização</a>
+    {chatAtivo&&<a href="#suporte">Chat de suporte</a>}
     {loja.conteudo.textoSuporte&&<a href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer">{loja.conteudo.textoSuporte}</a>}
    </div>
   </div>
   <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} {loja.nome}.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
 }
-function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];categorias:Categoria[];modoBanco:boolean}){
+function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produto[];categorias:Categoria[];modoBanco:boolean;chatAtivo:boolean}){
  const loja=useLoja();
  const [carrinho,setCarrinho]=useState<LinhaCarrinho[]>(carregarCarrinho);
  const [carrinhoAberto,setCarrinhoAberto]=useState(false);
@@ -160,9 +163,9 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
  const temDestaques=loja.conteudo.mostrarDestaques&&destaque.length>0;
  const temSobre=Boolean(loja.sobre||loja.fotosEspaco.length||(loja.conteudo.mostrarAvaliacoes&&loja.conteudo.avaliacoes.length));
  const paginas:PaginaLoja[]=Object.keys(paginasLoja).filter(pagina=>
-  (pagina!=='destaques'||temDestaques)&&(pagina!=='sobre'||temSobre)) as PaginaLoja[];
+  (pagina!=='destaques'||temDestaques)&&(pagina!=='sobre'||temSobre)&&(pagina!=='suporte'||chatAtivo)) as PaginaLoja[];
  const destino=lerNavegacao(hash);
- const pagina=paginas.includes(destino.pagina)?destino.pagina:destino.pagina==='destaques'?'cardapio':'inicio';
+ const pagina=paginas.includes(destino.pagina)||destino.pagina==='suporte'?destino.pagina:destino.pagina==='destaques'?'cardapio':'inicio';
 
  useEffect(()=>{
   function mudarPagina(){
@@ -282,14 +285,18 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
      <h1 className="container-padrao titulo-pagina">{paginasLoja.entrega}</h1>
      <ConsultaEntrega/><InformacoesPedido/><Passos/>
     </>}
-    {pagina==='contato'&&<Localizacao/>}
+    {pagina==='contato'&&<Localizacao chatAtivo={chatAtivo}/>}
+    {pagina==='suporte'&&(chatAtivo?<SuporteLoja/>:<section className="container-padrao suporte-loja">
+     <h1 className="titulo-pagina">Suporte</h1>
+     <p>O chat está indisponível no momento. <a href="#contato">Veja os contatos da loja.</a></p>
+    </section>)}
     {pagina==='sobre'&&<>
      <h1 className="container-padrao titulo-pagina">{paginasLoja.sobre}</h1>
      <SobreCasa/><Galeria/><Avaliacoes/>
     </>}
    </>}
   </main>
-  <Rodape/>
+  <Rodape chatAtivo={chatAtivo}/>
   {avisoSacola&&<div className="sacola-feedback" role="status" aria-live="polite">{avisoSacola}</div>}
   {!checkout&&!confirmacao&&quantidade>0&&<button className="barra-sacola-mobile" type="button" onClick={()=>setCarrinhoAberto(true)} aria-label={`Abrir sacola com ${quantidade} itens e total ${reais(total)}`}>
    <span className="barra-sacola-mobile__icon"><ShoppingBag size={21}/><b>{quantidade}</b></span><span>Ver pedido</span><strong>{reais(total)}</strong><ArrowRight size={19}/>
@@ -304,7 +311,7 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
 /**
  * O catálogo estático permanece como fallback enquanto o Supabase não
  * estiver conectado. Produtos reais só aparecem após publicação no ADM.
- * Nenhuma informação pessoal do cliente é enviada a esse banco pela loja.
+ * O chat usa a mesma conexão quando ativado pela equipe.
  */
 export default function LojaApp(){
  const [configRemota,setConfigRemota]=useState<ConfiguracaoAdmin|null>(null);
@@ -363,6 +370,6 @@ export default function LojaApp(){
  const categorias=useMemo(()=>publicados?categoriasRemotas:categoriasLocais,[publicados,categoriasRemotas]);
  return <LojaProvider valor={loja}>
   {erroRemoto&&<div className="aviso-atendimento container-padrao" role="alert">{erroRemoto}</div>}
-  <LojaConteudo produtos={produtos} categorias={categorias} modoBanco={publicados&&produtosRemotos.length>0}/>
+  <LojaConteudo produtos={produtos} categorias={categorias} modoBanco={publicados&&produtosRemotos.length>0} chatAtivo={configRemota?.chat_suporte_ativo===true}/>
  </LojaProvider>;
 }

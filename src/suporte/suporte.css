@@ -1,0 +1,156 @@
+.suporte-loja {
+  padding-block: 2rem 3.5rem;
+}
+
+.suporte-loja > p {
+  max-width: 40rem;
+  margin-bottom: 1.25rem;
+}
+
+.suporte-loja > p a {
+  text-decoration: underline;
+}
+
+.suporte-chat {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid #d6d5d9;
+  border-radius: 1rem;
+  background: #fff;
+  color: #261f29;
+}
+
+.suporte-loja .suporte-chat {
+  max-width: 44rem;
+}
+
+.suporte-chat h3 {
+  overflow-wrap: anywhere;
+}
+
+.suporte-mensagens {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  overflow-y: auto;
+  max-height: min(43dvh, 27rem);
+  padding: .65rem;
+  background: #f7f6f7;
+  border-radius: .75rem;
+}
+
+.suporte-mensagem {
+  align-self: flex-start;
+  max-width: 92%;
+  border-radius: .75rem;
+  border: 1px solid #e3e0e6;
+  padding: .65rem .85rem;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.suporte-mensagem--enviada {
+  align-self: flex-end;
+  background: #f8e7ef;
+}
+
+.suporte-mensagem > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .75rem;
+  align-items: baseline;
+}
+
+.suporte-mensagem time,
+.suporte-lista time,
+.suporte-nota {
+  color: #5f5863;
+  font-size: .82rem;
+}
+
+.suporte-mensagem p {
+  white-space: pre-wrap;
+}
+
+.suporte-form,
+.suporte-form label,
+.suporte-lista {
+  display: grid;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.suporte-form {
+  gap: .85rem;
+}
+
+.suporte-form input,
+.suporte-form textarea {
+  width: 100%;
+  border: 1px solid #938b98;
+  border-radius: .65rem;
+  padding: .65rem .75rem;
+  background: #fff;
+  color: #261f29;
+  font: inherit;
+}
+
+.suporte-form textarea {
+  resize: vertical;
+}
+
+.suporte-form button {
+  justify-self: start;
+}
+
+.suporte-erro {
+  color: #9b1c37;
+}
+
+.suporte-caixa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.suporte-lista {
+  max-height: min(58dvh, 35rem);
+  overflow: auto;
+  padding: .15rem;
+}
+
+.suporte-lista button {
+  display: grid;
+  gap: .2rem;
+  padding: .65rem .85rem;
+  border: 1px solid #d6d5d9;
+  border-radius: .75rem;
+  background: #fff;
+  color: #261f29;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.suporte-lista button[aria-pressed="true"] {
+  border-color: #8e315d;
+  background: #f8e7ef;
+}
+
+.suporte-lista button span {
+  font-size: .85rem;
+}
+
+@media (max-width: 740px) {
+  .suporte-caixa {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .suporte-lista {
+    max-height: min(26dvh, 15rem);
+  }
+}
