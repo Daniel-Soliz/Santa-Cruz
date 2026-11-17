@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, ChefHat, Clock3, Copy, Heart, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, Star, LockKeyhole, Store, Truck, UtensilsCrossed, X } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, CheckCircle2, Clock3, Copy, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, LockKeyhole, Truck, UtensilsCrossed, X } from 'lucide-react';
 import cardapio from '../data/cardapio.json';
 import { loja as lojaBase } from '../config/loja';
 import { aplicarConteudo } from '../config/conteudoLoja';
@@ -7,7 +7,7 @@ import {LojaProvider,useLoja,type ConfigLoja} from '../config/LojaContext';
 import {supabase,type ConfiguracaoAdmin} from '../admin/backend';
 import type { Categoria, LinhaCarrinho, Produto } from './types';
 import { carregarCarrinho, reais, salvarCarrinho, situacaoLoja, totalCarrinho } from './pedido';
-import { ProdutoCard, FotoPrato } from './components/ProdutoCard';
+import { ProdutoCard } from './components/ProdutoCard';
 import { ProdutoModal } from './components/ProdutoModal';
 import { Carrinho } from './components/Carrinho';
 import { Checkout, type Preparado } from './components/Checkout';
@@ -15,6 +15,8 @@ import { InformacoesPedido, SobreCasa, Avaliacoes, Galeria } from './components/
 import { ConsultaEntrega } from './components/ConsultaEntrega';
 import { entregaConfigurada } from './entrega';
 import { sugerirBebidas } from './vitrine';
+import { lerNavegacao, paginasLoja, type PaginaLoja } from './navegacao';
+import { NavegacaoLoja } from './components/NavegacaoLoja';
 
 const categoriasLocais=cardapio.categorias as Categoria[];
 const dadosLocais=cardapio.itens as Produto[];
@@ -22,20 +24,25 @@ const ajudaUrl=(loja:ConfigLoja)=>`https://wa.me/${loja.whatsapp}?text=${encodeU
 type Editando={produto:Produto;linha:LinhaCarrinho|null;voltarSacola:boolean};
 const totalItens=(carrinho:LinhaCarrinho[])=>carrinho.reduce((s,x)=>s+x.quantidade,0);
 function irPara(id:string){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
-function Header({quantidade,abrir,status}:{quantidade:number;abrir:()=>void;status:{aberto:boolean;mensagem:string}}){
+function Header({quantidade,abrir,status,paginas,atual,voltarAVitrine}:{
+ quantidade:number;abrir:()=>void;status:{aberto:boolean};paginas:PaginaLoja[];
+ atual:PaginaLoja|null;voltarAVitrine:()=>void;
+}){
  const loja=useLoja();
- return <header className="cabecalho" id="inicio">
+ return <header className="cabecalho">
   <div className="container-padrao cabecalho__conteudo">
-   <a href="#inicio" className="marca" onClick={e=>{e.preventDefault();irPara('inicio');}} aria-label="Voltar ao início">
-    {loja.logo&&<img src={loja.logo} alt={`Logo de ${loja.nomeCurto}`} width="55" height="55"/>}
+   <a href="#inicio" className="marca" aria-label="Voltar ao início" onClick={evento=>{
+    if(window.location.hash==='#inicio'&&!evento.ctrlKey&&!evento.metaKey&&!evento.shiftKey&&!evento.altKey){
+     evento.preventDefault();voltarAVitrine();
+    }
+   }}>
+    {loja.logo&&<img src={loja.logo} alt="" width="55" height="55"/>}
     <span><strong>{loja.nomeCurto}</strong><small>{loja.unidade}</small></span>
    </a>
-   <nav className="menu-desktop" aria-label="Navegação principal">
-    <a href="#cardapio">Cardápio</a>{loja.conteudo.mostrarComoPedir&&<a href="#como-funciona">Como pedir</a>}{loja.conteudo.mostrarAvaliacoes&&loja.conteudo.avaliacoes.length>0&&<a href="#avaliacoes">Avaliações</a>}<a href="#localizacao">Como chegar</a>
-   </nav>
    <div className="cabecalho__acoes">
     <span className={`status-loja ${status.aberto?'status-loja--aberto':'status-loja--fechado'}`}><span className="ponto-status"/>{status.aberto?'Aberto agora':'Fechado agora'}</span>
     <button type="button" onClick={abrir} aria-label={`Abrir carrinho, ${quantidade} itens`} className="cabecalho__sacola"><ShoppingBag size={20}/><span>Sacola</span>{quantidade>0&&<b>{quantidade}</b>}</button>
+    <NavegacaoLoja paginas={paginas} atual={atual} voltarAVitrine={voltarAVitrine}/>
    </div>
   </div>
  </header>;
@@ -48,7 +55,7 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
     {loja.conteudo.etiquetaHero&&<div className="hero__eyebrow">{loja.conteudo.etiquetaHero}</div>}
     <h1>{loja.conteudo.tituloHero}{loja.conteudo.destaqueHero&&<> <em>{loja.conteudo.destaqueHero}</em></>}</h1>
     {loja.conteudo.textoHero&&<p>{loja.conteudo.textoHero}</p>}
-    <div className="hero__acoes"><button className="botao botao--rosa" type="button" onClick={()=>irPara('cardapio')}>{loja.conteudo.botaoHero} <ArrowRight size={21}/></button>{loja.conteudo.mostrarComoPedir&&<a className="botao botao--claro" href="#como-funciona">Como funciona</a>}</div>
+    <div className="hero__acoes"><a className="botao botao--rosa" href="#cardapio">{loja.conteudo.botaoHero} <ArrowRight size={21}/></a></div>
     <div className="hero__selos">
      {entregaConfigurada(loja)&&<span><Truck size={16}/> Delivery</span>}<span><ShoppingBag size={16}/> Retirada</span>
      {loja.tempoMedioMinutos!==null&&<span><Clock3 size={16}/> Previsão: {loja.tempoMedioMinutos} min</span>}
@@ -90,13 +97,14 @@ function Localizacao(){
  const loja=useLoja();
  return <section id="localizacao" className="localizacao">
   <div className="container-padrao localizacao__grade">
-   <div className="localizacao__texto"><span className="micro-label">Nossa casa</span><h2>{loja.conteudo.tituloLocal}</h2>
+   <div className="localizacao__texto"><span className="micro-label">Nossa casa</span><h1>{loja.conteudo.tituloLocal}</h1>
     {loja.conteudo.textoLocal&&<p>{loja.conteudo.textoLocal}</p>}
     <address><MapPin size={21}/><span>{loja.endereco}<br/>CEP {loja.cep}</span></address>
     <a className="localizacao__telefone" href={loja.telefoneLink}><Phone size={18}/>{loja.telefone}</a>
     <div className="localizacao__horarios"><Clock3 size={20}/><div><b>Horário de atendimento</b><Horarios/></div></div>
     <div className="localizacao__links"><a className="botao botao--escuro" href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Como chegar <ArrowRight size={18}/></a>
      {loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer" className="link-instagram"><Instagram size={18}/> Instagram</a>}
+     {loja.conteudo.textoSuporte&&<a className="link-instagram" href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer"><MessageCircle size={18}/> {loja.conteudo.textoSuporte}</a>}
     </div>
    </div>
    <div className="localizacao__mapa"><iframe title={`Mapa de ${loja.endereco}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={loja.mapaEmbed} allowFullScreen/></div>
@@ -106,7 +114,7 @@ function Localizacao(){
 function Confirmacao({preparado,novo}:{preparado:Preparado;novo:()=>void}){
  const [copiou,setCopiou]=useState(false);
  async function copiar(){try{await navigator.clipboard.writeText(preparado.mensagem);setCopiou(true);}catch{setCopiou(false);}}
- return <main className="pagina-confirmacao"><div className="container-padrao confirmacao__caixa">
+ return <div className="pagina-confirmacao"><div className="container-padrao confirmacao__caixa">
   <div className="confirmacao__icone"><CheckCircle2 size={51}/></div>
   <span className="micro-label">{preparado.registradoNoPainel?'Pedido registrado para conferência':'Pedido pronto para enviar'}</span>
   <h1>{preparado.registradoNoPainel?'Pedido registrado. Falta confirmar no WhatsApp.':'Quase lá! Falta enviar no WhatsApp.'}</h1>
@@ -118,15 +126,17 @@ function Confirmacao({preparado,novo}:{preparado:Preparado;novo:()=>void}){
   <div className="confirmacao__aviso"><ShieldCheck size={20}/><span>O site não confirma recebimento no WhatsApp nem pagamento. A equipe confirmará disponibilidade, preços e prazo. {preparado.pedido.foraHorario?'O restaurante está fechado; a confirmação ocorrerá na próxima abertura.':''}</span></div>
   <div className="confirmacao__acoes"><a href={preparado.url} target="_blank" rel="noopener noreferrer" className="botao botao--rosa"><MessageCircle size={21}/> Abrir WhatsApp e enviar</a><button type="button" className="botao botao--claro" onClick={()=>void copiar()}><Copy size={18}/>{copiou?'Mensagem copiada':'Copiar pedido'}</button></div>
   <button type="button" className="link-voltar" onClick={novo}>Voltar ao cardápio</button>
- </div></main>;
+ </div></div>;
 }
 function Rodape(){
  const loja=useLoja();
  return <footer className="rodape">
   <div className="container-padrao rodape__grade">
    <div className="rodape__marca">{loja.logo&&<img src={loja.logo} alt={`Logo de ${loja.nomeCurto}`} width="62" height="62"/>}<div><strong>{loja.nomeCurto}</strong><span>{loja.unidade}</span></div>{loja.conteudo.textoRodape&&<p>{loja.conteudo.textoRodape}</p>}</div>
-   <div><h3>Encontre a gente</h3><p>{loja.endereco}<br/>CEP {loja.cep}</p><div className="rodape__horarios"><Horarios/></div></div>
-   <div>{loja.conteudo.tituloAtendimento&&<h3>{loja.conteudo.tituloAtendimento}</h3>}<a href={loja.telefoneLink}>{loja.telefone}</a>{loja.conteudo.textoSuporte&&<a href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer">{loja.conteudo.textoSuporte}</a>}<a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
+   <div className="rodape__atendimento">{loja.conteudo.tituloAtendimento&&<h3>{loja.conteudo.tituloAtendimento}</h3>}
+    <a href="#contato">Contato e localização</a>
+    {loja.conteudo.textoSuporte&&<a href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer">{loja.conteudo.textoSuporte}</a>}
+   </div>
   </div>
   <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} {loja.nome}.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
@@ -143,6 +153,38 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
  const [confirmacao,setConfirmacao]=useState<Preparado|null>(null);
  const [armazenamentoFalhou,setArmazenamentoFalhou]=useState(false);
  const [horario,setHorario]=useState(()=>situacaoLoja(loja.horarios));
+ const [hash,setHash]=useState(()=>window.location.hash);
+ const conteudo=useRef<HTMLElement>(null);
+ const hashAnterior=useRef<string|null>(null);
+ const destaque=produtos.filter(p=>p.destaque&&p.disponivel).slice(0,4);
+ const temDestaques=loja.conteudo.mostrarDestaques&&destaque.length>0;
+ const temSobre=Boolean(loja.sobre||loja.fotosEspaco.length||(loja.conteudo.mostrarAvaliacoes&&loja.conteudo.avaliacoes.length));
+ const paginas:PaginaLoja[]=Object.keys(paginasLoja).filter(pagina=>
+  (pagina!=='destaques'||temDestaques)&&(pagina!=='sobre'||temSobre)) as PaginaLoja[];
+ const destino=lerNavegacao(hash);
+ const pagina=paginas.includes(destino.pagina)?destino.pagina:destino.pagina==='destaques'?'cardapio':'inicio';
+
+ useEffect(()=>{
+  function mudarPagina(){
+   setHash(window.location.hash);
+   setCheckout(false);
+   setConfirmacao(null);
+  }
+  window.addEventListener('hashchange',mudarPagina);
+  return()=>window.removeEventListener('hashchange',mudarPagina);
+ },[]);
+ useLayoutEffect(()=>{
+  if(hashAnterior.current===hash&&!destino.ancora)return;
+  const primeiroAcesso=hashAnterior.current===null;
+  hashAnterior.current=hash;
+  if(primeiroAcesso&&!destino.ancora)return;
+  const alvo=destino.ancora?document.getElementById(destino.ancora):null;
+  if(alvo){alvo.scrollIntoView({behavior:'instant'});return;}
+  if(!primeiroAcesso){
+   window.scrollTo({top:0,behavior:'instant'});
+   conteudo.current?.focus({preventScroll:true});
+  }
+ },[hash,destino.ancora,pagina,categorias]);
  useEffect(()=>{setArmazenamentoFalhou(!salvarCarrinho(carrinho));},[carrinho]);
  useEffect(()=>{
   // Ao trocar o catálogo demonstrativo pelo real, remove linhas vencidas ou esgotadas.
@@ -163,11 +205,11 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
  },[loja.horarios]);
 
  useEffect(()=>{
-  const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':'Cardápio e pedidos';
+  const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':paginasLoja[pagina];
   document.title=`${titulo} | ${loja.nome}`;
   const description=document.querySelector('meta[name="description"]');
   description?.setAttribute('content',checkout?'Finalize seu pedido de comida nordestina: retirada, entrega ou consumo no local, com envio ao WhatsApp.':'Delícia do Nordeste · Casa do Norte · Santa Cruz. Veja o cardápio nordestino, monte sua sacola e envie o pedido para confirmação.');
- },[checkout,confirmacao,loja.nome]);
+ },[checkout,confirmacao,loja.nome,pagina]);
  const salvarItem=useCallback((item:LinhaCarrinho,antiga?:string)=>{
   setCarrinho(atual=>antiga?atual.map(l=>l.chave===antiga?item:l):[...atual,item]);
   setAvisoSacola(antiga?'Item atualizado na sacola.':'Prato adicionado à sacola.');
@@ -182,31 +224,47 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
  },[abrirModal]);
  const total=totalCarrinho(carrinho,produtos),quantidade=totalItens(carrinho);
  const filtrados=useMemo(()=>produtos.filter(p=>p.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(busca.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())),[busca,produtos]);
- const destaque=produtos.filter(p=>p.destaque&&p.disponivel).slice(0,4);
- function novaCompra(){setConfirmacao(null);setCheckout(false);setCarrinho([]);window.scrollTo({top:0,behavior:'smooth'});}
+ function voltarAVitrine(){
+  setCheckout(false);setConfirmacao(null);
+  window.scrollTo({top:0,behavior:'instant'});
+  conteudo.current?.focus({preventScroll:true});
+ }
+ function novaCompra(){
+  setCarrinho([]);
+  if(window.location.hash==='#cardapio')voltarAVitrine();
+  else window.location.hash='cardapio';
+ }
  function irCheckout(){setCarrinhoAberto(false);setCheckout(true);setConfirmacao(null);window.scrollTo({top:0,behavior:'smooth'});}
  return <div className="site-loja">
-  <a href="#conteudo" className="pular-conteudo">Pular para o conteúdo</a>
-  <Header quantidade={quantidade} abrir={()=>setCarrinhoAberto(true)} status={horario}/>
+  <a href="#conteudo" className="pular-conteudo" onClick={evento=>{
+   evento.preventDefault();conteudo.current?.focus();
+  }}>Pular para o conteúdo</a>
+  <Header quantidade={quantidade} abrir={()=>setCarrinhoAberto(true)} status={horario}
+   paginas={paginas} atual={checkout||confirmacao?null:pagina} voltarAVitrine={voltarAVitrine}/>
   {armazenamentoFalhou&&<div role="status" className="aviso-armazenamento">Seu navegador está bloqueando o armazenamento. A sacola pode não ser recuperada se você fechar a página.</div>}
-  {confirmacao?<Confirmacao preparado={confirmacao} novo={novaCompra}/>:
-   checkout?<Checkout modoBanco={modoBanco} linhas={carrinho} produtos={produtos} onVoltar={()=>{setCheckout(false);window.scrollTo({top:0});}} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
-   <main id="conteudo">
-    <Hero status={horario}/>
-    {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
-    {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
-    {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
-    {loja.conteudo.mostrarDestaques&&destaque.length>0&&<section className="destaques container-padrao" aria-labelledby="destaques-titulo">
-     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">{loja.conteudo.tituloDestaques} <span className="cor-rosa">♥</span></h2>{loja.conteudo.textoDestaques&&<p>{loja.conteudo.textoDestaques}</p>}</div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
+  <main ref={conteudo} id="conteudo" className="pagina-loja" tabIndex={-1}>
+   {confirmacao?<Confirmacao preparado={confirmacao} novo={novaCompra}/>:
+   checkout?<Checkout modoBanco={modoBanco} linhas={carrinho} produtos={produtos} onVoltar={voltarAVitrine} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
+   <>
+    {pagina==='inicio'&&<Hero status={horario}/>}
+    {(pagina==='cardapio'||pagina==='destaques')&&<>
+     {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
+     {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
+     {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
+    </>}
+    {pagina==='destaques'&&<section className="destaques container-padrao" aria-labelledby="destaques-titulo">
+     <div className="cabecalho-secao cabecalho-secao--linha"><div><h1 id="destaques-titulo">{loja.conteudo.tituloDestaques}</h1>{loja.conteudo.textoDestaques&&<p>{loja.conteudo.textoDestaques}</p>}</div><a className="link-categorias" href="#cardapio">Ver cardápio completo <ArrowRight size={18}/></a></div>
      <div className="grade-produtos">{destaque.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
     </section>}
-    <section className="catalogo" id="cardapio" aria-labelledby="cardapio-titulo">
+    {pagina==='cardapio'&&<section className="catalogo" id="catalogo" aria-labelledby="cardapio-titulo">
      <div className="container-padrao catalogo__inicio">
-      <h2 id="cardapio-titulo">{loja.conteudo.tituloCardapio}</h2>
+      <div><h1 id="cardapio-titulo">{loja.conteudo.tituloCardapio}</h1>
+       {temDestaques&&<a className="link-categorias" href="#destaques">Ver destaques da casa <ArrowRight size={16}/></a>}
+      </div>
       <label className="buscar-prato"><Search size={22} aria-hidden="true"/><span className="sr-only">Buscar pratos</span><input value={busca} onChange={e=>setBusca(e.target.value)} type="search" placeholder="Buscar prato pelo nome..." aria-label="Buscar pratos pelo nome"/>{busca&&<button type="button" aria-label="Limpar busca" onClick={()=>setBusca('')}><X size={19}/></button>}</label>
      </div>
      <nav className="barra-categorias" aria-label="Categorias do cardápio"><div className="container-padrao barra-categorias__lista">
-      <button type="button" aria-current={catAtiva==='todas'?'true':undefined} className={catAtiva==='todas'?'ativo':''} onClick={()=>{setCatAtiva('todas');irPara('cardapio');}}>Todos</button>
+      <button type="button" aria-current={catAtiva==='todas'?'true':undefined} className={catAtiva==='todas'?'ativo':''} onClick={()=>{setCatAtiva('todas');irPara('catalogo');}}>Todos</button>
       {categorias.filter(c=>produtos.some(p=>p.categoriaId===c.id)).map(c=><button key={c.id} type="button" aria-current={catAtiva===c.id?'true':undefined} className={catAtiva===c.id?'ativo':''} onClick={()=>{setCatAtiva(c.id);irPara('categoria-'+c.id);}}>{c.nome}</button>)}
      </div></nav>
      <div className="container-padrao catalogo__secoes">
@@ -219,14 +277,20 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
       })}
       {filtrados.length===0&&<div className="busca-vazia"><Search size={36}/><h3>Nenhum prato encontrado</h3><p>Experimente buscar outro nome ou limpe a pesquisa.</p><button type="button" className="botao botao--rosa" onClick={()=>setBusca('')}>Limpar busca</button></div>}
      </div>
-    </section>
-    <ConsultaEntrega/>
-    <InformacoesPedido/>
-    <SobreCasa/><Passos/><Avaliacoes/><Galeria/><Localizacao/>
-   </main>}
+    </section>}
+    {pagina==='entrega'&&<>
+     <h1 className="container-padrao titulo-pagina">{paginasLoja.entrega}</h1>
+     <ConsultaEntrega/><InformacoesPedido/><Passos/>
+    </>}
+    {pagina==='contato'&&<Localizacao/>}
+    {pagina==='sobre'&&<>
+     <h1 className="container-padrao titulo-pagina">{paginasLoja.sobre}</h1>
+     <SobreCasa/><Galeria/><Avaliacoes/>
+    </>}
+   </>}
+  </main>
   <Rodape/>
   {avisoSacola&&<div className="sacola-feedback" role="status" aria-live="polite">{avisoSacola}</div>}
-  <a className="whatsapp-suporte" href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer" aria-label="Dúvidas? Fale no WhatsApp" title="WhatsApp para dúvidas"><MessageCircle size={24}/></a>
   {!checkout&&!confirmacao&&quantidade>0&&<button className="barra-sacola-mobile" type="button" onClick={()=>setCarrinhoAberto(true)} aria-label={`Abrir sacola com ${quantidade} itens e total ${reais(total)}`}>
    <span className="barra-sacola-mobile__icon"><ShoppingBag size={21}/><b>{quantidade}</b></span><span>Ver pedido</span><strong>{reais(total)}</strong><ArrowRight size={19}/>
   </button>}

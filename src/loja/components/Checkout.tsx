@@ -106,7 +106,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
  const escolhaTipo:[TipoPedido,string,typeof Truck,string][]=[
   ['entrega','Delivery',Truck,'Receber no endereço'],['retirada','Retirada',Store,'Buscar no balcão'],['local','Comer no local',UtensilsCrossed,'Refeição no restaurante']
  ];
- return <main className="checkout-pagina">
+ return <div className="checkout-pagina">
   <div className="container-padrao">
    <button className="link-voltar" type="button" onClick={onVoltar}><ArrowLeft size={19}/> Voltar ao cardápio</button>
    <div className="checkout-titulo"><span className="micro-label">Quase lá!</span><h1>Finalizar pedido</h1><p>Revise suas escolhas. Tudo em uma única tela, de forma simples.</p></div>
@@ -180,5 +180,5 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
     </aside>
    </div>
   </div>
- </main>;
+ </div>;
 }

@@ -40,7 +40,7 @@ export function EditorVitrine({config,atualizar}:{config:ConfiguracaoAdmin;atual
   finally{setSalvando(false);}
  }
  return <section className="adm-conteudo">
-  <div className="adm-secao-topo"><div><h2>Página inicial</h2><p>Edite o que o cliente vê na abertura, no endereço e nas demais seções da vitrine.</p></div>
+  <div className="adm-secao-topo"><div><h2>Página inicial</h2><p>Edite a abertura do site e o conteúdo das abas da loja.</p></div>
    <a className="adm-link" href={import.meta.env.BASE_URL} target="_blank" rel="noopener noreferrer">Abrir loja <ArrowUpRight size={17}/></a></div>
   {config.conteudo===undefined&&<p className="adm-aviso">A edição da vitrine precisa da atualização do banco GERENCIAR_VITRINE_SANTA_CRUZ.sql.</p>}
   <form className="adm-form" onSubmit={e=>void salvar(e)}>
@@ -54,7 +54,7 @@ export function EditorVitrine({config,atualizar}:{config:ConfiguracaoAdmin;atual
      <label className="adm-toggle"><input type="checkbox" checked={dados.heroImagemIlustrativa} onChange={e=>alterar('heroImagemIlustrativa',e.target.checked)}/> A imagem principal é ilustrativa</label>
     </div>
    </details>
-   <details className="adm-card adm-vitrine"><summary>Localização e contato</summary><div className="adm-form">
+   <details className="adm-card adm-vitrine"><summary>Contato, localização e rodapé</summary><div className="adm-form">
     {texto('tituloLocal','Título da localização')}{texto('textoLocal','Texto da localização',2)}
     {texto('endereco','Endereço completo para exibição e mapa')}
     <div className="adm-duas-colunas">{texto('cep','CEP')}{texto('telefone','Telefone exibido')}</div>
@@ -74,7 +74,7 @@ export function EditorVitrine({config,atualizar}:{config:ConfiguracaoAdmin;atual
      })}
     </fieldset>
    </div></details>
-   <details className="adm-card adm-vitrine"><summary>Cardápio, história e outras seções</summary><div className="adm-form">
+   <details className="adm-card adm-vitrine"><summary>Cardápio, destaques, entrega e história</summary><div className="adm-form">
     {texto('tituloCardapio','Título do cardápio')}{texto('tituloDestaques','Título dos destaques')}
     {texto('textoDestaques','Descrição dos destaques',2)}
     <label className="adm-toggle"><input type="checkbox" checked={dados.mostrarDestaques} onChange={e=>alterar('mostrarDestaques',e.target.checked)}/> Mostrar destaques</label>
