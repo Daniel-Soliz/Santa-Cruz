@@ -42,4 +42,4 @@ export const loja={
  horarios:dados.horarios,
  siteUrl:dados.siteUrl
 };
-export const logoUrl=`${import.meta.env.BASE_URL}assets/aistudio/logo_casa_do_norte_108ee79c.jpg`;
+export const logoUrl=`${import.meta.env?.BASE_URL??'/'}assets/aistudio/logo_casa_do_norte_108ee79c.jpg`;

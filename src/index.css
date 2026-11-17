@@ -681,3 +681,8 @@ html,body{min-height:100%;background:#fbf7f1}
  .catalogo .tag{padding:3px 5px;font-size:.52rem}
  .catalogo .tag-foto-ilustrativa{right:4px;bottom:4px;padding:3px 4px}
 }
+
+@media(min-width:780px){
+ .hero__grade:has(>.hero__texto:only-child){grid-template-columns:minmax(0,680px)}
+}
+.rodape__horarios{display:grid;gap:3px;font-size:.75rem}

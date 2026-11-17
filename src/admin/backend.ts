@@ -25,7 +25,7 @@ export interface PedidoAdmin{
 export interface ConfiguracaoAdmin{
  id:string;catalogo_publicado:boolean;pedidos_ativos:boolean;
  taxa_entrega:number|null;pedido_minimo:number|null;
- bairros_atendidos:string[];formas_pagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};atualizado_em?:string;
+ bairros_atendidos:string[];conteudo?:unknown;formas_pagamento?:{pix:boolean;cartao:boolean;dinheiro:boolean};atualizado_em?:string;
 }
 export interface CategoriaAdmin{
  id:string;nome:string;ordem:number;ativa:boolean;atualizado_em?:string;
@@ -33,7 +33,7 @@ export interface CategoriaAdmin{
 export interface ProdutoAdmin{ id:string;dados:Record<string,unknown>;publicado:boolean;ordem:number;atualizado_em?:string }
 export const reais=(v:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 export function erroLegivel(error:unknown){
- const message=(error instanceof Error?error.message:String(error));
+ const message=(error&&typeof error==='object'&&'message' in error?String(error.message):String(error));
  if(/relation.*does not exist|Could not find the table|schema cache|PGRST205/.test(message))
   return 'Banco não preparado. Execute o SQL de instalação indicado no README.';
  if(/JWT|not authenticated|permission denied|row-level security|42501/i.test(message))

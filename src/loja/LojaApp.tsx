@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, ChefHat, Clock3, Copy, Heart, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, Star, LockKeyhole, Store, Truck, UtensilsCrossed, X } from 'lucide-react';
 import cardapio from '../data/cardapio.json';
-import { loja as lojaBase, logoUrl } from '../config/loja';
+import { loja as lojaBase } from '../config/loja';
+import { aplicarConteudo } from '../config/conteudoLoja';
 import {LojaProvider,useLoja,type ConfigLoja} from '../config/LojaContext';
 import {supabase,type ConfiguracaoAdmin} from '../admin/backend';
 import type { Categoria, LinhaCarrinho, Produto } from './types';
@@ -17,19 +18,20 @@ import { sugerirBebidas } from './vitrine';
 
 const categoriasLocais=cardapio.categorias as Categoria[];
 const dadosLocais=cardapio.itens as Produto[];
-const ajudaUrl=`https://wa.me/${lojaBase.whatsapp}?text=${encodeURIComponent('Olá! Tenho uma dúvida sobre o cardápio do Delícia do Nordeste Santa Cruz.')}`;
+const ajudaUrl=(loja:ConfigLoja)=>`https://wa.me/${loja.whatsapp}?text=${encodeURIComponent('Olá! Tenho uma dúvida sobre o cardápio de '+loja.nomeCurto+'.')}`;
 type Editando={produto:Produto;linha:LinhaCarrinho|null;voltarSacola:boolean};
 const totalItens=(carrinho:LinhaCarrinho[])=>carrinho.reduce((s,x)=>s+x.quantidade,0);
 function irPara(id:string){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
 function Header({quantidade,abrir,status}:{quantidade:number;abrir:()=>void;status:{aberto:boolean;mensagem:string}}){
+ const loja=useLoja();
  return <header className="cabecalho" id="inicio">
   <div className="container-padrao cabecalho__conteudo">
    <a href="#inicio" className="marca" onClick={e=>{e.preventDefault();irPara('inicio');}} aria-label="Voltar ao início">
-    <img src={logoUrl} alt="Logo Casa do Norte – Unidade Santa Cruz" width="55" height="55"/>
-    <span><strong>Delícia do Nordeste</strong><small>Casa do Norte · Santa Cruz</small></span>
+    {loja.logo&&<img src={loja.logo} alt={`Logo de ${loja.nomeCurto}`} width="55" height="55"/>}
+    <span><strong>{loja.nomeCurto}</strong><small>{loja.unidade}</small></span>
    </a>
    <nav className="menu-desktop" aria-label="Navegação principal">
-    <a href="#cardapio">Cardápio</a><a href="#como-funciona">Como pedir</a><a href="#avaliacoes">Avaliações</a><a href="#localizacao">Como chegar</a>
+    <a href="#cardapio">Cardápio</a>{loja.conteudo.mostrarComoPedir&&<a href="#como-funciona">Como pedir</a>}{loja.conteudo.mostrarAvaliacoes&&loja.conteudo.avaliacoes.length>0&&<a href="#avaliacoes">Avaliações</a>}<a href="#localizacao">Como chegar</a>
    </nav>
    <div className="cabecalho__acoes">
     <span className={`status-loja ${status.aberto?'status-loja--aberto':'status-loja--fechado'}`}><span className="ponto-status"/>{status.aberto?'Aberto agora':'Fechado agora'}</span>
@@ -43,27 +45,28 @@ function Hero({status}:{status:{aberto:boolean;mensagem:string}}){
  return <section className="hero">
   <div className="container-padrao hero__grade">
    <div className="hero__texto">
-    <div className="hero__eyebrow">Casa do Norte · Santa Cruz</div>
-    <h1>Da nossa cozinha para a <em>sua mesa.</em></h1>
-    <p>Comida nordestina feita com carinho, na unidade Santa Cruz.</p>
-    <div className="hero__acoes"><button className="botao botao--rosa" type="button" onClick={()=>irPara('cardapio')}>Ver cardápio e pedir <ArrowRight size={21}/></button><a className="botao botao--claro" href="#como-funciona">Como funciona</a></div>
+    {loja.conteudo.etiquetaHero&&<div className="hero__eyebrow">{loja.conteudo.etiquetaHero}</div>}
+    <h1>{loja.conteudo.tituloHero}{loja.conteudo.destaqueHero&&<> <em>{loja.conteudo.destaqueHero}</em></>}</h1>
+    {loja.conteudo.textoHero&&<p>{loja.conteudo.textoHero}</p>}
+    <div className="hero__acoes"><button className="botao botao--rosa" type="button" onClick={()=>irPara('cardapio')}>{loja.conteudo.botaoHero} <ArrowRight size={21}/></button>{loja.conteudo.mostrarComoPedir&&<a className="botao botao--claro" href="#como-funciona">Como funciona</a>}</div>
     <div className="hero__selos">
      {entregaConfigurada(loja)&&<span><Truck size={16}/> Delivery</span>}<span><ShoppingBag size={16}/> Retirada</span>
      {loja.tempoMedioMinutos!==null&&<span><Clock3 size={16}/> Previsão: {loja.tempoMedioMinutos} min</span>}
      <span className={status.aberto?'aberto':'fechado'}><span className="ponto-status"/>{status.aberto?'Aberto agora':'Fechado agora'}</span>
     </div>
    </div>
-   <div className="hero__visual">
-    {String(loja.heroFoto)?<img className="hero__foto" src={String(loja.heroFoto).startsWith('http')?String(loja.heroFoto):`${import.meta.env.BASE_URL}${String(loja.heroFoto).replace(/^\/+/, '')}`} alt={loja.heroImagemIlustrativa?'Fotografia ilustrativa de comida nordestina':'Foto do restaurante Delícia do Nordeste'} width="720" height="600" fetchPriority="high"/>:
-     <div className="hero__placeholder"><div className="hero__prato"><ChefHat size={76} strokeWidth={1.2}/><span>O sabor tem endereço</span></div><div className="hero__foto-texto"><b>Seu prato favorito mora aqui.</b><span>Sabores nordestinos</span></div></div>}
-    {loja.heroFoto&&loja.heroImagemIlustrativa&&<span className="hero__legenda">Imagem ilustrativa</span>}
-   </div>
+   {loja.heroFoto&&<div className="hero__visual">
+    <img className="hero__foto" src={loja.heroFoto} alt={loja.heroImagemIlustrativa?'Fotografia ilustrativa de comida nordestina':`Foto de ${loja.nomeCurto}`} width="720" height="600" fetchPriority="high"/>
+    {loja.heroImagemIlustrativa&&<span className="hero__legenda">Imagem ilustrativa</span>}
+   </div>}
   </div>
  </section>;
 }
 function Passos(){
+ const {conteudo}=useLoja();
+ if(!conteudo.mostrarComoPedir)return null;
  return <section id="como-funciona" className="passos container-padrao">
-  <div className="cabecalho-secao"><span className="micro-label">Simples assim</span><h2>Seu pedido em 3 passos</h2><p>Escolha no site, envie no WhatsApp e aguarde a confirmação.</p></div>
+  <div className="cabecalho-secao"><span className="micro-label">Simples assim</span><h2>{conteudo.tituloComoPedir}</h2>{conteudo.textoComoPedir&&<p>{conteudo.textoComoPedir}</p>}</div>
   <div className="passos__grade">
    <article><div className="passo-icone"><UtensilsCrossed size={28}/></div><span className="passo-numero">01</span><h3>Escolha seus pratos</h3><p>Explore o cardápio, escolha o tamanho e adicione observações.</p></article>
    <article><div className="passo-icone"><ShoppingBag size={28}/></div><span className="passo-numero">02</span><h3>Confira a sacola</h3><p>Defina retirada, entrega ou consumo no local e o pagamento.</p></article>
@@ -71,20 +74,32 @@ function Passos(){
   </div>
  </section>;
 }
+function Horarios(){
+ const {horarios}=useLoja();
+ const semana=[...horarios.slice(1),horarios[0]];
+ const grupos:{inicio:string;fim:string;horario:string}[]=[];
+ for(const dia of semana){
+  const horario=dia.aberto?`${dia.abertura}–${dia.fechamento}`:'Fechado';
+  const grupo=grupos.at(-1);
+  if(grupo?.horario===horario)grupo.fim=dia.dia;
+  else grupos.push({inicio:dia.dia,fim:dia.dia,horario});
+ }
+ return <>{grupos.map(({inicio,fim,horario})=><span key={inicio}>{inicio===fim?inicio:`${inicio} a ${fim.toLocaleLowerCase('pt-BR')}`} · {horario}</span>)}</>;
+}
 function Localizacao(){
  const loja=useLoja();
  return <section id="localizacao" className="localizacao">
   <div className="container-padrao localizacao__grade">
-   <div className="localizacao__texto"><span className="micro-label">Nossa casa</span><h2>Um pedacinho do Nordeste em São Paulo.</h2>
-    <p>Venha conhecer a Casa do Norte · Unidade Santa Cruz.</p>
+   <div className="localizacao__texto"><span className="micro-label">Nossa casa</span><h2>{loja.conteudo.tituloLocal}</h2>
+    {loja.conteudo.textoLocal&&<p>{loja.conteudo.textoLocal}</p>}
     <address><MapPin size={21}/><span>{loja.endereco}<br/>CEP {loja.cep}</span></address>
     <a className="localizacao__telefone" href={loja.telefoneLink}><Phone size={18}/>{loja.telefone}</a>
-    <div className="localizacao__horarios"><Clock3 size={20}/><div><b>Horário de atendimento</b><span>Terça a domingo, das 8h às 22h</span><span>Segunda-feira: fechado</span></div></div>
+    <div className="localizacao__horarios"><Clock3 size={20}/><div><b>Horário de atendimento</b><Horarios/></div></div>
     <div className="localizacao__links"><a className="botao botao--escuro" href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Como chegar <ArrowRight size={18}/></a>
      {loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer" className="link-instagram"><Instagram size={18}/> Instagram</a>}
     </div>
    </div>
-   <div className="localizacao__mapa"><iframe title="Mapa do Google – Rua Santa Cruz da Conceição, Parque Belém, São Paulo" loading="lazy" referrerPolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=Rua%20Santa%20Cruz%20da%20Concei%C3%A7%C3%A3o%2C%20Parque%20Bel%C3%A9m%2C%20S%C3%A3o%20Paulo%2C%20SP%2C%2002850-100&output=embed" allowFullScreen/></div>
+   <div className="localizacao__mapa"><iframe title={`Mapa de ${loja.endereco}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={loja.mapaEmbed} allowFullScreen/></div>
   </div>
  </section>;
 }
@@ -109,11 +124,11 @@ function Rodape(){
  const loja=useLoja();
  return <footer className="rodape">
   <div className="container-padrao rodape__grade">
-   <div className="rodape__marca"><img src={logoUrl} alt="Logo da Casa do Norte Santa Cruz" width="62" height="62"/><div><strong>Delícia do Nordeste</strong><span>Casa do Norte · Santa Cruz</span></div><p>Comida nordestina feita com carinho, pertinho de você.</p></div>
-   <div><h3>Encontre a gente</h3><p>{loja.endereco}<br/>CEP {loja.cep}</p><p>Terça a domingo, 8h às 22h<br/>Segunda-feira: fechado</p></div>
-   <div><h3>Atendimento</h3><a href={loja.telefoneLink}>{loja.telefone}</a><a href={ajudaUrl} target="_blank" rel="noopener noreferrer">WhatsApp para dúvidas</a><a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
+   <div className="rodape__marca">{loja.logo&&<img src={loja.logo} alt={`Logo de ${loja.nomeCurto}`} width="62" height="62"/>}<div><strong>{loja.nomeCurto}</strong><span>{loja.unidade}</span></div>{loja.conteudo.textoRodape&&<p>{loja.conteudo.textoRodape}</p>}</div>
+   <div><h3>Encontre a gente</h3><p>{loja.endereco}<br/>CEP {loja.cep}</p><div className="rodape__horarios"><Horarios/></div></div>
+   <div><h3>Atendimento</h3><a href={loja.telefoneLink}>{loja.telefone}</a><a href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer">WhatsApp para dúvidas</a><a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
   </div>
-  <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} Delícia do Nordeste · Casa do Norte · Santa Cruz.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
+  <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} {loja.nome}.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
 }
 function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];categorias:Categoria[];modoBanco:boolean}){
@@ -141,14 +156,18 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
   const timer=window.setTimeout(()=>setAvisoSacola(''),2800);
   return()=>window.clearTimeout(timer);
  },[avisoSacola]);
- useEffect(()=>{const timer=window.setInterval(()=>setHorario(situacaoLoja(loja.horarios)),30000);return()=>clearInterval(timer);},[]);
+ useEffect(()=>{
+  const atualizar=()=>setHorario(situacaoLoja(loja.horarios));
+  atualizar();
+  const timer=window.setInterval(atualizar,30000);return()=>clearInterval(timer);
+ },[loja.horarios]);
 
  useEffect(()=>{
   const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':'Cardápio e pedidos';
-  document.title=`${titulo} | Delícia do Nordeste Santa Cruz – Parque Belém`;
+  document.title=`${titulo} | ${loja.nome}`;
   const description=document.querySelector('meta[name="description"]');
   description?.setAttribute('content',checkout?'Finalize seu pedido de comida nordestina: retirada, entrega ou consumo no local, com envio ao WhatsApp.':'Delícia do Nordeste · Casa do Norte · Santa Cruz. Veja o cardápio nordestino, monte sua sacola e envie o pedido para confirmação.');
- },[checkout,confirmacao]);
+ },[checkout,confirmacao,loja.nome]);
  const salvarItem=useCallback((item:LinhaCarrinho,antiga?:string)=>{
   setCarrinho(atual=>antiga?atual.map(l=>l.chave===antiga?item:l):[...atual,item]);
   setAvisoSacola(antiga?'Item atualizado na sacola.':'Prato adicionado à sacola.');
@@ -177,13 +196,13 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
     {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
     {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
     {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
-    <section className="destaques container-padrao" aria-labelledby="destaques-titulo">
-     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">Destaques da casa <span className="cor-rosa">♥</span></h2><p>{produtos.some(p=>p.exemplo)?'Pratos ilustrativos para conhecer o formato do cardápio.':'Pratos escolhidos para destacar no cardápio.'}</p></div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
+    {loja.conteudo.mostrarDestaques&&destaque.length>0&&<section className="destaques container-padrao" aria-labelledby="destaques-titulo">
+     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">{loja.conteudo.tituloDestaques} <span className="cor-rosa">♥</span></h2><p>{produtos.some(p=>p.exemplo)?'Pratos ilustrativos para conhecer o formato do cardápio.':'Pratos escolhidos para destacar no cardápio.'}</p></div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
      <div className="grade-produtos">{destaque.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
-    </section>
+    </section>}
     <section className="catalogo" id="cardapio" aria-labelledby="cardapio-titulo">
      <div className="container-padrao catalogo__inicio">
-      <h2 id="cardapio-titulo">Nosso cardápio</h2>
+      <h2 id="cardapio-titulo">{loja.conteudo.tituloCardapio}</h2>
       <label className="buscar-prato"><Search size={22} aria-hidden="true"/><span className="sr-only">Buscar pratos</span><input value={busca} onChange={e=>setBusca(e.target.value)} type="search" placeholder="Buscar prato pelo nome..." aria-label="Buscar pratos pelo nome"/>{busca&&<button type="button" aria-label="Limpar busca" onClick={()=>setBusca('')}><X size={19}/></button>}</label>
      </div>
      <nav className="barra-categorias" aria-label="Categorias do cardápio"><div className="container-padrao barra-categorias__lista">
@@ -207,7 +226,7 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
    </main>}
   <Rodape/>
   {avisoSacola&&<div className="sacola-feedback" role="status" aria-live="polite">{avisoSacola}</div>}
-  <a className="whatsapp-suporte" href={ajudaUrl} target="_blank" rel="noopener noreferrer" aria-label="Dúvidas? Fale no WhatsApp" title="WhatsApp para dúvidas"><MessageCircle size={24}/></a>
+  <a className="whatsapp-suporte" href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer" aria-label="Dúvidas? Fale no WhatsApp" title="WhatsApp para dúvidas"><MessageCircle size={24}/></a>
   {!checkout&&!confirmacao&&quantidade>0&&<button className="barra-sacola-mobile" type="button" onClick={()=>setCarrinhoAberto(true)} aria-label={`Abrir sacola com ${quantidade} itens e total ${reais(total)}`}>
    <span className="barra-sacola-mobile__icon"><ShoppingBag size={21}/><b>{quantidade}</b></span><span>Ver pedido</span><strong>{reais(total)}</strong><ArrowRight size={19}/>
   </button>}
@@ -265,8 +284,9 @@ export default function LojaApp(){
   return()=>{ativo=false;void supabase!.removeChannel(canal);};
  },[]);
  const loja=useMemo<ConfigLoja>(()=>{
-  if(!configRemota)return lojaBase;
-  return {...lojaBase,
+  const base=aplicarConteudo(lojaBase,configRemota?.conteudo);
+  if(!configRemota)return base;
+  return {...base,
    pedidosOnlineAtivos:configRemota.pedidos_ativos,
    taxaEntregaFixa:configRemota.taxa_entrega===null?null:Number(configRemota.taxa_entrega),
    pedidoMinimoDelivery:configRemota.pedido_minimo===null?null:Number(configRemota.pedido_minimo),

@@ -347,3 +347,16 @@
 .adm-galeria-prato{display:grid;gap:12px;margin:0;padding:12px;border:1px solid #4d4045;border-radius:12px;min-width:0}
 .adm-galeria-prato>div{display:grid;gap:8px}
 .adm-galeria-prato legend{padding:0 6px;font-weight:700}
+
+.adm-vitrine>summary{font-size:1rem;font-weight:800;cursor:pointer;color:#402d3b}
+.adm-vitrine>summary:focus-visible{outline-offset:5px}
+.adm-vitrine[open]>summary{margin-bottom:18px}
+.adm-cardapio-atual{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;list-style:none;padding:0}
+.adm-cardapio-atual>li{padding:12px;border:1px solid #ebe3e9;border-radius:10px}
+.adm-cardapio-atual ul{font-size:.8rem;color:#766a77;padding-left:16px}
+.adm-vitrine-horarios{display:grid;gap:10px;margin:0;padding:12px;border:1px solid #ebe3e9;border-radius:10px;min-width:0}
+.adm-vitrine-hora{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:end;gap:8px}
+@media(max-width:520px){
+ .adm-vitrine-hora{grid-template-columns:1fr 1fr}
+ .adm-vitrine-hora>label:first-child{grid-column:1/-1}
+}

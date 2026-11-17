@@ -2,6 +2,8 @@ import {useMemo,useState,type FormEvent} from 'react';
 import {UtensilsCrossed,Plus,Search,Pencil,Eye,EyeOff,Trash2,X,Save,ImagePlus,AlertTriangle,CheckCircle2,ArrowUpRight,ChefHat} from 'lucide-react';
 import type {Opcional,Variacao,Produto} from '../loja/types';
 import {valorDigitado} from '../loja/pedido';
+import {imagemPublica} from '../config/conteudoLoja';
+import exemplo from '../data/cardapio.json';
 import {fotosDoProduto,LIMITE_FOTOS} from '../loja/vitrine';
 import {EditorFoto} from './EditorFoto';
 import {EditorOpcoes} from './EditorOpcoes';
@@ -17,7 +19,7 @@ type Rascunho={
 type Props={
  categorias:CategoriaAdmin[];produtos:ProdutoAdmin[];catalogoPublicado:boolean;atualizar:()=>Promise<void>;
 };
-const produtoImagem=(p:ProdutoAdmin)=>fotosDoProduto(p.dados)[0]||'';
+const produtoImagem=(p:ProdutoAdmin)=>imagemPublica(fotosDoProduto(p.dados)[0]||'');
 const valorSeguro=(p:ProdutoAdmin)=>Number(p.dados.preco||0);
 const idItem=()=>`prato-${crypto.randomUUID().slice(0,16)}`;
 
@@ -119,6 +121,22 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
   setSalvando(false);await atualizar();
   setSucesso(v=>v||'Prato excluído do cardápio.');
  };
+ async function copiarCardapioAtual(){
+  setErro('');setSucesso('');setSalvando(true);
+  try{
+   const categoriasExemplo=exemplo.categorias.map(categoria=>({...categoria,ativa:true}));
+   const {error:erroCategorias}=await supabase!.from('sc_categorias').upsert(categoriasExemplo,{onConflict:'id',ignoreDuplicates:true});
+   if(erroCategorias)throw erroCategorias;
+   const rascunhos=exemplo.itens.map((produto,ordem)=>({id:produto.id,dados:{...produto,exemplo:true},publicado:false,ordem:ordem+1}));
+   const {error:erroProdutos}=await supabase!.from('sc_produtos').upsert(rascunhos,{onConflict:'id',ignoreDuplicates:true});
+   if(erroProdutos)throw erroProdutos;
+   setSucesso('Cardápio copiado. Abra os pratos na lista para editar. Confira os dados reais antes de publicar.');
+  }catch(e){setErro(erroLegivel(e));}
+  finally{
+   setSalvando(false);
+   await atualizar();
+  }
+ }
  const alterarPublicacao=async(ativar:boolean)=>{
   setErro('');setSucesso('');
   if(ativar&&!produtos.some(p=>p.publicado&&p.dados.exemplo===false&&p.dados.disponivel!==false&&p.dados.preco!==undefined
@@ -157,6 +175,22 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
    {catalogoPublicado?'O cardápio do painel está ativo. Alterações em pratos publicados aparecem na loja.':
     'O site ainda apresenta o catálogo demonstrativo. Prepare os seus pratos aqui e ative o novo cardápio em Entregas e ajustes quando estiver pronto.'}
    </span></div>
+  {!catalogoPublicado&&<section className="adm-card adm-vitrine" aria-labelledby="adm-cardapio-atual">
+   <div className="adm-categorias__topo">
+    <div><h3 id="adm-cardapio-atual">Cardápio exibido na loja</h3>
+     <p className="adm-pequeno">O catálogo demonstrativo tem {exemplo.itens.length} pratos. Copie para editar categorias, fotos, preços e destaques.</p></div>
+    {exemplo.itens.some(item=>!produtos.some(p=>p.id===item.id))&&<button type="button" className="adm-btn" disabled={salvando} onClick={()=>void copiarCardapioAtual()}>
+     <Plus size={18}/> Copiar cardápio atual para edição
+    </button>}
+   </div>
+   <details><summary>Ver os {exemplo.itens.length} pratos que o cliente vê</summary>
+    <ul className="adm-cardapio-atual">
+     {exemplo.categorias.map(categoria=><li key={categoria.id}><strong>{categoria.nome}</strong>
+      <ul>{exemplo.itens.filter(item=>item.categoriaId===categoria.id).map(item=><li key={item.id}>{item.nome} · {reais(item.preco)}</li>)}</ul>
+     </li>)}
+    </ul>
+   </details>
+  </section>}
   <GestorCategorias categorias={categorias} produtos={produtos} atualizar={atualizar}/>
   <section className="adm-card adm-produtos-painel" aria-labelledby="adm-produtos-titulo">
    <div className="adm-categorias__topo">

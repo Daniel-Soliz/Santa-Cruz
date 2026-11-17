@@ -4,6 +4,17 @@ Loja mobile-first com cardápio, sacola e checkout WhatsApp, com estrutura opcio
 
 > **Importante:** os 16 pratos, fotos e preços atuais são EXEMPLOS. O Supabase do restaurante ainda precisa ser criado e conectado para permitir gestão real. Não há pagamento automático por Mercado Pago, e o restaurante continua confirmando os pedidos.
 
+## Editar a página inicial pelo ADM
+
+Execute `supabase/GERENCIAR_VITRINE_SANTA_CRUZ.sql` no projeto Santa Cruz depois
+da instalação inicial. A aba **Página inicial** publica textos, imagens,
+localização, horários e conteúdo das seções sem novo deploy. O endereço e os
+horários são dados públicos. A senha é gerenciada separadamente em **Segurança da conta**.
+
+Em **Cardápio e preços**, use **Copiar cardápio atual para edição** para importar
+as categorias e os exemplos como rascunhos. As cópias preservam registros
+existentes. Confira fotos, valores e disponibilidade reais antes de publicar.
+
 ## Criar um novo cardápio pelo ADM (sem editar o código)
 
 O painel fica em [Área da equipe](https://daniel-soliz.github.io/Santa-Cruz/#/admin).

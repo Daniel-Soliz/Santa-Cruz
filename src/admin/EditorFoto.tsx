@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ImagePlus,UploadCloud,Trash2,SlidersHorizontal} from 'lucide-react';
 import {supabase,erroLegivel} from './backend';
+import {imagemPublica} from '../config/conteudoLoja';
 import {ALTURA_FOTO,LARGURA_FOTO,pintarImagem,recorteInicial,exportarWebp,validarArquivoImagem,type Recorte} from './imagem';
 type Props={foto:string;nome:string;onSalvar:(url:string)=>void;produtoId:string;titulo?:string};
 export function EditorFoto({foto,nome,onSalvar,produtoId,titulo="Foto do prato"}:Props){
@@ -42,7 +43,7 @@ export function EditorFoto({foto,nome,onSalvar,produtoId,titulo="Foto do prato"}
    if(error)throw error;
    const {data}=supabase.storage.from('sc-fotos-cardapio').getPublicUrl(caminho);
    if(!data.publicUrl)throw new Error('Não foi possível gerar URL pública da foto.');
-   onSalvar(data.publicUrl);setInformacao('Imagem enviada. Clique em Salvar produto para guardar a alteração.');
+   onSalvar(data.publicUrl);setInformacao('Imagem enviada. Salve as alterações para aplicar a nova imagem.');
    setFile(null);imagem.current?.close();imagem.current=null;
   }catch(e){setErro(erroLegivel(e));}
   finally{setEnviando(false);}
@@ -52,7 +53,7 @@ export function EditorFoto({foto,nome,onSalvar,produtoId,titulo="Foto do prato"}
   <div className="adm-editor-foto__layout">
    <div className="adm-editor-foto__visual">
     {file?<canvas ref={canvas} width={LARGURA_FOTO} height={ALTURA_FOTO} role="img" aria-label="Prévia do enquadramento em formato 4 por 3"/>:
-     foto?<img src={foto} alt={`Foto atual do prato ${nome||'sem nome'}`}/>:
+     foto?<img src={imagemPublica(foto)||undefined} alt={`Foto atual do prato ${nome||'sem nome'}`}/>:
      <div className="adm-editor-foto__vazio"><ImagePlus size={29}/><span>Nenhuma imagem cadastrada</span></div>}
    </div>
    <div className="adm-editor-foto__controles">
@@ -68,7 +69,7 @@ export function EditorFoto({foto,nome,onSalvar,produtoId,titulo="Foto do prato"}
       <input type="range" min="0" max="100" step="5" value={recorte.y} onChange={e=>setRecorte(c=>({...c,y:Number(e.target.value)}))}/></label>
      <button type="button" className="adm-btn adm-btn--full" disabled={enviando} onClick={()=>void enviar()}><UploadCloud size={18}/>{enviando?'Enviando foto...':'Enviar foto otimizada'}</button>
     </>}
-    {foto&&<button type="button" className="adm-remover-foto" onClick={()=>{onSalvar('');setFile(null);setInformacao('Imagem removida do produto. Clique em Salvar produto para confirmar.');}}><Trash2 size={16}/> Remover foto deste prato</button>}
+    {foto&&<button type="button" className="adm-remover-foto" onClick={()=>{onSalvar('');setFile(null);setInformacao('Imagem removida. Salve as alterações para aplicar.');}}><Trash2 size={16}/> Remover imagem</button>}
    </div>
   </div>
   {erro&&<p className="adm-erro" role="alert">{erro}</p>}
