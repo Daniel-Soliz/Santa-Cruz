@@ -61,7 +61,7 @@ export function GestorCategorias({categorias,produtos,atualizar}:Props){
  };
  return <section className="adm-card adm-categorias" aria-labelledby="gerenciar-categorias">
   <div className="adm-categorias__topo">
-   <div><span className="adm-kicker">PASSO 1 · ORGANIZAR</span><h3 id="gerenciar-categorias"><Layers3 size={20}/> Categorias do cardápio</h3>
+   <div><h3 id="gerenciar-categorias"><Layers3 size={20}/> Categorias do cardápio</h3>
     <p className="adm-pequeno">Crie grupos como Pratos, Porções ou Bebidas. Você escolhe os nomes, a ordem e quais aparecem ao público.</p>
    </div>
    <span className="adm-chip">{categorias.length} categoria(s)</span>

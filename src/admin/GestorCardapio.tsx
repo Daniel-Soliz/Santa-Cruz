@@ -1,5 +1,5 @@
 import {useMemo,useState,type FormEvent} from 'react';
-import {UtensilsCrossed,Plus,Search,Pencil,Eye,EyeOff,Trash2,X,Save,ImagePlus,AlertTriangle,CheckCircle2,ArrowUpRight,ChefHat,Star} from 'lucide-react';
+import {Plus,Search,Pencil,Eye,EyeOff,Trash2,X,Save,ImagePlus,AlertTriangle,CheckCircle2,ArrowUpRight,ChefHat,Star} from 'lucide-react';
 import type {Opcional,Variacao,Produto} from '../loja/types';
 import {valorDigitado} from '../loja/pedido';
 import {imagemPublica} from '../config/conteudoLoja';
@@ -7,7 +7,6 @@ import exemplo from '../data/cardapio.json';
 import {fotosDoProduto,LIMITE_FOTOS} from '../loja/vitrine';
 import {EditorFoto} from './EditorFoto';
 import {EditorOpcoes} from './EditorOpcoes';
-import {GestorCategorias} from './GestorCategorias';
 import {removerFotoAntiga} from './fotosStorage';
 import {erroLegivel,reais,supabase,type CategoriaAdmin,type ProdutoAdmin} from './backend';
 
@@ -165,54 +164,55 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,destaques=
   &&podePublicar(String(p.dados.categoriaId||'')));
  return <section className="adm-conteudo" aria-labelledby="gerenciar-cardapio-titulo">
   <div className="adm-secao-topo">
-   <div><h2 id="gerenciar-cardapio-titulo">{destaques?'Destaques da casa':'Seu cardápio, do seu jeito'}</h2>
-    <p>{destaques?'Escolha os pratos da página inicial e edite nome, preço, fotos e porções.':'Gerencie as categorias, os pratos e os preços do cardápio.'}</p></div>
-   <a href="#inicio" className="adm-link" title="Abrir a loja pública"><ArrowUpRight size={17}/> Ver site</a>
+   <div><h2 id="gerenciar-cardapio-titulo">{destaques?'Destaques da casa':'Pratos e produtos'}</h2>
+    {destaques&&<p>Escolha os pratos da página inicial e edite nome, preço, fotos e porções.</p>}</div>
+   <a href={destaques?'#destaques':'#cardapio'} className="adm-link" title="Abrir o cardápio público"><ArrowUpRight size={17}/> Ver loja</a>
   </div>
-  {!destaques&&<div className="adm-etapas">
-   <span><b>1</b> Criar categorias</span><span><b>2</b> Cadastrar pratos</span>
-   <span><b>3</b> Ajustar imagens</span><span><b>4</b> Publicar na loja</span>
-  </div>}
-  <div className="adm-aviso"><AlertTriangle size={19}/><span>
-   {catalogoPublicado?'O cardápio do painel está ativo. Alterações em pratos publicados aparecem na loja.':
-    'A loja exibe o catálogo demonstrativo. Para mostrar seus pratos e destaques, publique o cardápio oficial em Cardápio e preços.'}
-   </span></div>
-  {!destaques&&!catalogoPublicado&&<section className="adm-card adm-vitrine" aria-labelledby="adm-cardapio-atual">
+  <div className="adm-card adm-produtos-painel">
    <div className="adm-categorias__topo">
-    <div><h3 id="adm-cardapio-atual">Cardápio exibido na loja</h3>
-     <p className="adm-pequeno">O catálogo demonstrativo tem {exemplo.itens.length} pratos. Copie para editar categorias, fotos, preços e destaques.</p></div>
-    {exemplo.itens.some(item=>!produtos.some(p=>p.id===item.id))&&<button type="button" className="adm-btn" disabled={salvando} onClick={()=>void copiarCardapioAtual()}>
-     <Plus size={18}/> Copiar cardápio atual para edição
-    </button>}
+    <p className="adm-pequeno">{catalogoPublicado?
+     'As alterações nos pratos publicados aparecem na loja.':
+     'A loja exibe o catálogo demonstrativo. Publique o cardápio oficial quando os pratos estiverem prontos.'}</p>
+    <div className="adm-acoes-produtos">
+     {!destaques&&!catalogoPublicado&&exemplo.itens.some(item=>!produtos.some(p=>p.id===item.id))&&
+      <button type="button" className="adm-btn adm-btn--secundario" disabled={salvando} onClick={()=>void copiarCardapioAtual()}>
+       <Plus size={17}/> Copiar cardápio para edição
+      </button>}
+     {!destaques&&<button type="button" className="adm-btn adm-btn--secundario" disabled={salvando}
+      onClick={()=>void alterarPublicacao(!catalogoPublicado)}>
+      {catalogoPublicado?<EyeOff size={17}/>:<Eye size={17}/>}
+      {catalogoPublicado?'Desativar cardápio do painel':'Publicar meu novo cardápio'}
+     </button>}
+     <button type="button" className="adm-btn" disabled={!categorias.length||salvando} onClick={()=>novo()}>
+      <Plus size={18}/> {destaques?'Novo destaque':'Novo prato'}
+     </button>
+    </div>
    </div>
-   <details><summary>Ver os {exemplo.itens.length} pratos que o cliente vê</summary>
-    <ul className="adm-cardapio-atual">
-     {exemplo.categorias.map(categoria=><li key={categoria.id}><strong>{categoria.nome}</strong>
-      <ul>{exemplo.itens.filter(item=>item.categoriaId===categoria.id).map(item=><li key={item.id}>{item.nome} · {reais(item.preco)}</li>)}</ul>
-     </li>)}
-    </ul>
-   </details>
-  </section>}
-  {!destaques&&<GestorCategorias categorias={categorias} produtos={produtos} atualizar={atualizar}/>}
-  <section className="adm-card adm-produtos-painel" aria-labelledby="adm-produtos-titulo">
-   <div className="adm-categorias__topo">
-    <div><h3 id="adm-produtos-titulo"><UtensilsCrossed size={20}/> {destaques?'Pratos para destacar':'Pratos e produtos'}</h3>
-     {destaques&&<p className="adm-pequeno">Abra um prato e marque “Destaque da casa”. Na loja aparecem os itens publicados, disponíveis e em categorias ativas.</p>}</div>
-    <button type="button" className="adm-btn" disabled={!categorias.length||salvando} onClick={()=>novo()}><Plus size={18}/> {destaques?'Novo destaque':'Novo prato'}</button>
-   </div>
-   {!categorias.length&&<p className="adm-categorias__vazio">Crie uma categoria em Cardápio e preços para cadastrar pratos.</p>}
-   <div className="adm-filtros-produtos">
-    <label className="adm-busca"><Search size={18}/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar um prato..." aria-label="Buscar pratos"/></label>
+   {destaques&&<p className="adm-pequeno">Abra um prato e marque “Destaque da casa”. Na loja aparecem os itens publicados, disponíveis e em categorias ativas.</p>}
+   {!categorias.length&&<p className="adm-categorias__vazio">Crie uma categoria na aba Categorias para cadastrar pratos.</p>}
+   <div className="adm-filtros-produtos adm-filtros-produtos--lista">
+    {!previa&&<><label className="adm-busca"><Search size={18}/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar um prato..." aria-label="Buscar pratos"/></label>
     <label className="adm-filtros-produtos__categoria">Filtrar por categoria
      <select value={categoriaFiltro} onChange={e=>setCategoriaFiltro(e.target.value)}>
       <option value="todas">Todas as categorias</option>
       {ordenadas.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
      </select>
-    </label>
+    </label></>}
+    {!destaques&&<button type="button" className="adm-btn adm-btn--secundario" onClick={()=>setPrevia(v=>!v)} aria-pressed={previa}>
+     <Eye size={17} aria-hidden="true"/> {previa?'Voltar à lista':'Prévia dos publicados'}
+    </button>}
    </div>
    {erro&&!editando&&<p className="adm-erro" role="alert">{erro}</p>}
    {sucesso&&<p className="adm-info" role="status"><CheckCircle2 size={18}/>{sucesso}</p>}
-   {filtrados.length?
+   {previa?(publicados.length?<div className="adm-previa-cardapio__grade" aria-label="Prévia dos pratos publicados">
+    {publicados.map(p=><article key={p.id} className="adm-previa-prato">
+     <div className="adm-previa-prato__foto">
+      {produtoImagem(p)?<img src={produtoImagem(p)} alt={String(p.dados.nome)} loading="lazy"/>:
+       <div className="adm-mini-sem-foto"><ImagePlus size={26}/></div>}
+     </div>
+     <div><strong>{String(p.dados.nome)}</strong><small>{categoriaPorId.get(String(p.dados.categoriaId))?.nome||'Sem categoria'}</small><b>{reais(valorSeguro(p))}</b></div>
+    </article>)}
+   </div>:<div className="adm-categorias__vazio">Nenhum prato real foi publicado em uma categoria ativa.</div>):filtrados.length?
     <div className="adm-tabela-wrap"><table className="adm-tabela">
      <thead><tr><th>Produto</th><th>Preço</th><th>Categoria</th><th>Visibilidade</th><th>Ações</th></tr></thead>
      <tbody>{lista.map(p=><tr key={p.id}>
@@ -239,41 +239,7 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,destaques=
      <p>Cadastre seu primeiro prato real. Nenhum preço ou foto será preenchido automaticamente.</p>
      {categorias.length>0&&<button type="button" className="adm-btn" onClick={()=>novo()}><Plus size={18}/> Cadastrar um prato</button>}
     </div>}
-  </section>
-  {!destaques&&<>
-  <section className="adm-card adm-previa-cardapio">
-   <div className="adm-categorias__topo">
-    <div><span className="adm-kicker">PASSO 3 · CONFERIR</span><h3>Prévia dos itens publicados</h3>
-     <p className="adm-pequeno">Visualização dos pratos que poderão aparecer na loja, mesmo antes de ativar o catálogo.</p>
-    </div>
-    <button type="button" className="adm-btn adm-btn--secundario" onClick={()=>setPrevia(v=>!v)}>
-     {previa?<EyeOff size={17}/>:<Eye size={17}/>} {previa?'Esconder prévia':'Visualizar prévia'}
-    </button>
-   </div>
-   {previa&&(publicados.length?<div className="adm-previa-cardapio__grade">
-    {publicados.map(p=><article key={p.id} className="adm-previa-prato">
-     <div className="adm-previa-prato__foto">
-      {produtoImagem(p)?<img src={produtoImagem(p)} alt={`Imagem do prato ${String(p.dados.nome)}`} loading="lazy"/>:
-       <div className="adm-mini-sem-foto"><ImagePlus size={26}/></div>}
-     </div>
-     <div><strong>{String(p.dados.nome)}</strong><small>{categoriaPorId.get(String(p.dados.categoriaId))?.nome||'Sem categoria'}</small><b>{reais(valorSeguro(p))}</b></div>
-    </article>)}
-   </div>:<div className="adm-categorias__vazio">Nenhum prato real foi publicado em uma categoria ativa.</div>)}
-  </section>
-  <section className="adm-card adm-publicacao">
-   <div><span className="adm-kicker">PASSO 4 · PUBLICAR</span>
-    <h3><CheckCircle2 size={21}/> {catalogoPublicado?'Cardápio publicado':'Pronto para abrir seu novo cardápio?'}</h3>
-    <p className="adm-pequeno">{catalogoPublicado?
-     'As alterações salvas nos pratos publicados ficam disponíveis para os clientes. Você pode voltar ao catálogo demonstrativo quando precisar.':
-     'Ao publicar, o catálogo de exemplos será substituído pelos pratos reais que você marcou como publicados em categorias ativas.'}</p>
-   </div>
-   <button type="button" className="adm-btn" disabled={salvando}
-    onClick={()=>void alterarPublicacao(!catalogoPublicado)}>
-    {catalogoPublicado?<EyeOff size={18}/>:<Eye size={18}/>}
-    {catalogoPublicado?'Desativar cardápio do painel':'Publicar meu novo cardápio'}
-   </button>
-  </section>
-  </>}
+  </div>
   {editando&&<div className="adm-sobreposicao" onClick={e=>{if(e.target===e.currentTarget&&!salvando)setEditando(null);}}>
    <section className="adm-modal adm-modal--produto" role="dialog" aria-modal="true" aria-labelledby="adm-editor-prato-titulo">
     <div className="adm-modal__topo"><div><span className="adm-kicker">EDIÇÃO DE CARDÁPIO</span><h3 id="adm-editor-prato-titulo">{produtos.some(p=>p.id===editando.id)?'Editar '+(editando.nome||'prato'):destaques?'Cadastrar destaque':'Cadastrar novo prato'}</h3></div>
