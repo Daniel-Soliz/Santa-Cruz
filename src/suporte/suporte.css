@@ -27,14 +27,6 @@
   max-width: 44rem;
 }
 
-.suporte-chat__topo {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: .6rem 1rem;
-}
-
 .suporte-chat h3 {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -143,6 +135,31 @@
   text-align: left;
   overflow-wrap: anywhere;
   cursor: pointer;
+}
+
+.suporte-lista__linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: .35rem;
+}
+
+.suporte-lista button.suporte-lista__excluir {
+  min-width: 44px;
+  min-height: 44px;
+  padding: .5rem;
+  place-items: center;
+  color: #9b1c37;
+}
+
+.suporte-lista__excluir:hover:not(:disabled),
+.suporte-lista__excluir:focus-visible {
+  background: #f8e7ef;
+}
+
+.suporte-lista button.suporte-lista__excluir:disabled {
+  opacity: .55;
+  cursor: wait;
 }
 
 .suporte-lista button[aria-pressed="true"] {

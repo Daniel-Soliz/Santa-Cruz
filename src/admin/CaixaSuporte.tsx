@@ -12,10 +12,10 @@ type Conversa={
 
 const horario=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'});
 
-function ResponderConversa({conversa,atualizarCaixa,aoExcluir}:{
+function ResponderConversa({conversa,atualizarCaixa,excluindo}:{
  conversa:Conversa;
  atualizarCaixa:()=>Promise<void>;
- aoExcluir:(id:string,excluida:boolean)=>void;
+ excluindo:boolean;
 }){
  const [mensagens,setMensagens]=useState<MensagemSuporte[]>([]);
  const [carregando,setCarregando]=useState(true);
@@ -23,8 +23,6 @@ function ResponderConversa({conversa,atualizarCaixa,aoExcluir}:{
  const [texto,setTexto]=useState('');
  const [erroEnvio,setErroEnvio]=useState('');
  const [enviando,setEnviando]=useState(false);
- const [excluindo,setExcluindo]=useState(false);
- const [erroExclusao,setErroExclusao]=useState('');
  const leitura=useRef(0);
  const envio=useRef<{id:string;texto:string}|null>(null);
  const campo=useRef<HTMLTextAreaElement>(null);
@@ -72,31 +70,8 @@ function ResponderConversa({conversa,atualizarCaixa,aoExcluir}:{
   }
  }
 
- async function excluir(){
-  if(!window.confirm(`Excluir permanentemente a conversa com ${conversa.nome} e todas as mensagens? O histórico também será apagado para o cliente.`))return;
-  leitura.current++;
-  setErroExclusao('');
-  setExcluindo(true);
-  try{
-   const {data,error}=await supabase!.from('sc_suporte_conversas')
-    .delete().eq('id',conversa.id).select('id').maybeSingle();
-   if(error)throw error;
-   aoExcluir(conversa.id,Boolean(data));
-  }catch{
-   setErroExclusao('Não foi possível excluir a conversa. Tente novamente.');
-  }finally{
-   setExcluindo(false);
-  }
- }
-
  return <section className="suporte-chat" aria-label={`Conversa com ${conversa.nome}`}>
-  <div className="suporte-chat__topo">
-   <h3>{conversa.nome}</h3>
-   <button type="button" className="adm-btn adm-btn--secundario" onClick={()=>void excluir()} disabled={enviando||excluindo}>
-    <Trash2 size={16} aria-hidden="true"/> {excluindo?'Excluindo…':'Excluir conversa'}
-   </button>
-  </div>
-  {erroExclusao&&<p role="alert" className="suporte-erro">{erroExclusao}</p>}
+  <h3>{conversa.nome}</h3>
   {falhaLeitura&&<p role="status" className="suporte-nota">Não foi possível atualizar a conversa. Tentando reconectar.</p>}
   {carregando&&!falhaLeitura&&<p role="status">Carregando mensagens…</p>}
   {!carregando&&<>
@@ -122,6 +97,8 @@ export function CaixaSuporte({ativo,aoAlterar}:{ativo:boolean|undefined;aoAltera
  const [salvando,setSalvando]=useState(false);
  const [erroConfig,setErroConfig]=useState('');
  const [avisoCaixa,setAvisoCaixa]=useState('');
+ const [excluindo,setExcluindo]=useState<string|null>(null);
+ const [erroExclusao,setErroExclusao]=useState('');
  const titulo=useRef<HTMLHeadingElement>(null);
  const leitura=useRef(0);
 
@@ -162,12 +139,25 @@ export function CaixaSuporte({ativo,aoAlterar}:{ativo:boolean|undefined;aoAltera
   }
  }
 
- function atualizarAposExclusao(id:string,excluida:boolean){
-  setConversas(atuais=>atuais.filter(conversa=>conversa.id!==id));
-  setSelecionada(atual=>atual?.id===id?null:atual);
-  setAvisoCaixa(excluida?'Conversa excluída.':'A conversa não está mais disponível.');
-  titulo.current?.focus();
-  void atualizar();
+ async function excluir(conversa:Conversa){
+  if(excluindo||!window.confirm(`Excluir permanentemente a conversa com ${conversa.nome} e todas as mensagens? O histórico também será apagado para o cliente.`))return;
+  setExcluindo(conversa.id);
+  setErroExclusao('');
+  setAvisoCaixa('');
+  try{
+   const {data,error}=await supabase!.from('sc_suporte_conversas')
+    .delete().eq('id',conversa.id).select('id').maybeSingle();
+   if(error)throw error;
+   setConversas(atuais=>atuais.filter(item=>item.id!==conversa.id));
+   setSelecionada(atual=>atual?.id===conversa.id?null:atual);
+   setAvisoCaixa(data?'Conversa excluída.':'A conversa não está mais disponível.');
+   titulo.current?.focus();
+   void atualizar();
+  }catch{
+   setErroExclusao(`Não foi possível excluir a conversa com ${conversa.nome}. Tente novamente.`);
+  }finally{
+   setExcluindo(null);
+  }
  }
 
  return <section className="adm-conteudo" aria-labelledby="adm-suporte-titulo">
@@ -178,6 +168,7 @@ export function CaixaSuporte({ativo,aoAlterar}:{ativo:boolean|undefined;aoAltera
    </button>}
   </div>
   {avisoCaixa&&<p className="adm-info" role="status">{avisoCaixa}</p>}
+  {erroExclusao&&<p className="adm-erro" role="alert">{erroExclusao}</p>}
   {erroConfig&&<p className="adm-erro" role="alert">{erroConfig}</p>}
   {ativo===undefined?<p className="adm-aviso">O banco da loja ainda precisa ser configurado para o chat.</p>:<>
    {!ativo&&<p className="adm-aviso">O chat está pausado para novos envios da loja.</p>}
@@ -185,14 +176,20 @@ export function CaixaSuporte({ativo,aoAlterar}:{ativo:boolean|undefined;aoAltera
    {carregando&&!falha&&<p role="status">Carregando conversas…</p>}
    {!carregando&&(conversas.length?<div className="suporte-caixa">
     <div aria-label="Conversas de suporte" className="suporte-lista">
-     {conversas.map(conversa=><button type="button" key={conversa.id} aria-pressed={selecionada?.id===conversa.id}
-      onClick={()=>{setSelecionada(conversa);setAvisoCaixa('');}}>
-      <strong>{conversa.nome}</strong><time dateTime={conversa.atualizado_em}>{horario.format(new Date(conversa.atualizado_em))}</time>
-      <span>{conversa.pendente?'Aguardando resposta':'Respondida'}</span>
-     </button>)}
+     {conversas.map(conversa=><div className="suporte-lista__linha" key={conversa.id}>
+      <button type="button" aria-pressed={selecionada?.id===conversa.id}
+       onClick={()=>{setSelecionada(conversa);setAvisoCaixa('');}}>
+       <strong>{conversa.nome}</strong><time dateTime={conversa.atualizado_em}>{horario.format(new Date(conversa.atualizado_em))}</time>
+       <span>{conversa.pendente?'Aguardando resposta':'Respondida'}</span>
+      </button>
+      <button type="button" className="suporte-lista__excluir" aria-label={`Excluir conversa com ${conversa.nome}`}
+       title="Excluir conversa" disabled={excluindo!==null} onClick={()=>void excluir(conversa)}>
+       <Trash2 size={18} aria-hidden="true"/>
+      </button>
+     </div>)}
      {mais&&<button type="button" onClick={()=>setLimite(atual=>atual+30)}>Carregar mais conversas</button>}
     </div>
-    {selecionada?<ResponderConversa key={selecionada.id} conversa={selecionada} atualizarCaixa={atualizar} aoExcluir={atualizarAposExclusao}/>:<div className="adm-vazio"><p>Selecione uma conversa para responder.</p></div>}
+    {selecionada?<ResponderConversa key={selecionada.id} conversa={selecionada} atualizarCaixa={atualizar} excluindo={excluindo===selecionada.id}/>:<div className="adm-vazio"><p>Selecione uma conversa para responder.</p></div>}
    </div>:<div className="adm-vazio"><MessageCircle size={34} aria-hidden="true"/><h3>Nenhuma conversa recebida</h3></div>)}
   </>}
  </section>;
