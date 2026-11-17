@@ -182,7 +182,8 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
      <div className="grade-produtos">{destaque.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
     </section>
     <section className="catalogo" id="cardapio" aria-labelledby="cardapio-titulo">
-     <div className="container-padrao catalogo__inicio"><span className="micro-label">Tem sabor para todo mundo</span><h2 id="cardapio-titulo">Nosso cardápio</h2><p>Encontre o que dá vontade de comer hoje.</p>
+     <div className="container-padrao catalogo__inicio">
+      <h2 id="cardapio-titulo">Nosso cardápio</h2>
       <label className="buscar-prato"><Search size={22} aria-hidden="true"/><span className="sr-only">Buscar pratos</span><input value={busca} onChange={e=>setBusca(e.target.value)} type="search" placeholder="Buscar prato pelo nome..." aria-label="Buscar pratos pelo nome"/>{busca&&<button type="button" aria-label="Limpar busca" onClick={()=>setBusca('')}><X size={19}/></button>}</label>
      </div>
      <nav className="barra-categorias" aria-label="Categorias do cardápio"><div className="container-padrao barra-categorias__lista">
@@ -193,7 +194,7 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
       {categorias.map(c=>{
        const itens=filtrados.filter(p=>p.categoriaId===c.id);
        return itens.length>0?<section id={'categoria-'+c.id} className="categoria-secao" key={c.id} aria-labelledby={'titulo-'+c.id}>
-        <div className="categoria-secao__topo"><div><span className="micro-label">{String(c.ordem).padStart(2,'0')} · Nossa cozinha</span><h3 id={'titulo-'+c.id}>{c.nome}</h3></div><small>{itens.length} {itens.length===1?'opção':'opções'}</small></div>
+        <div className="categoria-secao__topo"><h3 id={'titulo-'+c.id}>{c.nome}</h3><small>{itens.length} {itens.length===1?'opção':'opções'}</small></div>
         <div className="grade-produtos">{itens.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
        </section>:null;
       })}

@@ -118,22 +118,22 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
 .botao-adicionar:hover:not(:disabled){background:#941832}
 .botao-adicionar:disabled{background:#ddd1cb;color:#675d59}
 .catalogo{padding-block:44px 66px;background:#fffefa;border-top:1px solid #F8E8DE}
-.catalogo__inicio h2{font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.04;color:var(--vinho);margin:7px 0}
-.catalogo__inicio p{font-size:.85rem;color:var(--suave);margin-bottom:22px}
+.catalogo__inicio{display:grid;gap:14px;align-items:center}
+.catalogo__inicio h2{font-size:clamp(1.95rem,4vw,3rem);line-height:1.1;color:var(--vinho);margin:0}
 .buscar-prato{display:flex;align-items:center;gap:10px;max-width:600px;background:white;border:1.5px solid #e1cbc4;border-radius:17px;padding:0 14px;color:#9b6a67;box-shadow:0 6px 18px rgb(137 59 60 / .04)}
 .buscar-prato:focus-within{border-color:var(--rosa-escuro)}
 .buscar-prato input{width:100%;height:53px;min-width:0;border:0;background:transparent;color:var(--texto);outline:none;font-size:.85rem}
 .buscar-prato button{display:grid;place-items:center;background:transparent;border:0;color:var(--vinho);min-width:38px;min-height:44px}
-.barra-categorias{position:sticky;top:74px;z-index:35;margin-top:26px;border-block:1px solid #f1dfd3;background:rgb(255 248 236 / .96);backdrop-filter:blur(12px)}
-.barra-categorias__lista{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:12px 0;scrollbar-width:none;overscroll-behavior-x:contain}
+.barra-categorias{position:sticky;top:74px;z-index:35;margin-top:20px;border-block:1px solid #f1dfd3;background:rgb(255 248 236 / .96);backdrop-filter:blur(12px)}
+.barra-categorias__lista{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:8px 0;scrollbar-width:none;overscroll-behavior-x:contain}
 .barra-categorias__lista::-webkit-scrollbar{display:none}
 .barra-categorias button{flex:none;white-space:nowrap;border:1px solid #efdbcd;background:white;color:var(--vinho);border-radius:50px;padding:11px 16px;min-height:44px;font-size:.74rem;font-weight:800}
 .barra-categorias button:hover{background:#faebdf}
 .barra-categorias button.ativo{background:var(--vinho);border-color:var(--vinho);color:white}
-.catalogo__secoes{padding-top:12px}
-.categoria-secao{padding-top:32px;scroll-margin-top:138px}
-.categoria-secao__topo{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:17px;border-bottom:1px solid #f0e1d9;padding-bottom:12px}
-.categoria-secao h3{font-size:clamp(1.5rem,3.5vw,2.1rem);color:var(--vinho);line-height:1.15;margin:4px 0 0}
+.catalogo__secoes{display:grid;gap:30px;padding-top:25px}
+.categoria-secao{min-width:0}
+.categoria-secao__topo{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;border-bottom:1px solid #eadbd1;padding-bottom:9px}
+.categoria-secao__topo h3{font-size:clamp(1.35rem,3vw,1.85rem);color:var(--vinho);line-height:1.15;margin:0}
 .categoria-secao__topo small{font-size:.7rem;color:var(--suave);white-space:nowrap}
 .busca-vazia{text-align:center;padding:52px 16px;border:1px dashed #e7cbbd;border-radius:25px;color:var(--vinho)}
 .busca-vazia svg{margin:0 auto 10px}
@@ -633,12 +633,51 @@ html,body{min-height:100%;background:#fbf7f1}
  .hero__foto{min-height:0;height:100%;aspect-ratio:auto;border-radius:0}
  .hero__legenda{bottom:7px;left:7px;font-size:.62rem}
  .hero__eyebrow,.hero__selos,.hero__acoes>a,
- .destaques,.catalogo__inicio>.micro-label,.catalogo__inicio>p,
- .categoria-secao__topo .micro-label,.whatsapp-suporte,.barra-aviso span{display:none}
+ .destaques,.whatsapp-suporte,.barra-aviso span{display:none}
  .barra-aviso{background:#fffdf8;padding-block:7px;line-height:1.35}
  main>.aviso-atendimento{min-height:0;padding:9px 12px;font-size:.72rem;margin-block:9px}
  .catalogo{padding-top:24px}
- .catalogo__inicio h2{margin-top:0}
- .barra-categorias{background:#fbf7f1}
+ .barra-categorias{top:64px;background:#fbf7f1}
  .produto-card{box-shadow:none;border-radius:14px}
+}
+
+
+/* Modelos de card exclusivos do cardápio. */
+.catalogo .buscar-prato{width:100%;max-width:none;border-radius:12px;box-shadow:none}
+.catalogo .buscar-prato input{height:46px}
+.barra-categorias button:focus-visible{outline-offset:-4px}
+.catalogo .grade-produtos{
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));
+ gap:12px;
+}
+.catalogo .produto-card{
+ display:grid;grid-template-columns:clamp(96px,29%,176px) minmax(0,1fr);
+ min-height:148px;border-radius:14px;box-shadow:none;
+}
+.catalogo .produto-card:hover{transform:none;box-shadow:0 4px 14px rgb(91 40 42 / .07)}
+.catalogo .produto-card__imagem{aspect-ratio:auto}
+.catalogo .produto-card__imagem>.galeria-prato,
+.catalogo .produto-card__imagem>.food-photo,
+.catalogo .produto-card__imagem>.food-placeholder{position:absolute;inset:0}
+.catalogo .produto-card__corpo{padding:13px}
+.catalogo .produto-card h3{font-size:clamp(1.06rem,2vw,1.32rem);min-height:0;margin:0 0 5px;overflow-wrap:anywhere}
+.catalogo .produto-card__descricao{min-height:0;font-size:.8rem;-webkit-line-clamp:2}
+.catalogo .produto-card__inferior{flex-flow:row wrap;justify-content:space-between;align-items:center;gap:6px;padding-top:10px}
+.catalogo .produto-card__inferior strong{font-size:1rem;white-space:nowrap}
+.catalogo .botao-adicionar{width:auto;min-height:44px;padding:6px 10px;border-radius:9px}
+.catalogo .botao-adicionar svg{width:15px;height:15px}
+.catalogo .tag--yellow{background:#f3e7ca}
+.catalogo .produto-card__esgotado{flex-direction:column;gap:4px}
+.catalogo .galeria-prato__acoes{bottom:24px;left:0;right:0;justify-content:center}
+.catalogo .galeria-prato__acoes button{width:34px;height:34px}
+@media(min-width:780px){
+ .catalogo__inicio{grid-template-columns:minmax(0,1fr) minmax(270px,370px)}
+ .catalogo .produto-card__corpo{padding:18px}
+}
+@media(max-width:479px){
+ .catalogo .produto-card__corpo{padding:10px}
+ .catalogo .produto-card__descricao{font-size:.75rem}
+ .catalogo .produto-card__etiquetas{top:6px;left:6px;right:4px;gap:3px}
+ .catalogo .tag{padding:3px 5px;font-size:.52rem}
+ .catalogo .tag-foto-ilustrativa{right:4px;bottom:4px;padding:3px 4px}
 }
