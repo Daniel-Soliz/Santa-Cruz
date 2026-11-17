@@ -19,7 +19,7 @@ import { lerNavegacao, paginasLoja, passosParaVoltar, type PaginaLoja } from './
 import { NavegacaoLoja } from './components/NavegacaoLoja';
 import { SuporteLoja } from './components/SuporteLoja';
 import { AcompanharPedido } from './components/AcompanharPedido';
-import { lerReferenciaPedido, linkAcompanhamento } from './acompanhamento';
+import { lerReferenciaPedido, linkAcompanhamento, type ReferenciaPedido } from './acompanhamento';
 
 const categoriasLocais=cardapio.categorias as Categoria[];
 const dadosLocais=cardapio.itens as Produto[];
@@ -159,9 +159,14 @@ function Rodape({chatAtivo}:{chatAtivo:boolean}){
   <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} {loja.nome}.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
 }
-function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produto[];categorias:Categoria[];modoBanco:boolean;chatAtivo:boolean}){
+function LojaConteudo({produtos,categorias,modoBanco,chatAtivo,acessoDemo}:{produtos:Produto[];categorias:Categoria[];modoBanco:boolean;chatAtivo:boolean;acessoDemo:string}){
  const loja=useLoja();
- const [carrinho,setCarrinho]=useState<LinhaCarrinho[]>(carregarCarrinho);
+ const [carrinho,setCarrinho]=useState<LinhaCarrinho[]>(()=>acessoDemo?[]:carregarCarrinho());
+ const [pedidoDemo,setPedidoDemo]=useState<{referencia:ReferenciaPedido;total:number}|null>(null);
+ const [enviandoDemo,setEnviandoDemo]=useState(false);
+ const [erroDemo,setErroDemo]=useState('');
+ const envioDemo=useRef<{linhas:LinhaCarrinho[];chave:string}|null>(null);
+ const enviandoRef=useRef(false);
  const [carrinhoAberto,setCarrinhoAberto]=useState(false);
  const [avisoSacola,setAvisoSacola]=useState('');
  const [editando,setEditando]=useState<Editando|null>(null);
@@ -184,7 +189,7 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
  const temSobre=Boolean(loja.sobre||loja.fotosEspaco.length||(loja.conteudo.mostrarAvaliacoes&&loja.conteudo.avaliacoes.length));
  const paginas:PaginaLoja[]=Object.keys(paginasLoja).filter(pagina=>
   (pagina!=='destaques'||temDestaques)&&(pagina!=='sobre'||temSobre)&&(pagina!=='suporte'||chatAtivo)) as PaginaLoja[];
- const destino=lerNavegacao(hash);
+ const destino=lerNavegacao(hash.startsWith('#demo/')?'#cardapio':hash);
  const pagina=paginas.includes(destino.pagina)||destino.pagina==='suporte'?destino.pagina:destino.pagina==='destaques'?'cardapio':'inicio';
 
  useEffect(()=>{
@@ -197,6 +202,7 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
    setNavegacao({hash:proximoHash,passos:proximoPasso});
    setCheckout(false);
    setConfirmacao(null);
+   setPedidoDemo(null);
   }
   if(window.history.state?.scVoltar===undefined){
    window.history.replaceState({...window.history.state,scVoltar:passos},'');
@@ -216,7 +222,8 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
    conteudo.current?.focus({preventScroll:true});
   }
  },[hash,destino.ancora,pagina,categorias]);
- useEffect(()=>{setArmazenamentoFalhou(!salvarCarrinho(carrinho));},[carrinho]);
+ useEffect(()=>{if(!acessoDemo)setArmazenamentoFalhou(!salvarCarrinho(carrinho));},[carrinho,acessoDemo]);
+ useEffect(()=>{setErroDemo('');},[carrinho]);
  useEffect(()=>{
   // Ao trocar o catálogo demonstrativo pelo real, remove linhas vencidas ou esgotadas.
   setCarrinho(atual=>{
@@ -256,12 +263,12 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
  const total=totalCarrinho(carrinho,produtos),quantidade=totalItens(carrinho);
  const filtrados=useMemo(()=>produtos.filter(p=>p.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(busca.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())),[busca,produtos]);
  function voltarAVitrine(){
-  setCheckout(false);setConfirmacao(null);
+  setCheckout(false);setConfirmacao(null);setPedidoDemo(null);
   window.scrollTo({top:0,behavior:'instant'});
   conteudo.current?.focus({preventScroll:true});
  }
  function voltarAba(){
-  if(confirmacao){voltarAVitrine();return;}
+  if(confirmacao||pedidoDemo){voltarAVitrine();return;}
   if(passos>0){window.history.go(-passos);return;}
   window.location.hash='inicio';
  }
@@ -270,19 +277,43 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
   if(window.location.hash==='#cardapio')voltarAVitrine();
   else window.location.hash='cardapio';
  }
- function irCheckout(){setCarrinhoAberto(false);setCheckout(true);setConfirmacao(null);window.scrollTo({top:0,behavior:'smooth'});}
+ async function irCheckout(){
+  if(!acessoDemo){setCarrinhoAberto(false);setCheckout(true);setConfirmacao(null);window.scrollTo({top:0,behavior:'smooth'});return;}
+  if(enviandoRef.current||!carrinho.length)return;
+  enviandoRef.current=true;
+  setErroDemo('');setEnviandoDemo(true);
+  try{
+   if(!supabase)throw new Error('Não foi possível conectar à demonstração.');
+   const chave=envioDemo.current?.linhas===carrinho?envioDemo.current.chave:crypto.randomUUID().replaceAll('-','');
+   envioDemo.current={linhas:carrinho,chave};
+   const {data,error}=await supabase.rpc('sc_registrar_pedido_demo',{
+    p_acesso:acessoDemo,p_chave:chave,p_itens:carrinho.map(({produtoId,quantidade,variacaoId,opcionaisIds})=>({produtoId,quantidade,variacaoId,opcionaisIds}))
+   });
+   if(error)throw new Error(error.code==='P0001'?error.message:'Não foi possível registrar. Tente novamente.');
+   if(typeof data?.codigo!=='string'||!Number.isInteger(data.total_centavos))throw new Error('Não foi possível confirmar o pedido. Tente novamente.');
+   setPedidoDemo({referencia:{codigo:data.codigo,chave},total:data.total_centavos/100});
+   setCarrinhoAberto(false);setCarrinho([]);window.scrollTo({top:0});
+  }catch(e){setErroDemo(e instanceof Error?e.message:'Não foi possível registrar. Tente novamente.');}
+  finally{enviandoRef.current=false;setEnviandoDemo(false);}
+ }
  return <div className="site-loja">
   <a href="#conteudo" className="pular-conteudo" onClick={evento=>{
    evento.preventDefault();conteudo.current?.focus();
   }}>Pular para o conteúdo</a>
   <Header quantidade={quantidade} abrir={()=>setCarrinhoAberto(true)} status={horario}
-   paginas={paginas} atual={checkout||confirmacao||rastreio?null:pagina} voltarAVitrine={voltarAVitrine}/>
+   paginas={paginas} atual={checkout||confirmacao||pedidoDemo||rastreio?null:pagina} voltarAVitrine={voltarAVitrine}/>
   {armazenamentoFalhou&&<div role="status" className="aviso-armazenamento">Seu navegador está bloqueando o armazenamento. A sacola pode não ser recuperada se você fechar a página.</div>}
   <main ref={conteudo} id="conteudo" className="pagina-loja" tabIndex={-1}>
    {!checkout&&(passos>0||pagina!=='inicio'||confirmacao||rastreio)&&<div className="container-padrao navegacao-voltar">
     <button type="button" className="link-voltar" onClick={voltarAba}><ArrowLeft size={19} aria-hidden="true"/> Voltar</button>
    </div>}
-   {confirmacao?<Confirmacao key={confirmacao.pedido.numero} preparado={confirmacao} novo={novaCompra} chatAtivo={chatAtivo}/>:
+   {acessoDemo&&<div className="barra-aviso"><div className="container-padrao"><b>Demonstração Santa Cruz.</b> Pedidos e valores ilustrativos.</div></div>}
+   {pedidoDemo?<div className="pagina-confirmacao">
+    <div className="container-padrao confirmacao__caixa"><h1>Pedido de demonstração registrado</h1><p>{pedidoDemo.referencia.codigo} · {reais(pedidoDemo.total)}</p>
+     <a className="link-voltar" href={linkAcompanhamento(pedidoDemo.referencia)} target="_blank" rel="noopener noreferrer">Abrir acompanhamento do pedido</a>
+     <button className="link-voltar" type="button" onClick={voltarAVitrine}>Voltar ao cardápio</button>
+    </div><AcompanharPedido referencia={pedidoDemo.referencia} tipo="retirada"/>
+   </div>:confirmacao?<Confirmacao key={confirmacao.pedido.numero} preparado={confirmacao} novo={novaCompra} chatAtivo={chatAtivo}/>:
    checkout?<Checkout modoBanco={modoBanco} chatAtivo={chatAtivo} linhas={carrinho} produtos={produtos} onVoltar={voltarAVitrine} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
    rastreio?<AcompanharPedido key={hash} referencia={rastreio}/>:
    <>
@@ -345,7 +376,7 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
   </button>}
   {carrinhoAberto&&<Carrinho linhas={carrinho} produtos={produtos}
    sugestoes={sugerirBebidas(carrinho,produtos,categorias)}
-   adicionarSugestao={produto=>{setCarrinhoAberto(false);abrirModal(produto,null,true);}} fechar={()=>setCarrinhoAberto(false)} atualizar={mudarQuantidade} remover={chave=>setCarrinho(itens=>itens.filter(i=>i.chave!==chave))} limpar={()=>setCarrinho([])} editar={abrirEditor} finalizar={irCheckout}/>}
+   adicionarSugestao={produto=>{setCarrinhoAberto(false);abrirModal(produto,null,true);}} fechar={()=>setCarrinhoAberto(false)} atualizar={mudarQuantidade} remover={chave=>setCarrinho(itens=>itens.filter(i=>i.chave!==chave))} limpar={()=>setCarrinho([])} editar={abrirEditor} finalizar={()=>void irCheckout()} demo={!!acessoDemo} enviando={enviandoDemo} erro={erroDemo}/>}
   {editando&&<ProdutoModal key={editando.linha?.chave||editando.produto.id} produto={editando.produto} linha={editando.linha} fechar={()=>{if(editando.voltarSacola)setCarrinhoAberto(true);setEditando(null);}} salvar={salvarItem}/>}
  </div>;
 }
@@ -356,6 +387,7 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
  * O chat usa a mesma conexão quando ativado pela equipe.
  */
 export default function LojaApp(){
+ const [acessoDemo]=useState(()=>window.location.hash.match(/^#demo\/([0-9a-f]{32})$/)?.[1]||'');
  const [configRemota,setConfigRemota]=useState<ConfiguracaoAdmin|null>(null);
  const [produtosRemotos,setProdutosRemotos]=useState<Produto[]>([]);
  const [categoriasRemotas,setCategoriasRemotas]=useState<Categoria[]>([]);
@@ -407,11 +439,11 @@ export default function LojaApp(){
    formasPagamento:configRemota.formas_pagamento||lojaBase.formasPagamento
   };
  },[configRemota]);
- const publicados=!!configRemota?.catalogo_publicado;
+ const publicados=!acessoDemo&&!!configRemota?.catalogo_publicado;
  const produtos=useMemo(()=>publicados?produtosRemotos:dadosLocais,[publicados,produtosRemotos]);
  const categorias=useMemo(()=>publicados?categoriasRemotas:categoriasLocais,[publicados,categoriasRemotas]);
  return <LojaProvider valor={loja}>
   {erroRemoto&&<div className="aviso-atendimento container-padrao" role="alert">{erroRemoto}</div>}
-  <LojaConteudo produtos={produtos} categorias={categorias} modoBanco={publicados&&produtosRemotos.length>0} chatAtivo={configRemota?.chat_suporte_ativo===true}/>
+  <LojaConteudo produtos={produtos} categorias={categorias} modoBanco={publicados&&produtosRemotos.length>0} chatAtivo={configRemota?.chat_suporte_ativo===true} acessoDemo={acessoDemo}/>
  </LojaProvider>;
 }

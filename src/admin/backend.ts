@@ -15,6 +15,7 @@ export const supabase=backendConfigurado?
 
 export type PedidoStatus='aguardando_confirmacao'|'recebido'|'em_preparo'|'pronto'|'saiu_entrega'|'entregue'|'cancelado';
 export interface PedidoAdmin{
+ demonstracao?:boolean;
  id:string;codigo:string;cliente_nome:string;telefone:string|null;
  modalidade:'entrega'|'retirada'|'local';total_centavos:number;
  origem?:'site'|'manual'|'whatsapp';forma_pagamento?:string|null;
