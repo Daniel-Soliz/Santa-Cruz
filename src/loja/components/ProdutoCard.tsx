@@ -39,6 +39,9 @@ export function GaleriaPrato({produto}:{produto:Produto}){
  </div>;
 }
 export function ProdutoCard({produto,abrir}:{produto:Produto;abrir:(p:Produto)=>void}){
+ const valores=produto.variacoes.map(v=>produto.preco+v.acrescimo);
+ const menorPreco=valores.length?Math.min(...valores):produto.preco;
+ const temFaixa=valores.some(valor=>valor!==menorPreco);
  return <article className="produto-card">
   <div className="produto-card__imagem">
    <GaleriaPrato produto={produto}/>
@@ -53,7 +56,7 @@ export function ProdutoCard({produto,abrir}:{produto:Produto;abrir:(p:Produto)=>
    <h3>{produto.nome}</h3>
    <p className="produto-card__descricao">{produto.descricao}</p>
    <div className="produto-card__inferior">
-    <div><strong>{reais(produto.preco)}</strong>{produto.exemplo&&<small>Valor fictício</small>}</div>
+    <div>{temFaixa&&<small>A partir de</small>}<strong>{reais(menorPreco)}</strong>{produto.exemplo&&<small>Valor fictício</small>}</div>
     <button className="botao-adicionar" type="button" disabled={!produto.disponivel} onClick={()=>abrir(produto)}>
      {produto.disponivel?<><Plus size={18} aria-hidden="true"/> Adicionar</>:'Esgotado'}
     </button>

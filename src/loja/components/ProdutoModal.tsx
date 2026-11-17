@@ -6,7 +6,7 @@ import { GaleriaPrato } from './ProdutoCard';
 
 export function ProdutoModal({produto,linha,fechar,salvar}:{produto:Produto;linha?:LinhaCarrinho|null;fechar:()=>void;salvar:(item:LinhaCarrinho,antiga?:string)=>void}){
  const [quantidade,setQuantidade]=useState(linha?.quantidade||1);
- const [variacao,setVariacao]=useState(linha?.variacaoId||produto.variacoes[0]?.id||'');
+ const [variacao,setVariacao]=useState(produto.variacoes.find(v=>v.id===linha?.variacaoId)?.id||produto.variacoes[0]?.id||'');
  const [opcionais,setOpcionais]=useState<string[]>(linha?.opcionaisIds||[]);
  const [observacao,setObservacao]=useState(linha?.observacao||'');
  const inicio=useRef<HTMLButtonElement|null>(null);
@@ -40,10 +40,10 @@ export function ProdutoModal({produto,linha,fechar,salvar}:{produto:Produto;linh
     <h2 id="modal-titulo">{produto.nome}</h2>
     <p>{produto.descricao}</p>
     {produto.exemplo&&<div className="aviso-demo-inline"><Info size={16}/> Produto e preço ilustrativos; confirmar com a equipe.</div>}
-    {produto.variacoes.length>0&&<fieldset className="campo-grupo"><legend>Escolha o tamanho</legend>
+    {produto.variacoes.length>0&&<fieldset className="campo-grupo"><legend>Escolha a porção ou tamanho</legend>
      <div className="selecoes">{produto.variacoes.map(v=><label key={v.id} className={`selecao ${variacao===v.id?'selecao--ativa':''}`}>
       <input type="radio" name="tamanho" checked={variacao===v.id} onChange={()=>setVariacao(v.id)}/>
-      <span>{v.nome}</span><b>{v.acrescimo>0?`+ ${reais(v.acrescimo)}`:'Incluso'}</b>
+      <span>{v.nome}</span><b>{reais(dinheiro(produto.preco+v.acrescimo))}</b>
      </label>)}</div></fieldset>}
     {produto.opcionais.length>0&&<fieldset className="campo-grupo"><legend>Personalize o prato <small>(opcional)</small></legend>
      <div className="selecoes">{produto.opcionais.map(o=><label key={o.id} className={`selecao ${opcionais.includes(o.id)?'selecao--ativa':''}`}>

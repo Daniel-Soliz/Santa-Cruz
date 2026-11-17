@@ -97,6 +97,8 @@ export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configu
  for(const linha of p.linhas){
   const item=mapa.get(linha.produtoId);
   if(!item||!item.disponivel)erros.push('Um dos pratos foi removido ou está indisponível.');
+  if(item?.disponivel&&item.variacoes.length&&!item.variacoes.some(v=>v.id===linha.variacaoId))
+   erros.push(`Edite “${item.nome}” na sacola para escolher uma porção disponível.`);
   if(!Number.isInteger(linha.quantidade)||linha.quantidade<1||linha.quantidade>99)
    erros.push('Confira as quantidades dos itens.');
  }

@@ -26,7 +26,7 @@ export function entregaConfigurada(config:DadosEntrega):boolean{
 export function avaliarCobertura(bairro:string,config:DadosEntrega,local?:{cidade:string;uf:string}):Cobertura{
  if(!entregaConfigurada(config))return {
   estado:'indisponivel',
-  mensagem:'A entrega online não está disponível no momento. Você ainda pode pedir para retirada ou consumo no local.'
+  mensagem:'A entrega online não está disponível no momento. Você ainda pode pedir para retirada no balcão.'
  };
  if(local&&config.ufAtendimento&&config.cidadeAtendimento&&
    (local.uf.toUpperCase()!==config.ufAtendimento.toUpperCase()||

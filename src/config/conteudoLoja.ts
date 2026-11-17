@@ -20,7 +20,7 @@ export const conteudoPadrao={
  mostrarComoPedir:true,tituloComoPedir:'Seu pedido em 3 passos',
  textoComoPedir:'Escolha no site, envie no WhatsApp e aguarde a confirmação.',
  passoCardapioTitulo:'Escolha seus pratos',passoCardapioTexto:'Explore o cardápio, escolha o tamanho e adicione observações.',
- passoSacolaTitulo:'Confira a sacola',passoSacolaTexto:'Defina retirada, entrega ou consumo no local e o pagamento.',
+ passoSacolaTitulo:'Confira a sacola',passoSacolaTexto:'Escolha entrega ou retirada e informe a forma de pagamento.',
  passoConfirmacaoTitulo:'Envie para confirmar',passoConfirmacaoTexto:'O site prepara sua mensagem. Envie no WhatsApp e aguarde a equipe.',
  textoRodape:'Comida nordestina feita com carinho, pertinho de você.',
  tituloAtendimento:'Atendimento',textoSuporte:'WhatsApp para dúvidas'

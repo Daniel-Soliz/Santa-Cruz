@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Banknote, CheckCircle2, Clock3, CreditCard, MapPin, Search, ShieldCheck, ShoppingBag, Store, Truck, UtensilsCrossed, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Banknote, CheckCircle2, Clock3, CreditCard, MapPin, Search, ShieldCheck, ShoppingBag, Store, Truck, Wallet } from 'lucide-react';
 import {useLoja} from '../../config/LojaContext';
 import type { Cliente, LinhaCarrinho, Pagamento, PedidoCheckout, Produto, TipoPedido } from '../types';
 import { gerarNumeroPedido, montarMensagem, reais, situacaoLoja, totalCarrinho, totalComEntrega, urlWhatsApp, validarPedido, errosCamposPedido, valorDigitado, type ErrosCampos } from '../pedido';
@@ -7,13 +7,14 @@ import { consultarCep, avaliarCobertura, entregaConfigurada } from '../entrega';
 import {backendConfigurado,supabase} from '../../admin/backend';
 import {VerificacaoPedido,verificacaoConfigurada} from './VerificacaoPedido';
 
+type TipoOnline=Exclude<TipoPedido,'local'>;
 const clienteVazio:Cliente={nome:'',telefone:'',cep:'',rua:'',numero:'',complemento:'',bairro:'',cidade:'',uf:'',referencia:''};
 export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string; registradoNoPainel:boolean};
 
 export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void;modoBanco?:boolean}){
  const loja=useLoja();
  const [cliente,setCliente]=useState<Cliente>(clienteVazio);
- const [tipo,setTipo]=useState<TipoPedido>('retirada');
+ const [tipo,setTipo]=useState<TipoOnline>('retirada');
  const primeiraForma:Pagamento=loja.formasPagamento.pix?'pix':loja.formasPagamento.cartao?'cartao':'dinheiro';
  const [pagamento,setPagamento]=useState<Pagamento>(primeiraForma);
  const [trocoPara,setTrocoPara]=useState('');
@@ -56,7 +57,8 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
  }
  async function confirmar(semRegistro=false){
   setFalhaRegistro('');
-  const rascunho:PedidoCheckout={numero:gerarNumeroPedido(),cliente,tipo,pagamento,
+  const dadosCliente=tipo==='entrega'?cliente:{...clienteVazio,nome:cliente.nome,telefone:cliente.telefone};
+  const rascunho:PedidoCheckout={numero:gerarNumeroPedido(),cliente:dadosCliente,tipo,pagamento,
    trocoPara,observacoesGerais,linhas,foraHorario:!status.aberto};
   const falhas=validarPedido(rascunho,produtos,loja);
   if(falhas.length){
@@ -77,7 +79,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
    try{
     const {data,error}=await supabase!.functions.invoke('criar-pedido',{
      body:{
-      cliente,tipo,pagamento,trocoPara,observacoesGerais,
+      cliente:dadosCliente,tipo,pagamento,trocoPara,observacoesGerais,
       linhas:linhas.map(l=>({produtoId:l.produtoId,quantidade:l.quantidade,
        variacaoId:l.variacaoId,opcionaisIds:l.opcionaisIds,observacao:l.observacao})),
       total_cliente_centavos:Math.round(total*100),captcha
@@ -103,12 +105,12 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
   // evita bloqueio de popup após a chamada assíncrona.
   onPreparar({pedido,url,mensagem,registradoNoPainel});
  }
- const escolhaTipo:[TipoPedido,string,typeof Truck,string][]=[
-  ['entrega','Delivery',Truck,'Receber no endereço'],['retirada','Retirada',Store,'Buscar no balcão'],['local','Comer no local',UtensilsCrossed,'Refeição no restaurante']
+ const escolhaTipo:[TipoOnline,string,typeof Truck,string][]=[
+  ['entrega','Entrega',Truck,'Receber no endereço'],['retirada','Retirada',Store,'Buscar no balcão']
  ];
  return <div className="checkout-pagina">
   <div className="container-padrao">
-   <button className="link-voltar" type="button" onClick={onVoltar}><ArrowLeft size={19}/> Voltar ao cardápio</button>
+   <button className="link-voltar" type="button" onClick={onVoltar}><ArrowLeft size={19}/> Voltar</button>
    <div className="checkout-titulo"><span className="micro-label">Quase lá!</span><h1>Finalizar pedido</h1><p>Revise suas escolhas. Tudo em uma única tela, de forma simples.</p></div>
    <div className="checkout-layout">
     <form className="checkout-form" onSubmit={e=>{e.preventDefault();void confirmar();}} noValidate>
@@ -116,7 +118,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
      {!loja.pedidosOnlineAtivos&&<div className="aviso-atendimento aviso-atendimento--fechado"><Clock3 size={20}/> Os pedidos online estão pausados. O cardápio continua disponível para consulta.</div>}
      <section className="checkout-bloco" aria-labelledby="etapa-tipo"><div className="checkout-bloco__titulo"><span className="etapa-numero">01</span><div><h2 id="etapa-tipo">Como deseja receber?</h2><p>Selecione o tipo do pedido</p></div></div>
       <div className="tipo-grade">{escolhaTipo.map(([id,nome,Icon,descricao])=><button key={id} type="button" aria-pressed={tipo===id} disabled={id==='entrega'&&!entregaAtiva} onClick={()=>{setTipo(id);setErros([]);setCamposInvalidos({});}} className={`tipo-opcao ${tipo===id?'tipo-opcao--ativa':''}`}><Icon size={25}/><strong>{nome}</strong><small>{descricao}</small></button>)}</div>
-      {!entregaAtiva&&<p className="aviso-entrega-checkout" role="note">Entrega online indisponível no momento. Retirada e consumo no local continuam disponíveis.</p>}
+      {!entregaAtiva&&<p className="aviso-entrega-checkout" role="note">Entrega online indisponível no momento. Você pode pedir para retirar no balcão.</p>}
      </section>
      <section className="checkout-bloco" aria-labelledby="etapa-cliente"><div className="checkout-bloco__titulo"><span className="etapa-numero">02</span><div><h2 id="etapa-cliente">Seus dados</h2><p>Para identificarmos seu pedido</p></div></div>
       <div className="form-grade">
@@ -143,7 +145,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
      </section>
      <section className="checkout-bloco" aria-labelledby="etapa-pagamento"><div className="checkout-bloco__titulo"><span className="etapa-numero">03</span><div><h2 id="etapa-pagamento">Como deseja pagar?</h2><p>A forma de pagamento será confirmada com a equipe</p></div></div>
       <div className="pagamentos-grade">
-       {([['pix','Pix',Wallet,'A combinar no WhatsApp'],['cartao','Cartão',CreditCard,'Na entrega, retirada ou local'],['dinheiro','Dinheiro',Banknote,'Informe se precisa de troco']] as const)
+       {([['pix','Pix',Wallet,'A combinar no WhatsApp'],['cartao','Cartão',CreditCard,'Na entrega ou retirada'],['dinheiro','Dinheiro',Banknote,'Informe se precisa de troco']] as const)
        .filter(([id])=>loja.formasPagamento[id]).map(([id,nome,Icon,descricao])=>
        <label key={id} className={`pagamento-opcao ${pagamento===id?'pagamento-opcao--ativa':''}`}><input type="radio" name="pagamento" checked={pagamento===id} onChange={()=>setPagamento(id)}/><Icon size={22}/><span><strong>{nome}</strong><small>{descricao}</small></span></label>)}
       </div>

@@ -1,5 +1,5 @@
 import {useMemo,useState,type FormEvent} from 'react';
-import {UtensilsCrossed,Plus,Search,Pencil,Eye,EyeOff,Trash2,X,Save,ImagePlus,AlertTriangle,CheckCircle2,ArrowUpRight,ChefHat} from 'lucide-react';
+import {UtensilsCrossed,Plus,Search,Pencil,Eye,EyeOff,Trash2,X,Save,ImagePlus,AlertTriangle,CheckCircle2,ArrowUpRight,ChefHat,Star} from 'lucide-react';
 import type {Opcional,Variacao,Produto} from '../loja/types';
 import {valorDigitado} from '../loja/pedido';
 import {imagemPublica} from '../config/conteudoLoja';
@@ -17,13 +17,13 @@ type Rascunho={
  variacoes:Variacao[];opcionais:Opcional[];ordem:number;
 };
 type Props={
- categorias:CategoriaAdmin[];produtos:ProdutoAdmin[];catalogoPublicado:boolean;atualizar:()=>Promise<void>;
+ categorias:CategoriaAdmin[];produtos:ProdutoAdmin[];catalogoPublicado:boolean;destaques?:boolean;atualizar:()=>Promise<void>;
 };
 const produtoImagem=(p:ProdutoAdmin)=>imagemPublica(fotosDoProduto(p.dados)[0]||'');
 const valorSeguro=(p:ProdutoAdmin)=>Number(p.dados.preco||0);
 const idItem=()=>`prato-${crypto.randomUUID().slice(0,16)}`;
 
-export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}:Props){
+export function GestorCardapio({categorias,produtos,catalogoPublicado,destaques=false,atualizar}:Props){
  const [editando,setEditando]=useState<Rascunho|null>(null);
  const [salvando,setSalvando]=useState(false),[erro,setErro]=useState(''),[sucesso,setSucesso]=useState('');
  const [busca,setBusca]=useState(''),[categoriaFiltro,setCategoriaFiltro]=useState('todas');
@@ -43,7 +43,7 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
    exemplo:produto?dados.exemplo!==false:false,
    imagemIlustrativa:produto?dados.imagemIlustrativa===true:false,
    disponivel:produto?dados.disponivel!==false:true,
-   destaque:!!dados.destaque,
+   destaque:produto?dados.destaque===true:destaques,
    publicado:produto?.publicado||false,
    variacoes:Array.isArray(dados.variacoes)?dados.variacoes as Variacao[]:[],
    opcionais:Array.isArray(dados.opcionais)?dados.opcionais as Opcional[]:[],
@@ -159,23 +159,25 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
   (categoriaFiltro==='todas'||p.dados.categoriaId===categoriaFiltro) &&
   String(p.dados.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR')
    .includes(busca.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR')));
+ const lista=[...filtrados].sort((a,b)=>
+  (destaques?Number(b.dados.destaque===true)-Number(a.dados.destaque===true):0)||a.ordem-b.ordem);
  const publicados=produtos.filter(p=>p.publicado&&!p.dados.exemplo&&p.dados.disponivel!==false
   &&podePublicar(String(p.dados.categoriaId||'')));
  return <section className="adm-conteudo" aria-labelledby="gerenciar-cardapio-titulo">
   <div className="adm-secao-topo">
-   <div><span className="adm-kicker">GESTÃO COMPLETA</span><h2 id="gerenciar-cardapio-titulo">Seu cardápio, do seu jeito</h2>
-    <p>Crie categorias, pratos e fotos. Salve rascunhos e publique somente quando estiver tudo certo.</p></div>
+   <div><h2 id="gerenciar-cardapio-titulo">{destaques?'Destaques da casa':'Seu cardápio, do seu jeito'}</h2>
+    <p>{destaques?'Escolha os pratos da página inicial e edite nome, preço, fotos e porções.':'Gerencie as categorias, os pratos e os preços do cardápio.'}</p></div>
    <a href="#inicio" className="adm-link" title="Abrir a loja pública"><ArrowUpRight size={17}/> Ver site</a>
   </div>
-  <div className="adm-etapas">
+  {!destaques&&<div className="adm-etapas">
    <span><b>1</b> Criar categorias</span><span><b>2</b> Cadastrar pratos</span>
    <span><b>3</b> Ajustar imagens</span><span><b>4</b> Publicar na loja</span>
-  </div>
+  </div>}
   <div className="adm-aviso"><AlertTriangle size={19}/><span>
    {catalogoPublicado?'O cardápio do painel está ativo. Alterações em pratos publicados aparecem na loja.':
-    'O site ainda apresenta o catálogo demonstrativo. Prepare os seus pratos aqui e ative o novo cardápio em Entregas e ajustes quando estiver pronto.'}
+    'A loja exibe o catálogo demonstrativo. Para mostrar seus pratos e destaques, publique o cardápio oficial em Cardápio e preços.'}
    </span></div>
-  {!catalogoPublicado&&<section className="adm-card adm-vitrine" aria-labelledby="adm-cardapio-atual">
+  {!destaques&&!catalogoPublicado&&<section className="adm-card adm-vitrine" aria-labelledby="adm-cardapio-atual">
    <div className="adm-categorias__topo">
     <div><h3 id="adm-cardapio-atual">Cardápio exibido na loja</h3>
      <p className="adm-pequeno">O catálogo demonstrativo tem {exemplo.itens.length} pratos. Copie para editar categorias, fotos, preços e destaques.</p></div>
@@ -191,14 +193,14 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
     </ul>
    </details>
   </section>}
-  <GestorCategorias categorias={categorias} produtos={produtos} atualizar={atualizar}/>
+  {!destaques&&<GestorCategorias categorias={categorias} produtos={produtos} atualizar={atualizar}/>}
   <section className="adm-card adm-produtos-painel" aria-labelledby="adm-produtos-titulo">
    <div className="adm-categorias__topo">
-    <div><span className="adm-kicker">PASSO 2 · CADASTRAR</span><h3 id="adm-produtos-titulo"><UtensilsCrossed size={20}/> Pratos e produtos</h3>
-     <p className="adm-pequeno">Edite valores, fotos, descrição, tamanho, adicionais e disponibilidade sem mexer no código do site.</p></div>
-    <button type="button" className="adm-btn" disabled={!categorias.length||salvando} onClick={()=>novo()}><Plus size={18}/> Novo prato</button>
+    <div><h3 id="adm-produtos-titulo"><UtensilsCrossed size={20}/> {destaques?'Pratos para destacar':'Pratos e produtos'}</h3>
+     {destaques&&<p className="adm-pequeno">Abra um prato e marque “Destaque da casa”. Na loja aparecem os itens publicados, disponíveis e em categorias ativas.</p>}</div>
+    <button type="button" className="adm-btn" disabled={!categorias.length||salvando} onClick={()=>novo()}><Plus size={18}/> {destaques?'Novo destaque':'Novo prato'}</button>
    </div>
-   {!categorias.length&&<p className="adm-categorias__vazio">Primeiro crie uma categoria acima para habilitar o cadastro de pratos.</p>}
+   {!categorias.length&&<p className="adm-categorias__vazio">Crie uma categoria em Cardápio e preços para cadastrar pratos.</p>}
    <div className="adm-filtros-produtos">
     <label className="adm-busca"><Search size={18}/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar um prato..." aria-label="Buscar pratos"/></label>
     <label className="adm-filtros-produtos__categoria">Filtrar por categoria
@@ -213,7 +215,7 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
    {filtrados.length?
     <div className="adm-tabela-wrap"><table className="adm-tabela">
      <thead><tr><th>Produto</th><th>Preço</th><th>Categoria</th><th>Visibilidade</th><th>Ações</th></tr></thead>
-     <tbody>{[...filtrados].sort((a,b)=>a.ordem-b.ordem).map(p=><tr key={p.id}>
+     <tbody>{lista.map(p=><tr key={p.id}>
       <td><div className="adm-tabela__produto">
        {produtoImagem(p)?<img src={produtoImagem(p)} alt="" loading="lazy" width="50" height="50"/>:
         <div className="adm-mini-sem-foto" role="img" aria-label="Sem foto"><ImagePlus size={21}/></div>}
@@ -222,11 +224,14 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
       </div></td>
       <td><strong>{reais(valorSeguro(p))}</strong></td>
       <td>{categoriaPorId.get(String(p.dados.categoriaId||''))?.nome||'Categoria não cadastrada'}</td>
-      <td><span className={p.publicado?'adm-chip adm-chip--ok':'adm-chip'}>{p.publicado?'Publicado':'Rascunho'}</span></td>
+      <td><div className="adm-destaque-status">
+       <span className={p.publicado?'adm-chip adm-chip--ok':'adm-chip'}>{p.publicado?'Publicado':'Rascunho'}</span>
+       {destaques&&p.dados.destaque===true&&<span className="adm-chip"><Star size={13} aria-hidden="true"/> Marcado como destaque</span>}
+      </div></td>
       <td><div className="adm-tabela__acoes">
        <button type="button" title="Editar texto, preço e foto" aria-label={`Editar ${String(p.dados.nome)}`} onClick={()=>novo(p)}><Pencil size={18}/></button>
        <button type="button" title={p.publicado?'Despublicar':'Publicar'} aria-label={p.publicado?'Retirar da loja':'Publicar na loja'} disabled={salvando} onClick={()=>void publicar(p)}>{p.publicado?<EyeOff size={18}/>:<Eye size={18}/>}</button>
-       <button type="button" title="Excluir prato" aria-label={`Excluir ${String(p.dados.nome)}`} disabled={salvando} onClick={()=>void excluir(p)}><Trash2 size={18}/></button>
+       {!destaques&&<button type="button" title="Excluir prato" aria-label={`Excluir ${String(p.dados.nome)}`} disabled={salvando} onClick={()=>void excluir(p)}><Trash2 size={18}/></button>}
       </div></td>
      </tr>)}</tbody>
     </table></div>:
@@ -235,6 +240,7 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
      {categorias.length>0&&<button type="button" className="adm-btn" onClick={()=>novo()}><Plus size={18}/> Cadastrar um prato</button>}
     </div>}
   </section>
+  {!destaques&&<>
   <section className="adm-card adm-previa-cardapio">
    <div className="adm-categorias__topo">
     <div><span className="adm-kicker">PASSO 3 · CONFERIR</span><h3>Prévia dos itens publicados</h3>
@@ -267,9 +273,10 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
     {catalogoPublicado?'Desativar cardápio do painel':'Publicar meu novo cardápio'}
    </button>
   </section>
+  </>}
   {editando&&<div className="adm-sobreposicao" onClick={e=>{if(e.target===e.currentTarget&&!salvando)setEditando(null);}}>
    <section className="adm-modal adm-modal--produto" role="dialog" aria-modal="true" aria-labelledby="adm-editor-prato-titulo">
-    <div className="adm-modal__topo"><div><span className="adm-kicker">EDIÇÃO DE CARDÁPIO</span><h3 id="adm-editor-prato-titulo">{produtos.some(p=>p.id===editando.id)?'Editar prato':'Cadastrar novo prato'}</h3></div>
+    <div className="adm-modal__topo"><div><span className="adm-kicker">EDIÇÃO DE CARDÁPIO</span><h3 id="adm-editor-prato-titulo">{produtos.some(p=>p.id===editando.id)?'Editar '+(editando.nome||'prato'):destaques?'Cadastrar destaque':'Cadastrar novo prato'}</h3></div>
      <button type="button" onClick={()=>setEditando(null)} aria-label="Fechar editor" disabled={salvando}><X size={21}/></button>
     </div>
     <form className="adm-form" onSubmit={e=>void salvar(e)}>
@@ -299,11 +306,11 @@ export function GestorCardapio({categorias,produtos,catalogoPublicado,atualizar}
       })}
      </fieldset>
      <label>Ordem de exibição<input type="number" min={0} step={1} value={editando.ordem} onChange={e=>setEditando({...editando,ordem:Number(e.target.value)})}/></label>
-     <EditorOpcoes variacoes={editando.variacoes} opcionais={editando.opcionais}
+     <EditorOpcoes precoBase={valorDigitado(editando.preco)} variacoes={editando.variacoes} opcionais={editando.opcionais}
       onVariacoes={v=>setEditando({...editando,variacoes:v})} onOpcionais={v=>setEditando({...editando,opcionais:v})}/>
      <div className="adm-checkboxes">
       <label><input type="checkbox" checked={editando.disponivel} onChange={e=>setEditando({...editando,disponivel:e.target.checked})}/> Disponível para pedir</label>
-      <label><input type="checkbox" checked={editando.destaque} onChange={e=>setEditando({...editando,destaque:e.target.checked})}/> Destaque da casa</label>
+      {destaques&&<label><input type="checkbox" checked={editando.destaque} onChange={e=>setEditando({...editando,destaque:e.target.checked})}/> Destaque da casa</label>}
       <label><input type="checkbox" checked={editando.exemplo} onChange={e=>setEditando({...editando,exemplo:e.target.checked})}/> Produto demonstrativo</label>
       <label><input type="checkbox" checked={editando.imagemIlustrativa} onChange={e=>setEditando({...editando,imagemIlustrativa:e.target.checked})}/> Foto ilustrativa</label>
       <label><input type="checkbox" checked={editando.publicado} onChange={e=>setEditando({...editando,publicado:e.target.checked})}/> Publicar na loja</label>

@@ -360,3 +360,8 @@
  .adm-vitrine-hora{grid-template-columns:1fr 1fr}
  .adm-vitrine-hora>label:first-child{grid-column:1/-1}
 }
+
+.adm-voltar-aba{justify-self:start;margin-bottom:14px}
+.adm-atalhos-porcoes,.adm-destaque-status{display:flex;flex-wrap:wrap;gap:7px}
+.adm-destaque-status .adm-chip{display:inline-flex;gap:4px;align-items:center}
+.adm-atalhos-porcoes button:disabled{opacity:.45}

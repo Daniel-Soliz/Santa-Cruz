@@ -1,15 +1,20 @@
 import {Plus,Trash2} from 'lucide-react';
 import type {Variacao,Opcional} from '../loja/types';
+import {reais} from '../loja/pedido';
 const novoId=()=>crypto.randomUUID().slice(0,12);
-export function EditorOpcoes({variacoes,opcionais,onVariacoes,onOpcionais}:{
- variacoes:Variacao[];opcionais:Opcional[];
+const porcoes=['Individual','Para 2 pessoas'] as const;
+export function EditorOpcoes({precoBase,variacoes,opcionais,onVariacoes,onOpcionais}:{
+ precoBase:number|null;variacoes:Variacao[];opcionais:Opcional[];
  onVariacoes:(v:Variacao[])=>void;onOpcionais:(v:Opcional[])=>void;
 }){
  return <section className="adm-editor-opcoes">
-  <div><h4>Tamanhos e variações</h4><p className="adm-pequeno">Se não houver tamanhos, deixe a lista vazia. O preço base será utilizado.</p>
+  <div><h4>Porções e tamanhos</h4><p className="adm-pequeno">Escolha as opções do cliente. O preço final soma o preço base ao acréscimo da porção.</p>
+   <div className="adm-atalhos-porcoes">{porcoes.map(nome=><button type="button" className="adm-btn adm-btn--secundario" key={nome}
+    disabled={variacoes.some(v=>v.nome.trim().toLocaleLowerCase('pt-BR')===nome.toLocaleLowerCase('pt-BR'))}
+    onClick={()=>onVariacoes([...variacoes,{id:novoId(),nome,acrescimo:0}])}><Plus size={17}/> {nome}</button>)}</div>
    {variacoes.map((v,i)=><div key={v.id} className="adm-editor-opcoes__linha">
     <label>Nome<input value={v.nome} onChange={e=>onVariacoes(variacoes.map((x,j)=>i===j?{...x,nome:e.target.value}:x))} placeholder="Individual / Serve 2"/></label>
-    <label>Acréscimo (R$)<input type="number" inputMode="decimal" min="0" step=".01" value={v.acrescimo} onChange={e=>onVariacoes(variacoes.map((x,j)=>i===j?{...x,acrescimo:Number(e.target.value)}:x))}/></label>
+    <label>Acréscimo (R$)<input type="number" inputMode="decimal" min="0" step=".01" value={v.acrescimo} onChange={e=>onVariacoes(variacoes.map((x,j)=>i===j?{...x,acrescimo:Number(e.target.value)}:x))}/>{precoBase!==null&&<small>Preço final: {reais(precoBase+v.acrescimo)}</small>}</label>
     <button type="button" aria-label={`Excluir tamanho ${v.nome}`} onClick={()=>onVariacoes(variacoes.filter((_,j)=>i!==j))}><Trash2 size={19}/></button>
    </div>)}
    <button type="button" className="adm-btn adm-btn--secundario" onClick={()=>onVariacoes([...variacoes,{id:novoId(),nome:'',acrescimo:0}])}><Plus size={17}/> Adicionar tamanho</button>

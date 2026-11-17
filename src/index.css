@@ -238,7 +238,7 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
 .etapa-numero{display:grid;place-items:center;width:39px;height:39px;flex:0 0 39px;background:#ffe4dd;border-radius:12px;color:var(--rosa-escuro);font-family:"Baloo 2";font-weight:900}
 .checkout-bloco h2{margin:0;font-size:1.35rem;color:var(--vinho);line-height:1.2}
 .checkout-bloco__titulo p{margin:2px 0 0;color:var(--suave);font-size:.71rem}
-.tipo-grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tipo-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .tipo-opcao{min-height:106px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#fffcf8;border:1px solid var(--borda);border-radius:13px;padding:9px 4px;text-align:center;color:var(--vinho)}
 .tipo-opcao svg{color:var(--rosa-escuro)}
 .tipo-opcao strong{font-size:.77rem}
@@ -691,3 +691,6 @@ html,body{min-height:100%;background:#fbf7f1}
 @media(min-width:780px){
  .hero__grade:has(>.hero__texto:only-child){grid-template-columns:minmax(0,680px)}
 }
+
+.navegacao-voltar{padding-block:8px}
+.navegacao-voltar .link-voltar{min-height:44px}

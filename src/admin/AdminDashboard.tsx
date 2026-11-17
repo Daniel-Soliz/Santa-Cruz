@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
-import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,LogOut,Menu,X,RefreshCw,Plus,Search,Check,Trash2,Pencil,Eye,EyeOff,AlertTriangle,Clock3,Bell,ArrowUpRight,ShoppingBag,Truck,ShieldCheck,FileText,Save,House,LockKeyhole,MessageCircle} from 'lucide-react';
+import {LayoutDashboard,ClipboardList,UtensilsCrossed,Settings,LogOut,Menu,X,RefreshCw,Plus,Search,Check,Trash2,Pencil,Eye,EyeOff,AlertTriangle,Clock3,Bell,ArrowUpRight,ShoppingBag,Truck,ShieldCheck,FileText,Save,House,LockKeyhole,MessageCircle,Star,ArrowLeft} from 'lucide-react';
 import {logoUrl} from '../config/loja';
 import {GestorCardapio} from './GestorCardapio';
 import {EditorVitrine} from './EditorVitrine';
@@ -14,12 +14,12 @@ import type {Variacao,Opcional} from '../loja/types';
 import catalogo from '../data/cardapio.json';
 import {supabase,erroLegivel,reais,type ConfiguracaoAdmin,type PedidoAdmin,type PedidoStatus,type ProdutoAdmin,type CategoriaAdmin} from './backend';
 
-type Aba='inicio'|'pedidos'|'cardapio'|'financeiro'|'configuracoes'|'vitrine'|'seguranca'|'suporte';
+type Aba='inicio'|'pedidos'|'cardapio'|'financeiro'|'configuracoes'|'vitrine'|'seguranca'|'suporte'|'destaques';
 const labels:Record<PedidoStatus,string>={
  aguardando_confirmacao:'Aguardando confirmação',recebido:'Recebido',em_preparo:'Em preparo',pronto:'Pronto para retirada',
  saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'
 };
-const abas=[{id:'inicio',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'suporte',nome:'Suporte',Icon:MessageCircle},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'vitrine',nome:'Página inicial',Icon:House},{id:'financeiro',nome:'Entradas e saídas',Icon:ShoppingBag},{id:'configuracoes',nome:'Entregas e ajustes',Icon:Settings},{id:'seguranca',nome:'Segurança da conta',Icon:LockKeyhole}] as const;
+const abas=[{id:'inicio',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'suporte',nome:'Suporte',Icon:MessageCircle},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'destaques',nome:'Destaques',Icon:Star},{id:'vitrine',nome:'Página inicial',Icon:House},{id:'financeiro',nome:'Entradas e saídas',Icon:ShoppingBag},{id:'configuracoes',nome:'Entregas e ajustes',Icon:Settings},{id:'seguranca',nome:'Segurança da conta',Icon:LockKeyhole}] as const;
 const dataHora=(s:string)=>new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'});
 
 function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promise<void>}){
@@ -177,7 +177,18 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
  const andamento=pedidos.filter(p=>!['entregue','cancelado'].includes(p.status));
  const concluidos=pedidos.filter(p=>p.status==='entregue');
  const recebido=pedidos.filter(p=>p.pagamento_status==='pago').reduce((s,p)=>s+p.total_centavos,0)/100;
- const navegar=(id:Aba)=>{setAba(id);setMenuAberto(false);window.scrollTo({top:0,behavior:'smooth'});};
+ const abasAnteriores=useRef<Aba[]>([]);
+ function abrirAba(id:Aba){
+  setAba(id);setMenuAberto(false);window.scrollTo({top:0,behavior:'instant'});
+ }
+ function navegar(id:Aba){
+  if(id!==aba)abasAnteriores.current.push(aba);
+  abrirAba(id);
+ }
+ function voltarAba(){
+  const anterior=abasAnteriores.current.pop();
+  if(anterior)abrirAba(anterior);
+ }
  return <div className="adm-shell">
   {menuAberto&&<button className="adm-backdrop" onClick={()=>setMenuAberto(false)} aria-label="Fechar menu"/>}
   <aside className={`adm-sidebar ${menuAberto?'adm-sidebar--aberta':''}`}>
@@ -192,6 +203,9 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
     <div className="adm-topbar__direita"><span className="adm-online"><span/> Área protegida</span><button type="button" onClick={()=>void atualizar()} title="Atualizar dados" aria-label="Atualizar dados"><RefreshCw size={19}/></button><span className="adm-avatar">{usuario.slice(0,1).toUpperCase()}</span></div>
    </header>
    <main className="adm-main">
+    {abasAnteriores.current.length>0&&<button type="button" className="adm-btn adm-btn--secundario adm-voltar-aba" onClick={voltarAba}>
+     <ArrowLeft size={18} aria-hidden="true"/> Voltar
+    </button>}
     {alerta&&<div className="adm-info" role="status"><Bell size={18}/>{alerta}</div>}
     {erro&&<div className="adm-erro" role="alert">{erro}</div>}
     {carregando?<div className="adm-carregando"><RefreshCw size={28} className="adm-spin"/> Carregando dados reais...</div>:
@@ -222,7 +236,7 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
      </section>}
      {aba==='pedidos'&&<Pedidos pedidos={pedidos} atualizar={atualizar}/>}
      {aba==='suporte'&&config&&<CaixaSuporte ativo={config.chat_suporte_ativo} aoAlterar={atualizar}/>}
-     {aba==='cardapio'&&<GestorCardapio categorias={categorias} produtos={produtos} catalogoPublicado={!!config?.catalogo_publicado} atualizar={atualizar}/>}
+     {(aba==='cardapio'||aba==='destaques')&&<GestorCardapio key={aba} destaques={aba==='destaques'} categorias={categorias} produtos={produtos} catalogoPublicado={!!config?.catalogo_publicado} atualizar={atualizar}/>}
      {aba==='vitrine'&&config&&<EditorVitrine config={config} atualizar={atualizar}/>}
      {aba==='seguranca'&&<SegurancaConta/>}
      {aba==='financeiro'&&<Financeiro pedidos={pedidos} movimentos={movimentos} atualizar={atualizar}/>}

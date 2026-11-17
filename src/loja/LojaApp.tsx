@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, Clock3, Copy, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, LockKeyhole, Truck, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, Copy, Instagram, MapPin, MessageCircle, Phone, Search, ShieldCheck, ShoppingBag, LockKeyhole, Truck, UtensilsCrossed, X } from 'lucide-react';
 import cardapio from '../data/cardapio.json';
 import { loja as lojaBase } from '../config/loja';
 import { aplicarConteudo } from '../config/conteudoLoja';
@@ -15,7 +15,7 @@ import { InformacoesPedido, SobreCasa, Avaliacoes, Galeria } from './components/
 import { ConsultaEntrega } from './components/ConsultaEntrega';
 import { entregaConfigurada } from './entrega';
 import { sugerirBebidas } from './vitrine';
-import { lerNavegacao, paginasLoja, type PaginaLoja } from './navegacao';
+import { lerNavegacao, paginasLoja, passosParaVoltar, type PaginaLoja } from './navegacao';
 import { NavegacaoLoja } from './components/NavegacaoLoja';
 import { SuporteLoja } from './components/SuporteLoja';
 
@@ -156,10 +156,14 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
  const [confirmacao,setConfirmacao]=useState<Preparado|null>(null);
  const [armazenamentoFalhou,setArmazenamentoFalhou]=useState(false);
  const [horario,setHorario]=useState(()=>situacaoLoja(loja.horarios));
- const [hash,setHash]=useState(()=>window.location.hash);
+ const [navegacao,setNavegacao]=useState(()=>({
+  hash:window.location.hash,
+  passos:window.history.state?.scVoltar??0
+ }));
+ const {hash,passos}=navegacao;
  const conteudo=useRef<HTMLElement>(null);
  const hashAnterior=useRef<string|null>(null);
- const destaque=produtos.filter(p=>p.destaque&&p.disponivel).slice(0,4);
+ const destaque=produtos.filter(p=>p.destaque&&p.disponivel);
  const temDestaques=loja.conteudo.mostrarDestaques&&destaque.length>0;
  const temSobre=Boolean(loja.sobre||loja.fotosEspaco.length||(loja.conteudo.mostrarAvaliacoes&&loja.conteudo.avaliacoes.length));
  const paginas:PaginaLoja[]=Object.keys(paginasLoja).filter(pagina=>
@@ -169,13 +173,21 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
 
  useEffect(()=>{
   function mudarPagina(){
-   setHash(window.location.hash);
+   const proximoHash=window.location.hash;
+   if(proximoHash.startsWith('#/admin'))return;
+   const estadoAnterior=window.history.state;
+   const proximoPasso=estadoAnterior?.scVoltar??passosParaVoltar(hash,proximoHash,passos);
+   window.history.replaceState({...estadoAnterior,scVoltar:proximoPasso},'');
+   setNavegacao({hash:proximoHash,passos:proximoPasso});
    setCheckout(false);
    setConfirmacao(null);
   }
+  if(window.history.state?.scVoltar===undefined){
+   window.history.replaceState({...window.history.state,scVoltar:passos},'');
+  }
   window.addEventListener('hashchange',mudarPagina);
   return()=>window.removeEventListener('hashchange',mudarPagina);
- },[]);
+ },[hash,passos]);
  useLayoutEffect(()=>{
   if(hashAnterior.current===hash&&!destino.ancora)return;
   const primeiroAcesso=hashAnterior.current===null;
@@ -211,7 +223,7 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
   const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':paginasLoja[pagina];
   document.title=`${titulo} | ${loja.nome}`;
   const description=document.querySelector('meta[name="description"]');
-  description?.setAttribute('content',checkout?'Finalize seu pedido de comida nordestina: retirada, entrega ou consumo no local, com envio ao WhatsApp.':'Delícia do Nordeste · Casa do Norte · Santa Cruz. Veja o cardápio nordestino, monte sua sacola e envie o pedido para confirmação.');
+  description?.setAttribute('content',checkout?'Finalize seu pedido de comida nordestina: retirada ou entrega, com envio ao WhatsApp.':'Delícia do Nordeste · Casa do Norte · Santa Cruz. Veja o cardápio nordestino, monte sua sacola e envie o pedido para confirmação.');
  },[checkout,confirmacao,loja.nome,pagina]);
  const salvarItem=useCallback((item:LinhaCarrinho,antiga?:string)=>{
   setCarrinho(atual=>antiga?atual.map(l=>l.chave===antiga?item:l):[...atual,item]);
@@ -232,6 +244,11 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
   window.scrollTo({top:0,behavior:'instant'});
   conteudo.current?.focus({preventScroll:true});
  }
+ function voltarAba(){
+  if(confirmacao){voltarAVitrine();return;}
+  if(passos>0){window.history.go(-passos);return;}
+  window.location.hash='inicio';
+ }
  function novaCompra(){
   setCarrinho([]);
   if(window.location.hash==='#cardapio')voltarAVitrine();
@@ -246,17 +263,25 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
    paginas={paginas} atual={checkout||confirmacao?null:pagina} voltarAVitrine={voltarAVitrine}/>
   {armazenamentoFalhou&&<div role="status" className="aviso-armazenamento">Seu navegador está bloqueando o armazenamento. A sacola pode não ser recuperada se você fechar a página.</div>}
   <main ref={conteudo} id="conteudo" className="pagina-loja" tabIndex={-1}>
+   {!checkout&&(passos>0||pagina!=='inicio'||confirmacao)&&<div className="container-padrao navegacao-voltar">
+    <button type="button" className="link-voltar" onClick={voltarAba}><ArrowLeft size={19} aria-hidden="true"/> Voltar</button>
+   </div>}
    {confirmacao?<Confirmacao preparado={confirmacao} novo={novaCompra}/>:
    checkout?<Checkout modoBanco={modoBanco} linhas={carrinho} produtos={produtos} onVoltar={voltarAVitrine} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
    <>
     {pagina==='inicio'&&<Hero status={horario}/>}
-    {(pagina==='cardapio'||pagina==='destaques')&&<>
+    {(pagina==='cardapio'||pagina==='destaques'||(pagina==='inicio'&&temDestaques))&&<>
      {produtos.some(p=>p.exemplo)&&<div className="barra-aviso"><div className="container-padrao"><span>✦</span> <b>Cardápio demonstrativo:</b> pratos, fotos e valores ilustrativos, sujeitos à confirmação do restaurante. <span>✦</span></div></div>}
      {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
      {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
     </>}
-    {pagina==='destaques'&&<section className="destaques container-padrao" aria-labelledby="destaques-titulo">
-     <div className="cabecalho-secao cabecalho-secao--linha"><div><h1 id="destaques-titulo">{loja.conteudo.tituloDestaques}</h1>{loja.conteudo.textoDestaques&&<p>{loja.conteudo.textoDestaques}</p>}</div><a className="link-categorias" href="#cardapio">Ver cardápio completo <ArrowRight size={18}/></a></div>
+    {(pagina==='destaques'||(pagina==='inicio'&&temDestaques))&&<section className="destaques container-padrao" aria-labelledby="destaques-titulo">
+     <div className="cabecalho-secao cabecalho-secao--linha">
+      <div>{pagina==='inicio'?<h2 id="destaques-titulo">{loja.conteudo.tituloDestaques}</h2>:<h1 id="destaques-titulo">{loja.conteudo.tituloDestaques}</h1>}
+       {loja.conteudo.textoDestaques&&<p>{loja.conteudo.textoDestaques}</p>}
+      </div>
+      <a className="link-categorias" href="#cardapio">Ver cardápio completo <ArrowRight size={18}/></a>
+     </div>
      <div className="grade-produtos">{destaque.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
     </section>}
     {pagina==='cardapio'&&<section className="catalogo" id="catalogo" aria-labelledby="cardapio-titulo">
