@@ -24,11 +24,23 @@ const labels:Record<PedidoStatus,string>={
 const abas=[{id:'inicio',nome:'Visão geral',Icon:LayoutDashboard},{id:'pedidos',nome:'Pedidos',Icon:ClipboardList},{id:'suporte',nome:'Suporte',Icon:MessageCircle},{id:'cardapio',nome:'Cardápio e preços',Icon:UtensilsCrossed},{id:'destaques',nome:'Destaques',Icon:Star},{id:'categorias',nome:'Categorias',Icon:Layers3},{id:'vitrine',nome:'Página inicial',Icon:House},{id:'financeiro',nome:'Entradas e saídas',Icon:ShoppingBag},{id:'configuracoes',nome:'Entregas e ajustes',Icon:Settings},{id:'seguranca',nome:'Segurança da conta',Icon:LockKeyhole}] as const;
 const dataHora=(s:string)=>new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'});
 
-function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promise<void>}){
+function Pedidos({pedidos,totalDemo,atualizar}:{pedidos:PedidoAdmin[];totalDemo:number;atualizar:()=>Promise<void>}){
  const [aberto,setAberto]=useState(false),[busca,setBusca]=useState('');
  const [salvando,setSalvando]=useState(false),[erro,setErro]=useState('');
  const [nome,setNome]=useState(''),[telefone,setTelefone]=useState(''),[total,setTotal]=useState(''),[tipo,setTipo]=useState<'retirada'|'entrega'|'local'>('retirada'),[observacao,setObservacao]=useState('');
  const [formaPagamento,setFormaPagamento]=useState('outro');
+ const [linkDemo,setLinkDemo]=useState('');
+ const [criandoDemo,setCriandoDemo]=useState(false);
+ async function gerarLinkDemo(){
+  setErro('');setCriandoDemo(true);
+  try{
+   const {data,error}=await supabase!.rpc('sc_criar_acesso_demo');
+   if(error)throw error;
+   if(typeof data!=='string'||!/^[0-9a-f]{32}$/.test(data))throw new Error('Não foi possível gerar o link.');
+   setLinkDemo(window.location.origin+import.meta.env.BASE_URL+'#demo/'+data);
+  }catch(e){setErro(erroLegivel(e));}
+  finally{setCriandoDemo(false);}
+ }
  const [linkRastreio,setLinkRastreio]=useState('');
  const filtrar=pedidos.filter(p=>[p.codigo,p.cliente_nome,p.telefone||''].join(' ').toLowerCase().includes(busca.toLowerCase()));
  const registrar=async(e:FormEvent)=>{
@@ -62,11 +74,16 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
   <div className="adm-secao-topo"><div><span className="adm-kicker">CENTRAL OPERACIONAL</span><h2 id="adm-pedidos-titulo">Gestão de pedidos</h2><p>Pedidos cadastrados no banco do restaurante, sem valores demonstrativos.</p></div>
    <button className="adm-btn" onClick={()=>setAberto(true)}><Plus size={18}/> Registrar pedido</button></div>
   <div className="adm-aviso"><AlertTriangle size={19}/><span>O checkout seguro registra pedidos nesta lista. Solicitações enviadas pelo chat chegam na aba Suporte. Pedidos combinados pelo chat ou pelo WhatsApp podem ser registrados aqui pela equipe.</span></div>
+  {pedidos.some(p=>p.demonstracao)&&<p className="adm-info">Total dos pedidos de demonstração: <strong>{reais(totalDemo)}</strong></p>}
+  <div className="adm-form">
+   <button className="adm-btn adm-btn--secundario" type="button" onClick={()=>void gerarLinkDemo()} disabled={criandoDemo}>{criandoDemo?'Gerando…':'Gerar link de demonstração'}</button>
+   {linkDemo&&<label>Link de demonstração · válido por 3 dias<input value={linkDemo} readOnly onFocus={e=>e.currentTarget.select()}/></label>}
+  </div>
   <label className="adm-busca"><Search size={18}/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar por nome, número ou telefone" aria-label="Buscar pedidos"/></label>
   {erro&&<p className="adm-erro" role="alert">{erro}</p>}
   {filtrar.length?<div className="adm-lista-pedidos">{filtrar.map(p=><article className="adm-pedido" key={p.id}>
    <div className="adm-pedido__cabecalho"><div><span className="adm-kicker">{p.codigo}</span><h3>{p.cliente_nome}</h3><p>{dataHora(p.criado_em)} · {p.modalidade==='entrega'?'Delivery':p.modalidade==='local'?'No local':'Retirada'} {p.telefone?'· '+p.telefone:''}</p></div>
-    <b>{reais(p.total_centavos/100)}</b></div>
+    <b>{reais(p.total_centavos/100)}{p.demonstracao&&<small className="adm-chip">Demonstração</small>}</b></div>
    <p className="adm-pedido__nota">Origem: {p.origem==='site'?'Site':p.origem==='whatsapp'?'WhatsApp':'Registro manual'} · Pagamento: {p.forma_pagamento||'A confirmar'} · {p.pagamento_status==='pago'?'Marcado como recebido':p.pagamento_status==='estornado'?'Estornado':'Pendente'}</p>
    {p.itens?.length>0&&<ul className="adm-pedido__itens">{p.itens.map((i,index)=><li key={index}>{typeof i==='object'&&i!==null?
      `${Number((i as {quantidade?:number}).quantidade||0)}x ${String((i as {nome?:string}).nome||'Prato')}`:String(i)}</li>)}</ul>}
@@ -75,11 +92,11 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
     <label>Atualizar status<select aria-label={`Status do pedido ${p.codigo}`} value={p.status} onChange={e=>void status(p,e.target.value as PedidoStatus)}>
      {Object.entries(labels).map(([key,label])=><option key={key} value={key}>{label}</option>)}
     </select></label>
-    <label>Pagamento<select aria-label={`Recebimento do pedido ${p.codigo}`} value={p.pagamento_status||'pendente'} onChange={async e=>{
+    {!p.demonstracao&&<label>Pagamento<select aria-label={`Recebimento do pedido ${p.codigo}`} value={p.pagamento_status||'pendente'} onChange={async e=>{
      const novo=e.target.value;if(novo==='pago'&&!window.confirm('Você conferiu o recebimento deste pagamento fora do site?'))return;
      const {error}=await supabase!.from('sc_pedidos').update({pagamento_status:novo,atualizado_em:new Date().toISOString()}).eq('id',p.id);
      if(error)setErro(erroLegivel(error));else await atualizar();
-    }}><option value="pendente">Pendente</option><option value="pago">Recebido (conferido)</option><option value="estornado">Estornado</option></select></label></div>
+    }}><option value="pendente">Pendente</option><option value="pago">Recebido (conferido)</option><option value="estornado">Estornado</option></select></label>}</div>
    </article>)}</div>:<div className="adm-vazio"><ClipboardList size={38}/><h3>Nenhum pedido registrado</h3><p>Os pedidos aparecerão aqui quando forem cadastrados pela equipe ou por uma futura integração segura.</p></div>}
   {aberto&&<div className="adm-sobreposicao" onClick={e=>{if(e.target===e.currentTarget)setAberto(false);}}>
    <div className="adm-modal" role="dialog" aria-modal="true" aria-labelledby="novo-pedido-titulo">
@@ -181,10 +198,13 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
    .subscribe();
   return()=>{void supabase!.removeChannel(channel);};
  },[atualizar]);
- const andamento=pedidos.filter(p=>!['entregue','cancelado'].includes(p.status));
+ const pedidosReais=pedidos.filter(p=>!p.demonstracao);
+ const pedidosDemo=pedidos.filter(p=>p.demonstracao&&p.status!=='cancelado');
+ const totalDemo=pedidosDemo.reduce((s,p)=>s+p.total_centavos,0)/100;
+ const andamento=pedidosReais.filter(p=>!['entregue','cancelado'].includes(p.status));
  const pedidoAguardando=pedidos.some(p=>p.status==='aguardando_confirmacao');
- const concluidos=pedidos.filter(p=>p.status==='entregue');
- const recebido=pedidos.filter(p=>p.pagamento_status==='pago').reduce((s,p)=>s+p.total_centavos,0)/100;
+ const concluidos=pedidosReais.filter(p=>p.status==='entregue');
+ const recebido=pedidosReais.filter(p=>p.pagamento_status==='pago').reduce((s,p)=>s+p.total_centavos,0)/100;
  const abasAnteriores=useRef<Aba[]>([]);
  function abrirAba(id:Aba){
   setAba(id);setMenuAberto(false);window.scrollTo({top:0,behavior:'instant'});
@@ -225,7 +245,8 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
       <div className="adm-secao-topo"><div><span className="adm-kicker">PAINEL DE CONTROLE</span><h1>Visão geral</h1><p>Bem-vindo à administração da Casa do Norte Santa Cruz.</p></div>
        <span className="adm-hoje"><Clock3 size={17}/>{new Date().toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'long',year:'numeric'})}</span></div>
       <div className="adm-metricas">
-       <article><span><ClipboardList size={22}/></span><p>Pedidos registrados</p><strong>{pedidos.length}</strong><small>Somente registros do banco</small></article>
+       <article><span><ClipboardList size={22}/></span><p>Pedidos registrados</p><strong>{pedidosReais.length}</strong><small>Somente registros do banco</small></article>
+       {pedidosDemo.length>0&&<article><span><ClipboardList size={22}/></span><p>Total da demonstração</p><strong>{reais(totalDemo)}</strong><small>{pedidosDemo.length} pedidos de teste</small></article>}
        <article><span><Bell size={22}/></span><p>Em andamento</p><strong>{andamento.length}</strong><small>Aguardando conclusão</small></article>
        <article><span><Check size={22}/></span><p>Pedidos entregues</p><strong>{concluidos.length}</strong><small>Marcados pela equipe</small></article>
        <article><span><ShoppingBag size={22}/></span><p>Pagamentos conferidos</p><strong className="adm-metricas__dinheiro">{reais(recebido)}</strong><small>Equipe marcou como recebido · últimos 250</small></article>
@@ -245,13 +266,13 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
       </div>
       <div className="adm-aviso"><ShieldCheck size={19}/> Este painel usa dados do Supabase. Pedidos de site só chegam automaticamente após ativar a função segura de checkout e o catálogo real; conversas avulsas no WhatsApp ainda exigem registro manual.</div>
      </section>}
-     {aba==='pedidos'&&<Pedidos pedidos={pedidos} atualizar={atualizar}/>}
+     {aba==='pedidos'&&<Pedidos pedidos={pedidos} totalDemo={totalDemo} atualizar={atualizar}/>}
      {aba==='suporte'&&config&&<CaixaSuporte ativo={config.chat_suporte_ativo} aoAlterar={atualizar}/>}
      {(aba==='cardapio'||aba==='destaques')&&<GestorCardapio key={aba} destaques={aba==='destaques'} categorias={categorias} produtos={produtos} catalogoPublicado={!!config?.catalogo_publicado} atualizar={atualizar}/>}
      {aba==='categorias'&&<GestorCategorias categorias={categorias} produtos={produtos} atualizar={atualizar}/>}
      {aba==='vitrine'&&config&&<EditorVitrine config={config} atualizar={atualizar}/>}
      {aba==='seguranca'&&<SegurancaConta/>}
-     {aba==='financeiro'&&<Financeiro pedidos={pedidos} movimentos={movimentos} atualizar={atualizar}/>}
+     {aba==='financeiro'&&<Financeiro pedidos={pedidosReais} movimentos={movimentos} atualizar={atualizar}/>}
      {aba==='configuracoes'&&config&&<Configuracoes config={config} produtos={produtos} categorias={categorias} atualizar={atualizar}/>}
     </>}
    </main>

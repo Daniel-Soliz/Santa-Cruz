@@ -4,7 +4,7 @@ import type { LinhaCarrinho, Produto } from '../types';
 import { precoLinha, reais, totalCarrinho } from '../pedido';
 import { FotoPrato } from './ProdutoCard';
 
-export function Carrinho({linhas,produtos,sugestoes,adicionarSugestao,fechar,atualizar,remover,limpar,editar,finalizar}:{linhas:LinhaCarrinho[];produtos:Produto[];sugestoes:Produto[];adicionarSugestao:(produto:Produto)=>void;fechar:()=>void;atualizar:(chave:string,delta:number)=>void;remover:(chave:string)=>void;limpar:()=>void;editar:(linha:LinhaCarrinho)=>void;finalizar:()=>void}){
+export function Carrinho({linhas,produtos,sugestoes,adicionarSugestao,fechar,atualizar,remover,limpar,editar,finalizar,demo,enviando,erro}:{linhas:LinhaCarrinho[];produtos:Produto[];sugestoes:Produto[];adicionarSugestao:(produto:Produto)=>void;fechar:()=>void;atualizar:(chave:string,delta:number)=>void;remover:(chave:string)=>void;limpar:()=>void;editar:(linha:LinhaCarrinho)=>void;finalizar:()=>void;demo?:boolean;enviando?:boolean;erro?:string}){
  const focus=useRef<HTMLButtonElement>(null);
  useEffect(()=>{const before=document.body.style.overflow;document.body.style.overflow='hidden';focus.current?.focus();const handle=(e:KeyboardEvent)=>{if(e.key==='Escape')fechar();};window.addEventListener('keydown',handle);return()=>{document.body.style.overflow=before;window.removeEventListener('keydown',handle);};},[fechar]);
  const itens=linhas.map(l=>({linha:l,produto:produtos.find(p=>p.id===l.produtoId)})).filter(x=>!!x.produto);
@@ -41,9 +41,10 @@ export function Carrinho({linhas,produtos,sugestoes,adicionarSugestao,fechar,atu
     </section>}
    </div>
    <footer className="carrinho-rodape">
-    <p><span>Subtotal</span><strong>{reais(totalCarrinho(linhas,produtos))}</strong></p>
-    <small>A taxa de entrega, quando disponível, aparece no checkout. {linhas.some(l=>produtos.find(p=>p.id===l.produtoId)?.exemplo)&&'Os valores demonstrativos são ilustrativos.'}</small>
-    <button disabled={!itens.length} className="botao botao--rosa botao--full" type="button" onClick={finalizar}>Finalizar pedido <ArrowRight size={20}/></button>
+    <p><span>{demo?'Total demonstrativo':'Subtotal'}</span><strong>{reais(totalCarrinho(linhas,produtos))}</strong></p>
+    <small>{demo?'Retirada simulada. Sem cobrança.':'A taxa de entrega, quando disponível, aparece no checkout.'} {!demo&&linhas.some(l=>produtos.find(p=>p.id===l.produtoId)?.exemplo)&&'Os valores demonstrativos são ilustrativos.'}</small>
+    {erro&&<small role="alert">{erro}</small>}
+    <button disabled={!itens.length||enviando} className="botao botao--rosa botao--full" type="button" onClick={finalizar}>{enviando?'Registrando pedido…':demo?'Solicitar pedido de demonstração':'Finalizar pedido'} <ArrowRight size={20}/></button>
    </footer>
   </aside>
  </div>;
