@@ -113,22 +113,31 @@ function Localizacao({chatAtivo}:{chatAtivo:boolean}){
   </div>
  </section>;
 }
-function Confirmacao({preparado,novo}:{preparado:Preparado;novo:()=>void}){
+function Confirmacao({preparado,novo,chatAtivo}:{preparado:Preparado;novo:()=>void;chatAtivo:boolean}){
  const [copiou,setCopiou]=useState(false);
+ const [mostrarSuporte,setMostrarSuporte]=useState(false);
  async function copiar(){try{await navigator.clipboard.writeText(preparado.mensagem);setCopiou(true);}catch{setCopiou(false);}}
  return <div className="pagina-confirmacao"><div className="container-padrao confirmacao__caixa">
   <div className="confirmacao__icone"><CheckCircle2 size={51}/></div>
-  <span className="micro-label">{preparado.registradoNoPainel?'Pedido registrado para conferência':'Pedido pronto para enviar'}</span>
-  <h1>{preparado.registradoNoPainel?'Pedido registrado. Falta confirmar no WhatsApp.':'Quase lá! Falta enviar no WhatsApp.'}</h1>
-  <p>Montamos o pedido <strong>#{preparado.pedido.numero}</strong>. Abra a conversa, toque em <strong>Enviar</strong> e aguarde a confirmação do restaurante.</p>
+  <h1>Seu pedido está pronto para enviar</h1>
+  <p>{chatAtivo?'Escolha WhatsApp ou Suporte do site, toque em Enviar na conversa e aguarde a confirmação da equipe.':'Abra o WhatsApp, toque em Enviar na conversa e aguarde a confirmação da equipe.'}</p>
   <div className="confirmacao__numero">Número do pedido <b>{preparado.pedido.numero}</b></div>
   <p className="confirmacao__integracao" role="status">{preparado.registradoNoPainel?
-   'Pedido salvo no painel como aguardando confirmação. A equipe ainda precisa aceitar; não é recibo de pagamento.':
-   'Pedido não registrado automaticamente no painel. O atendimento depende do envio da mensagem no WhatsApp.'}</p>
-  <div className="confirmacao__aviso"><ShieldCheck size={20}/><span>O site não confirma recebimento no WhatsApp nem pagamento. A equipe confirmará disponibilidade, preços e prazo. {preparado.pedido.foraHorario?'O restaurante está fechado; a confirmação ocorrerá na próxima abertura.':''}</span></div>
-  <div className="confirmacao__acoes"><a href={preparado.url} target="_blank" rel="noopener noreferrer" className="botao botao--rosa"><MessageCircle size={21}/> Abrir WhatsApp e enviar</a><button type="button" className="botao botao--claro" onClick={()=>void copiar()}><Copy size={18}/>{copiou?'Mensagem copiada':'Copiar pedido'}</button></div>
+   'Pedido salvo na lista de pedidos como aguardando confirmação.':
+   'A equipe receberá os dados pelo canal que você escolher.'}</p>
+  <div className="confirmacao__aviso"><ShieldCheck size={20}/><span>A equipe vai confirmar disponibilidade, valores, prazo e pagamento. {preparado.pedido.foraHorario?'O restaurante está fechado. A equipe responde na próxima abertura.':''}</span></div>
+  <div className="confirmacao__acoes">
+   <a href={preparado.url} target="_blank" rel="noopener noreferrer" className="botao botao--rosa"><MessageCircle size={21}/> Abrir WhatsApp e enviar</a>
+   <button type="button" className="botao botao--claro" onClick={()=>void copiar()}><Copy size={18}/>{copiou?'Mensagem copiada':'Copiar pedido'}</button>
+   {chatAtivo&&<button type="button" className="botao botao--claro" aria-expanded={mostrarSuporte} onClick={()=>{
+    if(mostrarSuporte)document.getElementById('suporte-pedido-titulo')?.focus();
+    else setMostrarSuporte(true);
+   }}><MessageCircle size={18}/> Enviar pelo Suporte</button>}
+  </div>
   <button type="button" className="link-voltar" onClick={novo}>Voltar ao cardápio</button>
- </div></div>;
+ </div>
+  {chatAtivo&&mostrarSuporte&&<SuporteLoja pedido={{numero:preparado.pedido.numero,nome:preparado.pedido.cliente.nome,mensagem:preparado.mensagemSuporte}}/>}
+ </div>;
 }
 function Rodape({chatAtivo}:{chatAtivo:boolean}){
  const loja=useLoja();
@@ -223,7 +232,7 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
   const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':paginasLoja[pagina];
   document.title=`${titulo} | ${loja.nome}`;
   const description=document.querySelector('meta[name="description"]');
-  description?.setAttribute('content',checkout?'Finalize seu pedido de comida nordestina: retirada ou entrega, com envio ao WhatsApp.':'Delícia do Nordeste · Casa do Norte · Santa Cruz. Veja o cardápio nordestino, monte sua sacola e envie o pedido para confirmação.');
+  description?.setAttribute('content',checkout?'Revise seu pedido de comida nordestina para retirada ou entrega e escolha como enviar.':'Delícia do Nordeste · Casa do Norte · Santa Cruz. Veja o cardápio nordestino, monte sua sacola e envie o pedido para confirmação.');
  },[checkout,confirmacao,loja.nome,pagina]);
  const salvarItem=useCallback((item:LinhaCarrinho,antiga?:string)=>{
   setCarrinho(atual=>antiga?atual.map(l=>l.chave===antiga?item:l):[...atual,item]);
@@ -266,8 +275,8 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
    {!checkout&&(passos>0||pagina!=='inicio'||confirmacao)&&<div className="container-padrao navegacao-voltar">
     <button type="button" className="link-voltar" onClick={voltarAba}><ArrowLeft size={19} aria-hidden="true"/> Voltar</button>
    </div>}
-   {confirmacao?<Confirmacao preparado={confirmacao} novo={novaCompra}/>:
-   checkout?<Checkout modoBanco={modoBanco} linhas={carrinho} produtos={produtos} onVoltar={voltarAVitrine} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
+   {confirmacao?<Confirmacao key={confirmacao.pedido.numero} preparado={confirmacao} novo={novaCompra} chatAtivo={chatAtivo}/>:
+   checkout?<Checkout modoBanco={modoBanco} chatAtivo={chatAtivo} linhas={carrinho} produtos={produtos} onVoltar={voltarAVitrine} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
    <>
     {pagina==='inicio'&&<Hero status={horario}/>}
     {(pagina==='cardapio'||pagina==='destaques'||(pagina==='inicio'&&temDestaques))&&<>

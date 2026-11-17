@@ -35,7 +35,7 @@ test('Checkout vincula pedido real ao ADM sem fingir pagamento',()=>{
  const edge=ler('supabase/functions/criar-pedido/index.ts');
  assert.match(checkout,/functions\.invoke\('criar-pedido'/);
  assert.match(checkout,/total_cliente_centavos/);
- assert.match(checkout,/Continuar pelo WhatsApp sem registro no painel/);
+ assert.match(checkout,/onClick=\{\(\)=>void confirmar\(true\)\}/);
  assert.match(loja,/registradoNoPainel/);
  assert.match(edge,/turnstile\/v0\/siteverify/);
  assert.match(edge,/total_cliente_centavos!==total/);

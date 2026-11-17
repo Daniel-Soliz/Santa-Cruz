@@ -9,9 +9,9 @@ import {VerificacaoPedido,verificacaoConfigurada} from './VerificacaoPedido';
 
 type TipoOnline=Exclude<TipoPedido,'local'>;
 const clienteVazio:Cliente={nome:'',telefone:'',cep:'',rua:'',numero:'',complemento:'',bairro:'',cidade:'',uf:'',referencia:''};
-export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string; registradoNoPainel:boolean};
+export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string; mensagemSuporte:string; registradoNoPainel:boolean};
 
-export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void;modoBanco?:boolean}){
+export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false,chatAtivo=false}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void;modoBanco?:boolean;chatAtivo?:boolean}){
  const loja=useLoja();
  const [cliente,setCliente]=useState<Cliente>(clienteVazio);
  const [tipo,setTipo]=useState<TipoOnline>('retirada');
@@ -94,7 +94,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
    }catch(e){
     setCaptcha('');setRecriarCaptcha(x=>x+1);
     setFalhaRegistro(
-     'Este pedido não foi confirmado no painel. Verifique os dados ou use o envio por WhatsApp sem registro automático. '+
+     'Este pedido não foi confirmado no painel. Verifique os dados ou continue para escolher um canal de envio sem registro automático. '+
      (e instanceof Error?e.message:'Falha no serviço de pedidos.')
     );
     return;
@@ -104,7 +104,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
   const url=urlWhatsApp(mensagem,loja.whatsapp);
   // Abrir WhatsApp somente mediante clique explícito na tela seguinte:
   // evita bloqueio de popup após a chamada assíncrona.
-  onPreparar({pedido,url,mensagem,registradoNoPainel});
+  onPreparar({pedido,url,mensagem,mensagemSuporte:montarMensagem(pedido,produtos,loja,'suporte'),registradoNoPainel});
  }
  const escolhaTipo:[TipoOnline,string,typeof Truck,string][]=[
   ['entrega','Entrega',Truck,'Receber no endereço'],['retirada','Retirada',Store,'Buscar no balcão']
@@ -119,7 +119,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
      {!loja.pedidosOnlineAtivos&&<div className="aviso-atendimento aviso-atendimento--fechado"><Clock3 size={20}/> Os pedidos online estão pausados. O cardápio continua disponível para consulta.</div>}
      <section className="checkout-bloco" aria-labelledby="etapa-tipo"><div className="checkout-bloco__titulo"><span className="etapa-numero">01</span><div><h2 id="etapa-tipo">Como deseja receber?</h2><p>Selecione o tipo do pedido</p></div></div>
       <div className="tipo-grade">{escolhaTipo.map(([id,nome,Icon,descricao])=><button key={id} type="button" aria-pressed={tipo===id} disabled={!loja.pedidosOnlineAtivos} onClick={()=>{setTipo(id);setErros([]);setCamposInvalidos({});setFalhaRegistro('');}} className={`tipo-opcao ${tipo===id?'tipo-opcao--ativa':''}`}><Icon size={25}/><strong>{nome}</strong><small>{descricao}</small></button>)}</div>
-      {entregaSobConsulta&&<p className="aviso-entrega-checkout" role="note">Preencha seu endereço para solicitar entrega pelo WhatsApp. A taxa, o pedido mínimo e o atendimento ao endereço serão confirmados pelo restaurante.</p>}
+      {entregaSobConsulta&&<p className="aviso-entrega-checkout" role="note">Preencha seu endereço para solicitar entrega. A taxa, o pedido mínimo e o atendimento ao endereço serão confirmados pelo restaurante.</p>}
      </section>
      <section className="checkout-bloco" aria-labelledby="etapa-cliente"><div className="checkout-bloco__titulo"><span className="etapa-numero">02</span><div><h2 id="etapa-cliente">Seus dados</h2><p>Para identificarmos seu pedido</p></div></div>
       <div className="form-grade">
@@ -159,13 +159,13 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
       <strong>Recebimento na cozinha</strong>
       {sincronizar?<><p>O pedido será registrado no painel e ficará aguardando a confirmação da equipe. O pagamento continua a combinar com o restaurante.</p>
        <VerificacaoPedido key={recriarCaptcha} token={captcha} onToken={setCaptcha}/></>:
-       <p>{entregaSobConsulta?'Esta solicitação de entrega será enviada pelo WhatsApp para a equipe confirmar as condições. Ela não será registrada automaticamente no painel.':'O envio automático ao painel não está ativado. Você pode preparar a mensagem para confirmar pelo WhatsApp.'}</p>}
+       <p>A equipe vai conferir o pedido pelo canal de envio escolhido. O registro automático na lista de pedidos está indisponível.</p>}
      </div>}
      {falhaRegistro&&<div className="form-erros" role="alert">{falhaRegistro}</div>}
      {erros.length>0&&<div id="checkout-erros" className="form-erros" role="alert" tabIndex={-1}><strong>Confira antes de continuar:</strong><ul>{erros.map(e=><li key={e}>{e}</li>)}</ul></div>}
-     <button type="submit" className="botao botao--rosa botao--full botao-confirmar" disabled={!loja.pedidosOnlineAtivos||linhas.length===0||registrando}><CheckCircle2 size={21}/>{registrando?'Registrando pedido...':sincronizar?'Registrar pedido e preparar WhatsApp':entregaSobConsulta?'Solicitar entrega pelo WhatsApp':'Preparar pedido no WhatsApp'} <ArrowRight size={20}/></button>
-     {falhaRegistro&&<button type="button" className="botao botao--claro botao--full" onClick={()=>void confirmar(true)}>Continuar pelo WhatsApp sem registro no painel</button>}
-     <p className="checkout-legal">Você revisará o pedido antes de abrir o WhatsApp. <strong>É preciso tocar em Enviar no WhatsApp</strong> e aguardar a confirmação da equipe. Mesmo registrado no painel, isso não significa que foi aceito ou pago.</p>
+     <button type="submit" className="botao botao--rosa botao--full botao-confirmar" disabled={!loja.pedidosOnlineAtivos||linhas.length===0||registrando}><CheckCircle2 size={21}/>{registrando?'Registrando pedido...':sincronizar?'Registrar pedido e revisar':'Revisar pedido'} <ArrowRight size={20}/></button>
+     {falhaRegistro&&<button type="button" className="botao botao--claro botao--full" onClick={()=>void confirmar(true)}>Continuar sem registro na lista de pedidos</button>}
+     <p className="checkout-legal">Na próxima tela, envie o pedido {chatAtivo?'pelo WhatsApp ou pelo Suporte do site':'pelo WhatsApp'} e aguarde a confirmação da equipe. O pagamento será combinado com o restaurante.</p>
     </form>
     <aside className="checkout-resumo">
      <h2><ShoppingBag size={22}/> Resumo do pedido</h2>

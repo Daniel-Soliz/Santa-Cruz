@@ -58,6 +58,7 @@
 .adm-sidebar nav button:hover,.adm-sidebar__rodape button:hover,.adm-sidebar__rodape a:hover{background:#30252f;color:white}
 .adm-sidebar nav button.ativo{background:#3e2937;border-color:#704153;color:#fff}
 .adm-sidebar nav button.ativo svg{color:#f7be71}
+.adm-sidebar__pedido-pendente{width:7px;height:7px;flex:0 0 7px;margin-left:auto;border-radius:50%;background:#facc15}
 .adm-sidebar__rodape{margin-top:auto;padding-top:20px;border-top:1px solid #372c3a}
 .adm-sidebar__rodape button{cursor:pointer}
 .adm-principal{margin-left:252px;display:flex;flex-direction:column;min-width:0;min-height:100dvh;width:calc(100% - 252px)}

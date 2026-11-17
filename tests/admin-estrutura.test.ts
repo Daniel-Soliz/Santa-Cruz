@@ -29,8 +29,9 @@ test('SQL exige RLS, perfil de admin e protege dados de pedidos',()=>{
 });
 test('painel diferencia pedidos cadastrados manualmente dos pedidos por WhatsApp',()=>{
  const painel=read('src/admin/AdminDashboard.tsx');
- assert.match(painel,/Pedidos criados no site aparecem automaticamente/);
- assert.match(painel,/conversas avulsas no WhatsApp ainda exigem registro manual/);
+ assert.match(painel,/O checkout seguro registra pedidos nesta lista/);
+ assert.match(painel,/Solicitações enviadas pelo chat chegam na aba Suporte/);
+ assert.match(painel,/Pedidos combinados pelo chat ou pelo WhatsApp podem ser registrados aqui pela equipe/);
  assert.match(painel,/Somente registros do banco/);
  const editor=read('src/admin/GestorCardapio.tsx');
  assert.match(editor,/Produto demonstrativo/);

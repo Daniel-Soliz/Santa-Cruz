@@ -120,7 +120,8 @@ export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configu
 }
 const tipoLabel:Record<TipoPedido,string>={entrega:'🛵 Entrega (delivery)',retirada:'🏪 Retirada no balcão',local:'🍽️ Comer no local'};
 const pagamentoLabel:Record<Pagamento,string>={pix:'Pix (dados a confirmar no WhatsApp)',cartao:'Cartão na entrega / retirada / local',dinheiro:'Dinheiro'};
-export function montarMensagem(p:PedidoCheckout,produtos:Produto[],config:Configuracao){
+export function montarMensagem(p:PedidoCheckout,produtos:Produto[],config:Configuracao,canal:'whatsapp'|'suporte'='whatsapp'){
+ const destaque=(texto:string)=>canal==='whatsapp'?`*${texto}*`:texto;
  const mapa=new Map(produtos.map(produto=>[produto.id,produto]));
  const linhas=p.linhas.map(linha=>{
   const produto=mapa.get(linha.produtoId);
@@ -136,23 +137,23 @@ export function montarMensagem(p:PedidoCheckout,produtos:Produto[],config:Config
  const endereco=p.tipo==='entrega'?`📍 Endereço: ${p.cliente.rua}, ${p.cliente.numero}${p.cliente.complemento?', '+p.cliente.complemento:''} · ${p.cliente.bairro} · ${p.cliente.cidade}/${p.cliente.uf} · CEP ${somenteNumeros(p.cliente.cep)}${p.cliente.referencia?' · Ref.: '+p.cliente.referencia:''}`:null;
  const demo=p.linhas.some(l=>mapa.get(l.produtoId)?.exemplo);
  return [
- '🍽️ *Novo pedido – Delícia do Nordeste*',
- `🧾 *Número:* ${p.numero}`,
- `👤 *Nome:* ${p.cliente.nome.trim()}`,
- `📞 *Telefone:* ${p.cliente.telefone.trim()}`,
- `🛵 *Tipo:* ${tipoLabel[p.tipo]}`,endereco,'',
- entregaSobConsulta?'⚠️ *SOLICITAÇÃO DE ENTREGA: taxa, pedido mínimo e atendimento ao endereço sujeitos à confirmação do restaurante.*':null,
- '*ITENS:*',...linhas,'',
+ `🍽️ ${destaque('Novo pedido – Delícia do Nordeste')}`,
+ `🧾 ${destaque('Número:')} ${p.numero}`,
+ `👤 ${destaque('Nome:')} ${p.cliente.nome.trim()}`,
+ `📞 ${destaque('Telefone:')} ${p.cliente.telefone.trim()}`,
+ `🛵 ${destaque('Tipo:')} ${tipoLabel[p.tipo]}`,endereco,'',
+ entregaSobConsulta?`⚠️ ${destaque('SOLICITAÇÃO DE ENTREGA: taxa, pedido mínimo e atendimento ao endereço sujeitos à confirmação do restaurante.')}`:null,
+ destaque('ITENS:'),...linhas,'',
  `Subtotal: ${reais(subtotal)}`,
  `Taxa de entrega: ${p.tipo!=='entrega'?'Não se aplica':taxaPendente?'A confirmar pelo restaurante':reais(config.taxaEntregaFixa!)}`,
- taxaPendente?'*TOTAL COM ENTREGA: a confirmar após informar a taxa.*':`*TOTAL: ${reais(totalComEntrega(subtotal,p.tipo,config.taxaEntregaFixa))}*`,
- `💳 *Pagamento:* ${pagamentoLabel[p.pagamento]}`,
- p.pagamento==='dinheiro'?`💵 *Troco para:* ${p.trocoPara.trim()?reais(valorDigitado(p.trocoPara)??0):'Não precisa'}`:null,
- p.observacoesGerais?`📝 *Observações gerais:* ${p.observacoesGerais.trim()}`:null,
- p.foraHorario?'🕗 *Fora do horário:* confirmar o pedido na próxima abertura.':null,
- demo?'⚠️ *PEDIDO DEMONSTRATIVO — ITENS E VALORES FICTÍCIOS. Confirmar preços, disponibilidade e total com a equipe.*':null,
+ destaque(taxaPendente?'TOTAL COM ENTREGA: a confirmar após informar a taxa.':`TOTAL: ${reais(totalComEntrega(subtotal,p.tipo,config.taxaEntregaFixa))}`),
+ `💳 ${destaque('Pagamento:')} ${canal==='suporte'&&p.pagamento==='pix'?'Pix (dados a confirmar com a equipe)':pagamentoLabel[p.pagamento]}`,
+ p.pagamento==='dinheiro'?`💵 ${destaque('Troco para:')} ${p.trocoPara.trim()?reais(valorDigitado(p.trocoPara)??0):'Não precisa'}`:null,
+ p.observacoesGerais?`📝 ${destaque('Observações gerais:')} ${p.observacoesGerais.trim()}`:null,
+ p.foraHorario?`🕗 ${destaque('Fora do horário:')} confirmar o pedido na próxima abertura.`:null,
+ demo?`⚠️ ${destaque('PEDIDO DEMONSTRATIVO — ITENS E VALORES FICTÍCIOS. Confirmar preços, disponibilidade e total com a equipe.')}`:null,
  '',
- '⚠️ *Pedido sujeito à confirmação do restaurante pelo WhatsApp. Não é pagamento confirmado.*'
+ `⚠️ ${destaque(canal==='whatsapp'?'Pedido sujeito à confirmação do restaurante pelo WhatsApp. Não é pagamento confirmado.':'Pedido sujeito à confirmação do restaurante. Pagamento a confirmar.')}`
  ].filter((linha):linha is string=>linha!==null).join('\n');
 }
 export function urlWhatsApp(mensagem:string,telefone='5511960149521'){

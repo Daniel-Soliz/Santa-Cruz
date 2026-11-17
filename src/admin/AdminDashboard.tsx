@@ -56,7 +56,7 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
  return <section className="adm-conteudo" aria-labelledby="adm-pedidos-titulo">
   <div className="adm-secao-topo"><div><span className="adm-kicker">CENTRAL OPERACIONAL</span><h2 id="adm-pedidos-titulo">Gestão de pedidos</h2><p>Pedidos cadastrados no banco do restaurante, sem valores demonstrativos.</p></div>
    <button className="adm-btn" onClick={()=>setAberto(true)}><Plus size={18}/> Registrar pedido</button></div>
-  <div className="adm-aviso"><AlertTriangle size={19}/><span>Pedidos criados no site aparecem automaticamente <strong>apenas quando o checkout seguro do Supabase estiver ativado</strong>. Pedidos enviados fora do site pelo WhatsApp devem ser registrados manualmente.</span></div>
+  <div className="adm-aviso"><AlertTriangle size={19}/><span>O checkout seguro registra pedidos nesta lista. Solicitações enviadas pelo chat chegam na aba Suporte. Pedidos combinados pelo chat ou pelo WhatsApp podem ser registrados aqui pela equipe.</span></div>
   <label className="adm-busca"><Search size={18}/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar por nome, número ou telefone" aria-label="Buscar pedidos"/></label>
   {erro&&<p className="adm-erro" role="alert">{erro}</p>}
   {filtrar.length?<div className="adm-lista-pedidos">{filtrar.map(p=><article className="adm-pedido" key={p.id}>
@@ -176,6 +176,7 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
   return()=>{void supabase!.removeChannel(channel);};
  },[atualizar]);
  const andamento=pedidos.filter(p=>!['entregue','cancelado'].includes(p.status));
+ const pedidoAguardando=pedidos.some(p=>p.status==='aguardando_confirmacao');
  const concluidos=pedidos.filter(p=>p.status==='entregue');
  const recebido=pedidos.filter(p=>p.pagamento_status==='pago').reduce((s,p)=>s+p.total_centavos,0)/100;
  const abasAnteriores=useRef<Aba[]>([]);
@@ -195,7 +196,10 @@ export function AdminDashboard({usuario,sair}:{usuario:string;sair:()=>Promise<v
   <aside className={`adm-sidebar ${menuAberto?'adm-sidebar--aberta':''}`}>
    <div className="adm-sidebar__marca"><img src={logoUrl} alt="Logo Delícia do Nordeste" width={54} height={54}/><div><b>Delícia do Nordeste</b><small>Central de Gestão · Santa Cruz</small></div></div>
    <p className="adm-sidebar__legenda">PAINEL ADMINISTRATIVO</p>
-   <nav aria-label="Menu administrativo">{abas.map(item=><button type="button" key={item.id} onClick={()=>navegar(item.id)} className={aba===item.id?'ativo':''}><item.Icon size={19}/>{item.nome}</button>)}</nav>
+   <nav aria-label="Menu administrativo">{abas.map(item=><button type="button" key={item.id} onClick={()=>navegar(item.id)} className={aba===item.id?'ativo':''}>
+    <item.Icon size={19}/>{item.nome}
+    {item.id==='pedidos'&&pedidoAguardando&&<><span className="adm-sidebar__pedido-pendente" aria-hidden="true"/><span className="sr-only">com pedido aguardando confirmação</span></>}
+   </button>)}</nav>
    <div className="adm-sidebar__rodape"><a href="#inicio"><ArrowUpRight size={18}/> Ver loja pública</a><button type="button" onClick={()=>void sair()}><LogOut size={18}/> Sair da administração</button></div>
   </aside>
   <div className="adm-principal">
