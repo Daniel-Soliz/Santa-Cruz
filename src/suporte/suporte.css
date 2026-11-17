@@ -27,7 +27,16 @@
   max-width: 44rem;
 }
 
+.suporte-chat__topo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: .6rem 1rem;
+}
+
 .suporte-chat h3 {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
