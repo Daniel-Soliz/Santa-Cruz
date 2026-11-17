@@ -68,9 +68,9 @@ function Passos(){
  return <section id="como-funciona" className="passos container-padrao">
   <div className="cabecalho-secao"><span className="micro-label">Simples assim</span><h2>{conteudo.tituloComoPedir}</h2>{conteudo.textoComoPedir&&<p>{conteudo.textoComoPedir}</p>}</div>
   <div className="passos__grade">
-   <article><div className="passo-icone"><UtensilsCrossed size={28}/></div><span className="passo-numero">01</span><h3>Escolha seus pratos</h3><p>Explore o cardápio, escolha o tamanho e adicione observações.</p></article>
-   <article><div className="passo-icone"><ShoppingBag size={28}/></div><span className="passo-numero">02</span><h3>Confira a sacola</h3><p>Defina retirada, entrega ou consumo no local e o pagamento.</p></article>
-   <article><div className="passo-icone"><MessageCircle size={28}/></div><span className="passo-numero">03</span><h3>Envie para confirmar</h3><p>O site prepara sua mensagem. Envie no WhatsApp e aguarde a equipe.</p></article>
+   <article><div className="passo-icone"><UtensilsCrossed size={28}/></div><span className="passo-numero">01</span><h3>{conteudo.passoCardapioTitulo}</h3><p>{conteudo.passoCardapioTexto}</p></article>
+   <article><div className="passo-icone"><ShoppingBag size={28}/></div><span className="passo-numero">02</span><h3>{conteudo.passoSacolaTitulo}</h3><p>{conteudo.passoSacolaTexto}</p></article>
+   <article><div className="passo-icone"><MessageCircle size={28}/></div><span className="passo-numero">03</span><h3>{conteudo.passoConfirmacaoTitulo}</h3><p>{conteudo.passoConfirmacaoTexto}</p></article>
   </div>
  </section>;
 }
@@ -126,7 +126,7 @@ function Rodape(){
   <div className="container-padrao rodape__grade">
    <div className="rodape__marca">{loja.logo&&<img src={loja.logo} alt={`Logo de ${loja.nomeCurto}`} width="62" height="62"/>}<div><strong>{loja.nomeCurto}</strong><span>{loja.unidade}</span></div>{loja.conteudo.textoRodape&&<p>{loja.conteudo.textoRodape}</p>}</div>
    <div><h3>Encontre a gente</h3><p>{loja.endereco}<br/>CEP {loja.cep}</p><div className="rodape__horarios"><Horarios/></div></div>
-   <div><h3>Atendimento</h3><a href={loja.telefoneLink}>{loja.telefone}</a><a href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer">WhatsApp para dúvidas</a><a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
+   <div>{loja.conteudo.tituloAtendimento&&<h3>{loja.conteudo.tituloAtendimento}</h3>}<a href={loja.telefoneLink}>{loja.telefone}</a>{loja.conteudo.textoSuporte&&<a href={ajudaUrl(loja)} target="_blank" rel="noopener noreferrer">{loja.conteudo.textoSuporte}</a>}<a href={loja.mapsUrl} target="_blank" rel="noopener noreferrer">Ver localização</a>{loja.instagram&&<a href={loja.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</div>
   </div>
   <div className="container-padrao rodape__base"><span>© {new Date().getFullYear()} {loja.nome}.</span><span>Pedidos sujeitos à confirmação da equipe.</span><a className="rodape__admin-link" href="#/admin" title="Acesso reservado à equipe"><LockKeyhole size={12}/> Área da equipe</a></div>
  </footer>;
@@ -197,7 +197,7 @@ function LojaConteudo({produtos,categorias,modoBanco}:{produtos:Produto[];catego
     {!loja.pedidosOnlineAtivos&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao">Pedidos online temporariamente desligados. Você ainda pode consultar o cardápio.</div>}
     {!horario.aberto&&<div role="status" className="aviso-atendimento aviso-atendimento--fechado container-padrao"><Clock3 size={20}/>{horario.mensagem}. Você pode montar a sacola para enviar quando desejar.</div>}
     {loja.conteudo.mostrarDestaques&&destaque.length>0&&<section className="destaques container-padrao" aria-labelledby="destaques-titulo">
-     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">{loja.conteudo.tituloDestaques} <span className="cor-rosa">♥</span></h2><p>{produtos.some(p=>p.exemplo)?'Pratos ilustrativos para conhecer o formato do cardápio.':'Pratos escolhidos para destacar no cardápio.'}</p></div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
+     <div className="cabecalho-secao cabecalho-secao--linha"><div><span className="micro-label">Sugestões em destaque</span><h2 id="destaques-titulo">{loja.conteudo.tituloDestaques} <span className="cor-rosa">♥</span></h2>{loja.conteudo.textoDestaques&&<p>{loja.conteudo.textoDestaques}</p>}</div><button type="button" className="link-categorias" onClick={()=>irPara('cardapio')}>Ver cardápio completo <ArrowRight size={18}/></button></div>
      <div className="grade-produtos">{destaque.map(p=><ProdutoCard key={p.id} produto={p} abrir={abrirModal}/>)}</div>
     </section>}
     <section className="catalogo" id="cardapio" aria-labelledby="cardapio-titulo">

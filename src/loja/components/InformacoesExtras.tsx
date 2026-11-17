@@ -6,13 +6,14 @@ import { entregaConfigurada } from '../entrega';
 /** Bloco de informações: só aparecem os dados efetivamente configurados. */
 export function InformacoesPedido(){
  const loja=useLoja();
+ if(!loja.conteudo.mostrarInformacoes)return null;
  const formas=[
   loja.formasPagamento.pix?'Pix':null,
   loja.formasPagamento.cartao?'Cartão na entrega':null,
   loja.formasPagamento.dinheiro?'Dinheiro':null
  ].filter(Boolean).join(' · ');
  return <section className="informacoes-pedido container-padrao" aria-labelledby="informacoes-titulo">
-  <div className="informacoes-pedido__titulo"><span className="micro-label">Antes de pedir</span><h2 id="informacoes-titulo">Tudo claro, do início ao fim</h2></div>
+  <div className="informacoes-pedido__titulo"><span className="micro-label">Antes de pedir</span><h2 id="informacoes-titulo">{loja.conteudo.tituloInformacoes}</h2></div>
   <div className="informacoes-pedido__grade">
    {entregaConfigurada(loja)&&<article><Truck size={23}/><div><strong>Delivery</strong><span>Peça em poucos toques</span></div></article>}
    <article><ShoppingBag size={23}/><div><strong>Retirada</strong><span>{loja.unidade}</span></div></article>
@@ -27,7 +28,7 @@ export function InformacoesPedido(){
 export function SobreCasa(){
  const loja=useLoja();
  if(!loja.sobre)return null;
- return <section className="sobre-casa container-padrao" id="sobre"><div className="sobre-casa__arte"><span>✹</span><b>Sabor que aproxima.</b><small>{loja.unidade}</small></div><div className="sobre-casa__texto">
+ return <section className="sobre-casa container-padrao" id="sobre"><div className="sobre-casa__arte"><span>✹</span>{loja.conteudo.fraseSobre&&<b>{loja.conteudo.fraseSobre}</b>}<small>{loja.unidade}</small></div><div className="sobre-casa__texto">
   <span className="micro-label">Conheça nossa história</span><h2>{loja.conteudo.tituloSobre}</h2><p>{loja.sobre}</p>
   <div className="sobre-casa__pontos"><span><UtensilsCrossed size={17}/> Culinária nordestina</span><span><Heart size={17}/> Sabores da nossa terra</span></div>
  </div></section>;

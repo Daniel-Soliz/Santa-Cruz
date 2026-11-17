@@ -59,6 +59,7 @@ export function EditorVitrine({config,atualizar}:{config:ConfiguracaoAdmin;atual
     {texto('endereco','Endereço completo para exibição e mapa')}
     <div className="adm-duas-colunas">{texto('cep','CEP')}{texto('telefone','Telefone exibido')}</div>
     {texto('whatsapp','WhatsApp com 55 e DDD')}{texto('instagram','Link do Instagram')}
+    <div className="adm-duas-colunas">{texto('tituloAtendimento','Título de atendimento no rodapé')}{texto('textoSuporte','Texto do link de suporte')}</div>
     {texto('textoRodape','Texto do rodapé',2)}
     <fieldset className="adm-vitrine-horarios"><legend>Horários de atendimento</legend>
      {dados.horarios.map((hora,i)=>{
@@ -75,10 +76,17 @@ export function EditorVitrine({config,atualizar}:{config:ConfiguracaoAdmin;atual
    </div></details>
    <details className="adm-card adm-vitrine"><summary>Cardápio, história e outras seções</summary><div className="adm-form">
     {texto('tituloCardapio','Título do cardápio')}{texto('tituloDestaques','Título dos destaques')}
+    {texto('textoDestaques','Descrição dos destaques',2)}
     <label className="adm-toggle"><input type="checkbox" checked={dados.mostrarDestaques} onChange={e=>alterar('mostrarDestaques',e.target.checked)}/> Mostrar destaques</label>
+    {texto('tituloInformacoes','Título das informações do pedido')}
+    <label className="adm-toggle"><input type="checkbox" checked={dados.mostrarInformacoes} onChange={e=>alterar('mostrarInformacoes',e.target.checked)}/> Mostrar informações do pedido</label>
     {texto('tituloSobre','Título da história')}{texto('sobre','História da loja (vazio oculta a seção)',4)}
+    {texto('fraseSobre','Frase do cartão da história')}
     {texto('tituloGaleria','Título da galeria')}{foto('fachada','Foto da fachada')}{foto('salao','Foto do salão')}
     {texto('tituloComoPedir','Título de como pedir')}{texto('textoComoPedir','Descrição de como pedir',2)}
+    {texto('passoCardapioTitulo','Passo 1 · título')}{texto('passoCardapioTexto','Passo 1 · descrição',2)}
+    {texto('passoSacolaTitulo','Passo 2 · título')}{texto('passoSacolaTexto','Passo 2 · descrição',2)}
+    {texto('passoConfirmacaoTitulo','Passo 3 · título')}{texto('passoConfirmacaoTexto','Passo 3 · descrição',2)}
     <label className="adm-toggle"><input type="checkbox" checked={dados.mostrarComoPedir} onChange={e=>alterar('mostrarComoPedir',e.target.checked)}/> Mostrar como pedir</label>
     {texto('tituloAvaliacoes','Título das avaliações')}{texto('avaliacoesGoogleUrl','Link de avaliações no Google')}
     <label className="adm-toggle"><input type="checkbox" checked={dados.mostrarAvaliacoes} onChange={e=>alterar('mostrarAvaliacoes',e.target.checked)}/> Mostrar avaliações</label>
