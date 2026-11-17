@@ -292,6 +292,22 @@ h1,h2,h3{font-family:"Baloo 2","Poppins",sans-serif}
 .confirmacao__aviso{display:flex;gap:10px;align-items:flex-start;padding:14px;border-radius:13px;background:#fff0dc;color:#754122;font-size:.75rem;text-align:left;line-height:1.55;max-width:545px;margin:0 auto}
 .confirmacao__aviso svg{flex:0 0 20px}
 .confirmacao__acoes{display:flex;flex-wrap:wrap;gap:11px;justify-content:center;margin:26px 0 16px}
+.confirmacao__links{display:flex;justify-content:center;flex-wrap:wrap;gap:12px 20px}
+.pedido-andamento{max-width:730px;margin:24px auto;border:1px solid var(--borda);border-radius:20px;padding:22px;background:white}
+.pedido-andamento__resumo{display:flex;align-items:flex-start;gap:13px;color:var(--vinho)}
+.pedido-andamento__resumo svg{flex:none;margin-top:4px}
+.pedido-andamento__resumo span{font-size:.76rem;font-weight:700;color:var(--suave)}
+.pedido-andamento__resumo h2{font-size:clamp(1.35rem,4vw,1.8rem);margin:1px 0}
+.pedido-andamento__resumo p,.pedido-andamento__aviso{font-size:.84rem;color:var(--suave);margin-top:6px}
+.pedido-andamento__etapas{display:flex;flex-wrap:wrap;gap:10px;list-style:none;padding:0;margin:18px 0 0}
+.pedido-andamento__etapas li{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:9px;background:#f9f2ed;color:var(--suave);font-size:.78rem}
+.pedido-andamento__etapas li span{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:white;font-weight:700}
+.pedido-andamento__etapas li.atual{background:#fce8ee;color:var(--vinho);font-weight:800}
+.pedido-andamento__etapas li.concluida{background:#e7f7e8;color:#27603b}
+.pedido-andamento__animacao{height:6px;margin-top:15px;border-radius:6px;background:#fce8ee;overflow:hidden}
+.pedido-andamento__animacao::after{content:"";display:block;width:32%;height:100%;border-radius:inherit;background:var(--vinho);animation:pedido-em-preparo 1.65s ease-in-out infinite alternate}
+@keyframes pedido-em-preparo{from{transform:translateX(0)}to{transform:translateX(212%)}}
+@media(prefers-reduced-motion:reduce){.pedido-andamento__animacao::after{animation:none}}
 @media(min-width:400px){
  .status-loja{display:inline-flex}
  .cabecalho__sacola span{display:inline}

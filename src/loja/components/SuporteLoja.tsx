@@ -71,7 +71,7 @@ export function SuporteLoja({pedido}:{pedido?:PedidoSuporte}){
    setFalhaAtualizacao(false);
    setCarregando(false);
   }catch{
-   if(tentativa===leitura.current)setFalhaAtualizacao(true);
+   if(tentativa===leitura.current){setFalhaAtualizacao(true);setCarregando(false);}
   }
  },[chave]);
  useEffect(()=>()=>{leitura.current++;},[]);
@@ -93,7 +93,11 @@ export function SuporteLoja({pedido}:{pedido?:PedidoSuporte}){
     p_chave:acesso,p_id:tentativa.id,p_texto:tentativa.texto,p_nome:nome.trim()||null
    });
    if(error){setErro(error.code==='P0001'?error.message:erroEnvio);return;}
-   setConversa(data as Conversa);
+   const confirmada=data as Conversa|null;
+   if(!confirmada?.existe||!confirmada.mensagens.some(mensagem=>mensagem.id===tentativa.id)){
+    setErro(erroEnvio);return;
+   }
+   setConversa(confirmada);
    setCarregando(false);
    setFalhaAtualizacao(false);
    if(pedidoPendente){

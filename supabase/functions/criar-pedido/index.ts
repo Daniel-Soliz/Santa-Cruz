@@ -9,7 +9,7 @@ type Pedido={
  bairro?:string;cidade?:string;uf?:string;referencia?:string};
  tipo:'entrega'|'retirada'|'local';
  pagamento:'pix'|'cartao'|'dinheiro';trocoPara?:string;observacoesGerais?:string;
- linhas:Linha[];captcha:string;total_cliente_centavos:number;
+ linhas:Linha[];captcha:string;total_cliente_centavos:number;chave_rastreio?:string;
 };
 const url=Deno.env.get('SUPABASE_URL')||'';
 const segredo=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
@@ -46,6 +46,9 @@ Deno.serve(async request=>{
   const raw=await request.text();
   if(raw.length>14000)return recusado('Pedido excedeu o tamanho permitido.',413,origin);
   const pedido=JSON.parse(raw) as Pedido;
+  const chaveRastreio=pedido?.chave_rastreio;
+  if(chaveRastreio!==undefined&&(typeof chaveRastreio!=='string'||!/^[0-9a-f]{32}$/.test(chaveRastreio)))
+   return recusado('Referência de acompanhamento inválida.',400,origin);
   const nome=texto(pedido?.cliente?.nome,120),telefone=texto(pedido?.cliente?.telefone,22).replace(/\D/g,'');
   const modalidade=pedido?.tipo,pagamento=pedido?.pagamento;
   if(nome.length<2||!/^\d{10,11}$/.test(telefone))return recusado('Informe nome e telefone válidos.',400,origin);
@@ -157,7 +160,8 @@ Deno.serve(async request=>{
    total_centavos:total,subtotal_centavos:subtotal,taxa_entrega_centavos:taxa,
    forma_pagamento:pagamento,pagamento_status:'pendente',
    origem:'site',status:'aguardando_confirmacao',itens:linhasLimpa,
-   endereco,observacoes:texto(pedido.observacoesGerais,500),ip_hash:ipHash
+   endereco,observacoes:texto(pedido.observacoesGerais,500),ip_hash:ipHash,
+   ...(chaveRastreio?{chave_rastreio_hash:await sha(chaveRastreio)}:{})
   });
   if(insertError)return recusado('Não foi possível registrar o pedido. Tente novamente.',503,origin);
   return json({codigo,total_centavos:total,estado:'aguardando_confirmacao'},201,origin);

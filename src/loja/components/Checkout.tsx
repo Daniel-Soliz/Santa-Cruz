@@ -6,10 +6,11 @@ import { gerarNumeroPedido, montarMensagem, reais, situacaoLoja, totalCarrinho, 
 import { consultarCep, avaliarCobertura, entregaConfigurada } from '../entrega';
 import {backendConfigurado,supabase} from '../../admin/backend';
 import {VerificacaoPedido,verificacaoConfigurada} from './VerificacaoPedido';
+import {linkAcompanhamento,type ReferenciaPedido} from '../acompanhamento';
 
 type TipoOnline=Exclude<TipoPedido,'local'>;
 const clienteVazio:Cliente={nome:'',telefone:'',cep:'',rua:'',numero:'',complemento:'',bairro:'',cidade:'',uf:'',referencia:''};
-export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string; mensagemSuporte:string; registradoNoPainel:boolean};
+export type Preparado = {pedido:PedidoCheckout; url:string; mensagem:string; mensagemSuporte:string; registradoNoPainel:boolean; referencia:ReferenciaPedido};
 
 export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false,chatAtivo=false}:{linhas:LinhaCarrinho[];produtos:Produto[];onVoltar:()=>void;onPreparar:(preparado:Preparado)=>void;modoBanco?:boolean;chatAtivo?:boolean}){
  const loja=useLoja();
@@ -59,7 +60,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false,ch
  async function confirmar(semRegistro=false){
   setFalhaRegistro('');
   const dadosCliente=tipo==='entrega'?cliente:{...clienteVazio,nome:cliente.nome,telefone:cliente.telefone};
-  const rascunho:PedidoCheckout={numero:gerarNumeroPedido(),cliente:dadosCliente,tipo,pagamento,
+  const rascunho:PedidoCheckout={numero:gerarNumeroPedido()+crypto.randomUUID().slice(0,4).toUpperCase(),cliente:dadosCliente,tipo,pagamento,
    trocoPara,observacoesGerais,linhas,foraHorario:!status.aberto};
   const falhas=validarPedido(rascunho,produtos,loja,{entregaSobConsulta});
   if(falhas.length){
@@ -74,13 +75,14 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false,ch
   }
   setCamposInvalidos({});setErros([]);
   let pedido=rascunho,registradoNoPainel=false;
+  const chave=crypto.randomUUID().replaceAll('-','');
   if(sincronizar&&!semRegistro){
    if(!captcha){setFalhaRegistro('Conclua a verificação de segurança para registrar o pedido no painel.');return;}
    setRegistrando(true);
    try{
     const {data,error}=await supabase!.functions.invoke('criar-pedido',{
      body:{
-      cliente:dadosCliente,tipo,pagamento,trocoPara,observacoesGerais,
+      cliente:dadosCliente,tipo,pagamento,trocoPara,observacoesGerais,chave_rastreio:chave,
       linhas:linhas.map(l=>({produtoId:l.produtoId,quantidade:l.quantidade,
        variacaoId:l.variacaoId,opcionaisIds:l.opcionaisIds,observacao:l.observacao})),
       total_cliente_centavos:Math.round(total*100),captcha
@@ -100,11 +102,13 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false,ch
     return;
    }finally{setRegistrando(false);}
   }
-  const mensagem=montarMensagem(pedido,produtos,loja);
+  const referencia={codigo:pedido.numero,chave};
+  const acompanhamento=`\n\nAcompanhamento do pedido: ${linkAcompanhamento(referencia)}`;
+  const mensagem=montarMensagem(pedido,produtos,loja)+acompanhamento;
   const url=urlWhatsApp(mensagem,loja.whatsapp);
   // Abrir WhatsApp somente mediante clique explícito na tela seguinte:
   // evita bloqueio de popup após a chamada assíncrona.
-  onPreparar({pedido,url,mensagem,mensagemSuporte:montarMensagem(pedido,produtos,loja,'suporte'),registradoNoPainel});
+  onPreparar({pedido,url,mensagem,mensagemSuporte:montarMensagem(pedido,produtos,loja,'suporte')+acompanhamento,registradoNoPainel,referencia});
  }
  const escolhaTipo:[TipoOnline,string,typeof Truck,string][]=[
   ['entrega','Entrega',Truck,'Receber no endereço'],['retirada','Retirada',Store,'Buscar no balcão']

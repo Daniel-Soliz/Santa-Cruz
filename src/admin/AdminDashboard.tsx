@@ -11,6 +11,7 @@ import {EditorOpcoes} from './EditorOpcoes';
 import {removerFotoAntiga} from './fotosStorage';
 import {Financeiro,type MovimentoCaixa} from './Financeiro';
 import {valorDigitado} from '../loja/pedido';
+import {hashChaveRastreio,lerReferenciaPedido} from '../loja/acompanhamento';
 import type {Variacao,Opcional} from '../loja/types';
 import catalogo from '../data/cardapio.json';
 import {supabase,erroLegivel,reais,type ConfiguracaoAdmin,type PedidoAdmin,type PedidoStatus,type ProdutoAdmin,type CategoriaAdmin} from './backend';
@@ -28,22 +29,26 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
  const [salvando,setSalvando]=useState(false),[erro,setErro]=useState('');
  const [nome,setNome]=useState(''),[telefone,setTelefone]=useState(''),[total,setTotal]=useState(''),[tipo,setTipo]=useState<'retirada'|'entrega'|'local'>('retirada'),[observacao,setObservacao]=useState('');
  const [formaPagamento,setFormaPagamento]=useState('outro');
+ const [linkRastreio,setLinkRastreio]=useState('');
  const filtrar=pedidos.filter(p=>[p.codigo,p.cliente_nome,p.telefone||''].join(' ').toLowerCase().includes(busca.toLowerCase()));
  const registrar=async(e:FormEvent)=>{
   e.preventDefault();setErro('');
   const numero=valorDigitado(total);
   if(numero===null){setErro('Informe um valor válido para o pedido.');return;}
+  const referencia=lerReferenciaPedido(linkRastreio);
+  if(linkRastreio.trim()&&!referencia){setErro('Cole o link completo de acompanhamento que veio com o pedido.');return;}
   setSalvando(true);
   try{
-   const codigo=`M-${new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/[^0-9]/g,'')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
+   const codigo=referencia?.codigo||`M-${new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/[^0-9]/g,'')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
    const {error}=await supabase!.from('sc_pedidos').insert({
     codigo,cliente_nome:nome.trim(),telefone:telefone.trim()||null,
     modalidade:tipo,total_centavos:Math.round(numero*100),
     observacoes:observacao.trim()||null, status:'recebido',itens:[],
-    origem:'manual',forma_pagamento:formaPagamento,pagamento_status:'pendente'
+    origem:'manual',forma_pagamento:formaPagamento,pagamento_status:'pendente',
+    ...(referencia?{chave_rastreio_hash:await hashChaveRastreio(referencia.chave)}:{})
    });
    if(error)throw error;
-   setAberto(false);setNome('');setTotal('');setTelefone('');setObservacao('');await atualizar();
+   setAberto(false);setNome('');setTotal('');setTelefone('');setObservacao('');setLinkRastreio('');await atualizar();
   }catch(e){setErro(erroLegivel(e));}
   finally{setSalvando(false);}
  };
@@ -83,6 +88,7 @@ function Pedidos({pedidos,atualizar}:{pedidos:PedidoAdmin[];atualizar:()=>Promis
     <form onSubmit={e=>void registrar(e)} className="adm-form">
      <label>Nome do cliente *<input required minLength={2} value={nome} onChange={e=>setNome(e.target.value)} placeholder="Nome do cliente"/></label>
      <label>Telefone (opcional)<input type="tel" value={telefone} onChange={e=>setTelefone(e.target.value)} placeholder="DDD + número"/></label>
+     <label>Link de acompanhamento do site (opcional)<input value={linkRastreio} onChange={e=>setLinkRastreio(e.target.value)} placeholder="Cole o link recebido pelo WhatsApp ou pelo Suporte"/></label>
      <div className="adm-duas-colunas">
       <label>Valor confirmado (R$) *<input required inputMode="decimal" value={total} onChange={e=>setTotal(e.target.value)} placeholder="0,00"/></label>
       <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as typeof tipo)}><option value="retirada">Retirada</option><option value="entrega">Entrega</option><option value="local">No local</option></select></label>

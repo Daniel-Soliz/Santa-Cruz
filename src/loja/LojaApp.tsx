@@ -18,6 +18,8 @@ import { sugerirBebidas } from './vitrine';
 import { lerNavegacao, paginasLoja, passosParaVoltar, type PaginaLoja } from './navegacao';
 import { NavegacaoLoja } from './components/NavegacaoLoja';
 import { SuporteLoja } from './components/SuporteLoja';
+import { AcompanharPedido } from './components/AcompanharPedido';
+import { lerReferenciaPedido, linkAcompanhamento } from './acompanhamento';
 
 const categoriasLocais=cardapio.categorias as Categoria[];
 const dadosLocais=cardapio.itens as Produto[];
@@ -134,8 +136,12 @@ function Confirmacao({preparado,novo,chatAtivo}:{preparado:Preparado;novo:()=>vo
     else setMostrarSuporte(true);
    }}><MessageCircle size={18}/> Enviar pelo Suporte</button>}
   </div>
-  <button type="button" className="link-voltar" onClick={novo}>Voltar ao cardápio</button>
+  <div className="confirmacao__links">
+   <a className="link-voltar" href={linkAcompanhamento(preparado.referencia)} target="_blank" rel="noopener noreferrer">Abrir acompanhamento do pedido</a>
+   <button type="button" className="link-voltar" onClick={novo}>Voltar ao cardápio</button>
+  </div>
  </div>
+  <AcompanharPedido referencia={preparado.referencia} tipo={preparado.pedido.tipo}/>
   {chatAtivo&&mostrarSuporte&&<SuporteLoja pedido={{numero:preparado.pedido.numero,nome:preparado.pedido.cliente.nome,mensagem:preparado.mensagemSuporte}}/>}
  </div>;
 }
@@ -170,6 +176,7 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
   passos:window.history.state?.scVoltar??0
  }));
  const {hash,passos}=navegacao;
+ const rastreio=lerReferenciaPedido(hash);
  const conteudo=useRef<HTMLElement>(null);
  const hashAnterior=useRef<string|null>(null);
  const destaque=produtos.filter(p=>p.destaque&&p.disponivel);
@@ -229,11 +236,11 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
  },[loja.horarios]);
 
  useEffect(()=>{
-  const titulo=confirmacao?'Pedido preparado':checkout?'Finalizar pedido':paginasLoja[pagina];
+  const titulo=rastreio?'Acompanhar pedido':confirmacao?'Pedido preparado':checkout?'Finalizar pedido':paginasLoja[pagina];
   document.title=`${titulo} | ${loja.nome}`;
   const description=document.querySelector('meta[name="description"]');
   description?.setAttribute('content',checkout?'Revise seu pedido de comida nordestina para retirada ou entrega e escolha como enviar.':'Delícia do Nordeste · Casa do Norte · Santa Cruz. Veja o cardápio nordestino, monte sua sacola e envie o pedido para confirmação.');
- },[checkout,confirmacao,loja.nome,pagina]);
+ },[checkout,confirmacao,loja.nome,pagina,hash]);
  const salvarItem=useCallback((item:LinhaCarrinho,antiga?:string)=>{
   setCarrinho(atual=>antiga?atual.map(l=>l.chave===antiga?item:l):[...atual,item]);
   setAvisoSacola(antiga?'Item atualizado na sacola.':'Prato adicionado à sacola.');
@@ -269,14 +276,15 @@ function LojaConteudo({produtos,categorias,modoBanco,chatAtivo}:{produtos:Produt
    evento.preventDefault();conteudo.current?.focus();
   }}>Pular para o conteúdo</a>
   <Header quantidade={quantidade} abrir={()=>setCarrinhoAberto(true)} status={horario}
-   paginas={paginas} atual={checkout||confirmacao?null:pagina} voltarAVitrine={voltarAVitrine}/>
+   paginas={paginas} atual={checkout||confirmacao||rastreio?null:pagina} voltarAVitrine={voltarAVitrine}/>
   {armazenamentoFalhou&&<div role="status" className="aviso-armazenamento">Seu navegador está bloqueando o armazenamento. A sacola pode não ser recuperada se você fechar a página.</div>}
   <main ref={conteudo} id="conteudo" className="pagina-loja" tabIndex={-1}>
-   {!checkout&&(passos>0||pagina!=='inicio'||confirmacao)&&<div className="container-padrao navegacao-voltar">
+   {!checkout&&(passos>0||pagina!=='inicio'||confirmacao||rastreio)&&<div className="container-padrao navegacao-voltar">
     <button type="button" className="link-voltar" onClick={voltarAba}><ArrowLeft size={19} aria-hidden="true"/> Voltar</button>
    </div>}
    {confirmacao?<Confirmacao key={confirmacao.pedido.numero} preparado={confirmacao} novo={novaCompra} chatAtivo={chatAtivo}/>:
    checkout?<Checkout modoBanco={modoBanco} chatAtivo={chatAtivo} linhas={carrinho} produtos={produtos} onVoltar={voltarAVitrine} onPreparar={p=>{setConfirmacao(p);setCheckout(false);window.scrollTo({top:0});}}/>:
+   rastreio?<AcompanharPedido key={hash} referencia={rastreio}/>:
    <>
     {pagina==='inicio'&&<Hero status={horario}/>}
     {(pagina==='cardapio'||pagina==='destaques'||(pagina==='inicio'&&temDestaques))&&<>
