@@ -89,7 +89,7 @@ export function errosCamposPedido(p:PedidoCheckout,config:Configuracao,subtotal:
  }
  return erros;
 }
-export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configuracao){
+export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configuracao,{entregaSobConsulta=false}:{entregaSobConsulta?:boolean}={}){
  const erros:string[]=[];
  if(!config.pedidosOnlineAtivos)erros.push('Os pedidos online estão pausados no momento.');
  if(!p.linhas.length)erros.push('Adicione pelo menos um prato ao pedido.');
@@ -107,11 +107,11 @@ export function validarPedido(p:PedidoCheckout,produtos:Produto[],config:Configu
  erros.push(...Object.values(falhasCampos).filter((m):m is string=>!!m));
  if(config.formasPagamento?.[p.pagamento]===false)erros.push('Esta forma de pagamento está indisponível.');
  if(p.tipo==='entrega'){
-  if(config.taxaEntregaFixa===null||config.taxaEntregaFixa<0)
+  if(config.taxaEntregaFixa===null?!entregaSobConsulta:!Number.isFinite(config.taxaEntregaFixa)||config.taxaEntregaFixa<0)
    erros.push('Taxa de entrega indisponível no momento. Escolha retirada ou fale com a equipe.');
-  if(config.pedidoMinimoDelivery===null||config.pedidoMinimoDelivery<0)
+  if(config.pedidoMinimoDelivery===null?!entregaSobConsulta:!Number.isFinite(config.pedidoMinimoDelivery)||config.pedidoMinimoDelivery<0)
    erros.push('Pedido mínimo de entrega ainda não definido. Escolha retirada ou fale com a equipe.');
-  if(!config.bairrosAtendidos?.length)
+  if(!config.bairrosAtendidos?.length&&!entregaSobConsulta)
    erros.push('Bairros atendidos ainda não cadastrados. Escolha retirada ou fale com a equipe.');
   if(config.pedidoMinimoDelivery!==null&&subtotal<config.pedidoMinimoDelivery)
    erros.push(`Pedido mínimo para entrega: ${reais(config.pedidoMinimoDelivery)}.`);
@@ -131,7 +131,8 @@ export function montarMensagem(p:PedidoCheckout,produtos:Produto[],config:Config
   return `• ${linha.quantidade}x ${produto.nome}${detalhes?' — '+detalhes:''} — ${reais(dinheiro(precoLinha(linha,produto)*linha.quantidade))}`;
  }).filter((line):line is string=>!!line);
  const subtotal=totalCarrinho(p.linhas,produtos);
- const taxa=p.tipo==='entrega'?(config.taxaEntregaFixa??0):0;
+ const taxaPendente=p.tipo==='entrega'&&config.taxaEntregaFixa===null;
+ const entregaSobConsulta=p.tipo==='entrega'&&(taxaPendente||config.pedidoMinimoDelivery===null||!config.bairrosAtendidos?.length);
  const endereco=p.tipo==='entrega'?`📍 Endereço: ${p.cliente.rua}, ${p.cliente.numero}${p.cliente.complemento?', '+p.cliente.complemento:''} · ${p.cliente.bairro} · ${p.cliente.cidade}/${p.cliente.uf} · CEP ${somenteNumeros(p.cliente.cep)}${p.cliente.referencia?' · Ref.: '+p.cliente.referencia:''}`:null;
  const demo=p.linhas.some(l=>mapa.get(l.produtoId)?.exemplo);
  return [
@@ -140,10 +141,11 @@ export function montarMensagem(p:PedidoCheckout,produtos:Produto[],config:Config
  `👤 *Nome:* ${p.cliente.nome.trim()}`,
  `📞 *Telefone:* ${p.cliente.telefone.trim()}`,
  `🛵 *Tipo:* ${tipoLabel[p.tipo]}`,endereco,'',
+ entregaSobConsulta?'⚠️ *SOLICITAÇÃO DE ENTREGA: taxa, pedido mínimo e atendimento ao endereço sujeitos à confirmação do restaurante.*':null,
  '*ITENS:*',...linhas,'',
  `Subtotal: ${reais(subtotal)}`,
- `Taxa de entrega: ${p.tipo==='entrega'?reais(taxa):'Não se aplica'}`,
- `*TOTAL: ${reais(totalComEntrega(subtotal,p.tipo,config.taxaEntregaFixa))}*`,
+ `Taxa de entrega: ${p.tipo!=='entrega'?'Não se aplica':taxaPendente?'A confirmar pelo restaurante':reais(config.taxaEntregaFixa!)}`,
+ taxaPendente?'*TOTAL COM ENTREGA: a confirmar após informar a taxa.*':`*TOTAL: ${reais(totalComEntrega(subtotal,p.tipo,config.taxaEntregaFixa))}*`,
  `💳 *Pagamento:* ${pagamentoLabel[p.pagamento]}`,
  p.pagamento==='dinheiro'?`💵 *Troco para:* ${p.trocoPara.trim()?reais(valorDigitado(p.trocoPara)??0):'Não precisa'}`:null,
  p.observacoesGerais?`📝 *Observações gerais:* ${p.observacoesGerais.trim()}`:null,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Banknote, CheckCircle2, Clock3, CreditCard, MapPin, Search, ShieldCheck, ShoppingBag, Store, Truck, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Banknote, CheckCircle2, Clock3, CreditCard, Search, ShieldCheck, ShoppingBag, Store, Truck, Wallet } from 'lucide-react';
 import {useLoja} from '../../config/LojaContext';
 import type { Cliente, LinhaCarrinho, Pagamento, PedidoCheckout, Produto, TipoPedido } from '../types';
 import { gerarNumeroPedido, montarMensagem, reais, situacaoLoja, totalCarrinho, totalComEntrega, urlWhatsApp, validarPedido, errosCamposPedido, valorDigitado, type ErrosCampos } from '../pedido';
@@ -26,13 +26,14 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
  const [recriarCaptcha,setRecriarCaptcha]=useState(0);
  const [registrando,setRegistrando]=useState(false);
  const [falhaRegistro,setFalhaRegistro]=useState('');
- const sincronizar=modoBanco&&backendConfigurado&&verificacaoConfigurada;
+ const entregaSobConsulta=tipo==='entrega'&&!entregaConfigurada(loja);
+ const taxaPendente=tipo==='entrega'&&loja.taxaEntregaFixa===null;
+ const sincronizar=modoBanco&&backendConfigurado&&verificacaoConfigurada&&!entregaSobConsulta;
  const [camposInvalidos,setCamposInvalidos]=useState<ErrosCampos>({});
- const entregaAtiva=entregaConfigurada(loja);
  const subtotal=totalCarrinho(linhas,produtos);
  const total=totalComEntrega(subtotal,tipo,loja.taxaEntregaFixa);
  const trocoInformado=valorDigitado(trocoPara);
- const trocoEstimado=pagamento==='dinheiro'&&trocoInformado!==null&&trocoInformado>=total?trocoInformado-total:null;
+ const trocoEstimado=!taxaPendente&&pagamento==='dinheiro'&&trocoInformado!==null&&trocoInformado>=total?trocoInformado-total:null;
  const status=situacaoLoja(loja.horarios);
  const atualizar=(campo:keyof Cliente,valor:string)=>{
   setCliente(c=>({...c,[campo]:valor}));
@@ -60,7 +61,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
   const dadosCliente=tipo==='entrega'?cliente:{...clienteVazio,nome:cliente.nome,telefone:cliente.telefone};
   const rascunho:PedidoCheckout={numero:gerarNumeroPedido(),cliente:dadosCliente,tipo,pagamento,
    trocoPara,observacoesGerais,linhas,foraHorario:!status.aberto};
-  const falhas=validarPedido(rascunho,produtos,loja);
+  const falhas=validarPedido(rascunho,produtos,loja,{entregaSobConsulta});
   if(falhas.length){
    const campos=errosCamposPedido(rascunho,loja,subtotal);
    setCamposInvalidos(campos);setErros(falhas);
@@ -117,8 +118,8 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
      {!status.aberto&&<div className="aviso-atendimento aviso-atendimento--fechado"><Clock3 size={20}/><span>{status.mensagem}. Você pode montar o pedido; ele será confirmado pelo restaurante quando abrir.</span></div>}
      {!loja.pedidosOnlineAtivos&&<div className="aviso-atendimento aviso-atendimento--fechado"><Clock3 size={20}/> Os pedidos online estão pausados. O cardápio continua disponível para consulta.</div>}
      <section className="checkout-bloco" aria-labelledby="etapa-tipo"><div className="checkout-bloco__titulo"><span className="etapa-numero">01</span><div><h2 id="etapa-tipo">Como deseja receber?</h2><p>Selecione o tipo do pedido</p></div></div>
-      <div className="tipo-grade">{escolhaTipo.map(([id,nome,Icon,descricao])=><button key={id} type="button" aria-pressed={tipo===id} disabled={id==='entrega'&&!entregaAtiva} onClick={()=>{setTipo(id);setErros([]);setCamposInvalidos({});}} className={`tipo-opcao ${tipo===id?'tipo-opcao--ativa':''}`}><Icon size={25}/><strong>{nome}</strong><small>{descricao}</small></button>)}</div>
-      {!entregaAtiva&&<p className="aviso-entrega-checkout" role="note">Entrega online indisponível no momento. Você pode pedir para retirar no balcão.</p>}
+      <div className="tipo-grade">{escolhaTipo.map(([id,nome,Icon,descricao])=><button key={id} type="button" aria-pressed={tipo===id} disabled={!loja.pedidosOnlineAtivos} onClick={()=>{setTipo(id);setErros([]);setCamposInvalidos({});setFalhaRegistro('');}} className={`tipo-opcao ${tipo===id?'tipo-opcao--ativa':''}`}><Icon size={25}/><strong>{nome}</strong><small>{descricao}</small></button>)}</div>
+      {entregaSobConsulta&&<p className="aviso-entrega-checkout" role="note">Preencha seu endereço para solicitar entrega pelo WhatsApp. A taxa, o pedido mínimo e o atendimento ao endereço serão confirmados pelo restaurante.</p>}
      </section>
      <section className="checkout-bloco" aria-labelledby="etapa-cliente"><div className="checkout-bloco__titulo"><span className="etapa-numero">02</span><div><h2 id="etapa-cliente">Seus dados</h2><p>Para identificarmos seu pedido</p></div></div>
       <div className="form-grade">
@@ -139,7 +140,6 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
         <label className="form-campo">UF *<input maxLength={2} {...propsErro('uf')} value={cliente.uf} onChange={e=>atualizar('uf',e.target.value.toUpperCase())} placeholder="SP" required/>{mostrarErro('uf')}</label>
         <label className="form-campo form-campo--largo">Ponto de referência<input value={cliente.referencia} onChange={e=>atualizar('referencia',e.target.value)} placeholder="Se houver"/></label>
        </div>
-       {(loja.taxaEntregaFixa===null||loja.pedidoMinimoDelivery===null)&&<p className="config-pendente"><MapPin size={17}/> O delivery está temporariamente indisponível para pedidos online. A equipe precisa definir a taxa e o mínimo de entrega.</p>}
        {loja.bairrosAtendidos.length>0&&<p className="cep-status">Bairros atendidos: {loja.bairrosAtendidos.join(', ')}.</p>}
       </div>}
      </section>
@@ -159,11 +159,11 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
       <strong>Recebimento na cozinha</strong>
       {sincronizar?<><p>O pedido será registrado no painel e ficará aguardando a confirmação da equipe. O pagamento continua a combinar com o restaurante.</p>
        <VerificacaoPedido key={recriarCaptcha} token={captcha} onToken={setCaptcha}/></>:
-       <p>O envio automático ao painel não está ativado. Você pode preparar a mensagem para confirmar pelo WhatsApp.</p>}
+       <p>{entregaSobConsulta?'Esta solicitação de entrega será enviada pelo WhatsApp para a equipe confirmar as condições. Ela não será registrada automaticamente no painel.':'O envio automático ao painel não está ativado. Você pode preparar a mensagem para confirmar pelo WhatsApp.'}</p>}
      </div>}
      {falhaRegistro&&<div className="form-erros" role="alert">{falhaRegistro}</div>}
      {erros.length>0&&<div id="checkout-erros" className="form-erros" role="alert" tabIndex={-1}><strong>Confira antes de continuar:</strong><ul>{erros.map(e=><li key={e}>{e}</li>)}</ul></div>}
-     <button type="submit" className="botao botao--rosa botao--full botao-confirmar" disabled={!loja.pedidosOnlineAtivos||linhas.length===0||registrando}><CheckCircle2 size={21}/>{registrando?'Registrando pedido...':sincronizar?'Registrar pedido e preparar WhatsApp':'Preparar pedido no WhatsApp'} <ArrowRight size={20}/></button>
+     <button type="submit" className="botao botao--rosa botao--full botao-confirmar" disabled={!loja.pedidosOnlineAtivos||linhas.length===0||registrando}><CheckCircle2 size={21}/>{registrando?'Registrando pedido...':sincronizar?'Registrar pedido e preparar WhatsApp':entregaSobConsulta?'Solicitar entrega pelo WhatsApp':'Preparar pedido no WhatsApp'} <ArrowRight size={20}/></button>
      {falhaRegistro&&<button type="button" className="botao botao--claro botao--full" onClick={()=>void confirmar(true)}>Continuar pelo WhatsApp sem registro no painel</button>}
      <p className="checkout-legal">Você revisará o pedido antes de abrir o WhatsApp. <strong>É preciso tocar em Enviar no WhatsApp</strong> e aguardar a confirmação da equipe. Mesmo registrado no painel, isso não significa que foi aceito ou pago.</p>
     </form>
@@ -177,7 +177,7 @@ export function Checkout({linhas,produtos,onVoltar,onPreparar,modoBanco=false}:{
       const valor=item.preco+(variante?.acrescimo||0)+extras.reduce((s,x)=>s+x.preco,0);
       return <div className="checkout-resumo__linha" key={l.chave}><div><b>{l.quantidade}× {item.nome}</b>{variante&&<small>{variante.nome}</small>}{extras.length>0&&<small>{extras.map(x=>x.nome).join(', ')}</small>}{l.observacao&&<small>Obs.: {l.observacao}</small>}</div><strong>{reais(valor*l.quantidade)}</strong></div>;
      })}</div>
-     <div className="checkout-valores"><div><span>Subtotal</span><b>{reais(subtotal)}</b></div>{(tipo!=='entrega'||loja.taxaEntregaFixa!==null)&&<div><span>Taxa de entrega</span><b>{tipo!=='entrega'?'Não se aplica':reais(loja.taxaEntregaFixa!)}</b></div>}<div className="checkout-valores__total"><span>Total estimado</span><strong>{tipo==='entrega'&&loja.taxaEntregaFixa===null?'Indisponível':reais(total)}</strong></div></div>
+     <div className="checkout-valores"><div><span>Subtotal</span><b>{reais(subtotal)}</b></div><div><span>Taxa de entrega</span><b>{tipo!=='entrega'?'Não se aplica':taxaPendente?'A confirmar':reais(loja.taxaEntregaFixa!)}</b></div><div className="checkout-valores__total"><span>{taxaPendente?'Total com entrega':'Total estimado'}</span><strong>{taxaPendente?'A confirmar':reais(total)}</strong></div></div>
      {linhas.some(l=>produtos.find(p=>p.id===l.produtoId)?.exemplo)&&<p className="resumo-aviso">⚠️ Itens e valores demonstrativos. Confira as condições reais com a equipe antes de pagar.</p>}
     </aside>
    </div>

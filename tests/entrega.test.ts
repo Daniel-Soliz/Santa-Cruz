@@ -6,7 +6,7 @@ const incompleta={pedidosOnlineAtivos:true,taxaEntregaFixa:null,pedidoMinimoDeli
 const completa={pedidosOnlineAtivos:true,taxaEntregaFixa:8,pedidoMinimoDelivery:30,bairrosAtendidos:['Parque Belém','Vila São João']};
 test('a entrega não é declarada disponível com configuração incompleta',()=>{
  assert.equal(entregaConfigurada(incompleta),false);
- assert.equal(avaliarCobertura('Parque Belém',incompleta).estado,'indisponivel');
+ assert.equal(avaliarCobertura('Parque Belém',incompleta).estado,'sob-consulta');
  assert.equal(entregaConfigurada({...completa,bairrosAtendidos:[]}),false);
  assert.equal(entregaConfigurada({...completa,pedidosOnlineAtivos:false}),false);
  assert.equal(entregaConfigurada(completa),true);
@@ -23,7 +23,7 @@ test('ViaCEP usa só CEP numérico e não confunde endereço com autorização d
  const dado=await consultarCep('02850-100',falso as typeof fetch);
  assert.equal(url,'https://viacep.com.br/ws/02850100/json/');
  assert.equal(dado.bairro,'Parque Belém');
- assert.equal(avaliarCobertura(dado.bairro,incompleta).estado,'indisponivel');
+ assert.equal(avaliarCobertura(dado.bairro,incompleta).estado,'sob-consulta');
  await assert.rejects(()=>consultarCep('999',falso as typeof fetch),/CEP válido/);
 });
 test('ViaCEP reporta erros sem inventar endereço',async()=>{
@@ -35,4 +35,15 @@ test('não promete delivery para CEP de outra cidade com bairro homônimo',()=>{
  const cfg={...completa,cidadeAtendimento:'São Paulo',ufAtendimento:'SP'};
  assert.equal(avaliarCobertura('Parque Belém',cfg,{cidade:'São Paulo',uf:'SP'}).estado,'disponivel');
  assert.equal(avaliarCobertura('Parque Belém',cfg,{cidade:'Rio de Janeiro',uf:'RJ'}).estado,'nao-atendido');
+});
+
+test('entrega sob consulta continua respeitando pausas, cidade e bairros já cadastrados',()=>{
+ const cfg={...incompleta,cidadeAtendimento:'São Paulo',ufAtendimento:'SP'};
+ assert.equal(avaliarCobertura('Parque Belém',cfg,{cidade:'Rio de Janeiro',uf:'RJ'}).estado,'nao-atendido');
+ assert.equal(avaliarCobertura('Parque Belém',{...cfg,pedidosOnlineAtivos:false}).estado,'indisponivel');
+ assert.equal(avaliarCobertura('Outro bairro',{...cfg,bairrosAtendidos:['Parque Belém']}).estado,'nao-atendido');
+ const consulta=avaliarCobertura('Parque Belém',cfg,{cidade:'São Paulo',uf:'SP'});
+ assert.equal(consulta.estado,'sob-consulta');
+ assert.match(consulta.mensagem,/confirmará a taxa/);
+ assert.doesNotMatch(consulta.mensagem,/Bairro atendido|R\$/);
 });

@@ -12,7 +12,7 @@ export type DadosEntrega={
  ufAtendimento?:string;
 };
 export type EnderecoCep={cep:string;rua:string;bairro:string;cidade:string;uf:string};
-export type Cobertura={estado:'disponivel'|'indisponivel'|'nao-atendido'|'verificar-bairro';mensagem:string};
+export type Cobertura={estado:'disponivel'|'indisponivel'|'nao-atendido'|'verificar-bairro'|'sob-consulta';mensagem:string};
 
 export function normalizarBairro(texto:string){
  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR');
@@ -24,7 +24,7 @@ export function entregaConfigurada(config:DadosEntrega):boolean{
   &&config.bairrosAtendidos.some(b=>!!normalizarBairro(b));
 }
 export function avaliarCobertura(bairro:string,config:DadosEntrega,local?:{cidade:string;uf:string}):Cobertura{
- if(!entregaConfigurada(config))return {
+ if(!config.pedidosOnlineAtivos)return {
   estado:'indisponivel',
   mensagem:'A entrega online não está disponível no momento. Você ainda pode pedir para retirada no balcão.'
  };
@@ -38,9 +38,13 @@ export function avaliarCobertura(bairro:string,config:DadosEntrega,local?:{cidad
   estado:'verificar-bairro',
   mensagem:'CEP localizado. Confirme o bairro para verificar a área de entrega.'
  };
- if(!config.bairrosAtendidos.some(b=>normalizarBairro(b)===normalizarBairro(bairro)))return {
+ if(config.bairrosAtendidos.length&&!config.bairrosAtendidos.some(b=>normalizarBairro(b)===normalizarBairro(bairro)))return {
   estado:'nao-atendido',
   mensagem:'Esse bairro não está na área de entrega cadastrada. Você pode escolher retirada.'
+ };
+ if(!entregaConfigurada(config))return {
+  estado:'sob-consulta',
+  mensagem:'Endereço informado. Escolha Entrega ao finalizar e envie a solicitação pelo WhatsApp. O restaurante confirmará a taxa, o pedido mínimo e o atendimento ao endereço.'
  };
  return {
   estado:'disponivel',

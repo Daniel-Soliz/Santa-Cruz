@@ -55,6 +55,33 @@ test('checkout exige nome e telefone, bloqueia entrega sem taxa e pedido mínimo
  assert.deepEqual(validarPedido(delivery,catalog.itens,{...config,taxaEntregaFixa:8,pedidoMinimoDelivery:30,bairrosAtendidos:['Parque Belém']}),[]);
  assert.ok(validarPedido({...base,pagamento:'dinheiro',trocoPara:'30'},catalog.itens,config).some(s=>s.includes('troco')));
 });
+
+test('solicitação de entrega por WhatsApp aceita configuração pendente e exige endereço completo',()=>{
+ const entrega:PedidoCheckout={...base,tipo:'entrega'};
+ const consulta={entregaSobConsulta:true};
+ assert.deepEqual(validarPedido(entrega,catalog.itens,config,consulta),[]);
+ assert.ok(validarPedido({...entrega,cliente:{...cliente,rua:'',numero:''}},catalog.itens,config,consulta).length>=2);
+ assert.ok(validarPedido(entrega,catalog.itens,{...config,pedidosOnlineAtivos:false},consulta).some(e=>e.includes('pausados')));
+ assert.ok(validarPedido(entrega,catalog.itens,{...config,bairrosAtendidos:['Outro bairro']},consulta).some(e=>e.includes('bairro')));
+ assert.ok(validarPedido(entrega,catalog.itens,{...config,cidadeAtendimento:'Outra cidade'},consulta).some(e=>e.includes('cidade')));
+ assert.ok(validarPedido(entrega,catalog.itens,{...config,pedidoMinimoDelivery:100},consulta).some(e=>e.includes('mínimo')));
+ assert.ok(validarPedido(entrega,catalog.itens,{...config,taxaEntregaFixa:-1},consulta).some(e=>e.includes('Taxa')));
+ assert.ok(validarPedido(entrega,catalog.itens,config).some(e=>e.includes('Taxa')));
+});
+
+test('mensagem de entrega sem taxa informa subtotal e confirmação sem apresentar frete grátis ou total final',()=>{
+ const entrega:PedidoCheckout={...base,tipo:'entrega'};
+ const mensagem=montarMensagem(entrega,catalog.itens,config);
+ assert.match(mensagem,/SOLICITAÇÃO DE ENTREGA/);
+ assert.match(mensagem,/Taxa de entrega: A confirmar pelo restaurante/);
+ assert.match(mensagem,/TOTAL COM ENTREGA: a confirmar/);
+ assert.match(mensagem,/Subtotal: R\$\s+73,80/);
+ assert.match(mensagem,/Rua Santa Cruz da Conceição/);
+ assert.doesNotMatch(mensagem,/Taxa de entrega: R\$\s+0,00|\*TOTAL:|grátis/i);
+ const configurada=montarMensagem(entrega,catalog.itens,{...config,taxaEntregaFixa:8,pedidoMinimoDelivery:0,bairrosAtendidos:['Parque Belém']});
+ assert.match(configurada,/\*TOTAL: R\$\s+81,80\*/);
+ assert.doesNotMatch(configurada,/SOLICITAÇÃO DE ENTREGA|TOTAL COM ENTREGA: a confirmar/);
+});
 test('nunca adiciona item esgotado e respeita o interruptor geral',()=>{
  assert.ok(validarPedido({...base,linhas:[{...linha,produtoId:'ex-06'}]},catalog.itens,config).some(e=>e.includes('indisponível')));
  assert.ok(validarPedido(base,catalog.itens,{...config,pedidosOnlineAtivos:false}).some(e=>e.includes('pausados')));

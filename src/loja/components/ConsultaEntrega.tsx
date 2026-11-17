@@ -30,7 +30,7 @@ export function ConsultaEntrega(){
   <div className="consulta-entrega__texto">
    <div className="consulta-entrega__icone"><Truck size={25}/></div>
    <div><span className="micro-label">Antes de montar a sacola</span><h2 id="consulta-entrega-titulo">Confira a entrega pelo CEP</h2>
-    <p>{ativa?'Consulte o CEP e veja se seu bairro está na área atendida.':'A entrega online ainda não está habilitada. Você pode conferir seu CEP, mas os pedidos estão disponíveis para retirada no balcão.'}</p>
+    <p>{ativa?'Consulte o CEP e veja se seu bairro está na área atendida.':loja.pedidosOnlineAtivos?'Você pode solicitar entrega ao finalizar. A taxa, o pedido mínimo e o atendimento ao endereço serão confirmados pelo restaurante no WhatsApp.':'Os pedidos online estão pausados no momento. Você pode consultar o endereço pelo CEP.'}</p>
    </div>
   </div>
   <form onSubmit={e=>void status(e)} className="consulta-entrega__form">
